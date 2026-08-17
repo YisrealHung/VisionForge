@@ -1,0 +1,86 @@
+# ==============================================================================
+# VisionForge - Git Ignore Configuration
+# ==============================================================================
+
+# Python / Bytecode / Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing & Type Checking
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Frontend
+frontend/node_modules/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+frontend/.vite/
+
+# Large Model Weights, Checkpoints & Exported Formats
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+*.weights
+*.bin
+*.safetensors
+*.ckpt
+
+# Training Runs, Logs & Ultralytics Output
+runs/
+*.log
+logs/
+training_logs/
+.gradcam_cache/
+
+# SQLite Database & Local User Projects Data
+# Keep the directory structure tracked via .gitkeep, but ignore user project data
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.sqlite
+backend/data/*.sqlite3
+backend/data/projects/*
+!backend/data/projects/.gitkeep
+!backend/data/.gitkeep
+
+# IDEs & System Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
