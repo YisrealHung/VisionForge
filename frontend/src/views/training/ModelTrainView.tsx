@@ -181,7 +181,7 @@ export const ModelTrainView: React.FC = () => {
             🧠 模型配置與訓練中心
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            專案：<span style={{ color: '#EB7E83', fontWeight: 600 }}>{activeProject.name}</span> · 任務類型：<span style={{ color: '#557B86', fontWeight: 600 }}>{activeProject.task_type.toUpperCase()}</span> · 選擇深度學習架構與超參數調整
+            專案：<span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{activeProject.name}</span> · 任務類型：<span style={{ color: 'var(--accent-teal)', fontWeight: 600 }}>{activeProject.task_type.toUpperCase()}</span> · 選擇深度學習架構與超參數調整
           </p>
         </div>
 
@@ -197,7 +197,7 @@ export const ModelTrainView: React.FC = () => {
       </div>
 
       {errorMsg && (
-        <div style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(235, 126, 131, 0.16)', border: '1px solid rgba(235, 126, 131, 0.35)', color: '#fca5a8', fontSize: '0.85rem' }}>
+        <div style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(235, 87, 87, 0.16)', border: '1px solid rgba(235, 87, 87, 0.35)', color: '#fca5a8', fontSize: '0.85rem' }}>
           {errorMsg}
         </div>
       )}
@@ -205,7 +205,7 @@ export const ModelTrainView: React.FC = () => {
       {/* Step 1: Preset Templates */}
       <div>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sparkles size={17} color="#557B86" /> 步驟一：選擇訓練預設模板
+          <Sparkles size={17} color="var(--accent-teal)" /> 步驟一：選擇訓練預設模板
         </h3>
         <PresetSelector currentPreset={preset} onSelectPreset={handleSelectPreset} />
       </div>
@@ -213,7 +213,7 @@ export const ModelTrainView: React.FC = () => {
       {/* Step 2: Model Architecture */}
       <div>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <BrainCircuit size={17} color="#EB7E83" /> 步驟二：選擇{getTaskTitle(taskType)}
+          <BrainCircuit size={17} color="var(--accent-primary)" /> 步驟二：選擇{getTaskTitle(taskType)}
         </h3>
         <ModelSelector
           taskType={taskType}
@@ -225,7 +225,7 @@ export const ModelTrainView: React.FC = () => {
       {/* Step 3: Hyperparameter Fine-tuning */}
       <Card>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sliders size={17} color="#E1998A" /> 步驟三：超參數設定 (Hyperparameters)
+          <Sliders size={17} color="var(--accent-peach)" /> 步驟三：超參數設定 (Hyperparameters)
         </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
@@ -249,7 +249,7 @@ export const ModelTrainView: React.FC = () => {
                     padding: '2px 6px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
-                    color: '#EB7E83',
+                    color: 'var(--accent-primary)',
                     background: 'var(--bg-surface-elevated)',
                     border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-xs)',
@@ -268,7 +268,7 @@ export const ModelTrainView: React.FC = () => {
                 setEpochs(Number(e.target.value));
                 setPreset('custom');
               }}
-              style={{ width: '100%', accentColor: '#EB7E83' }}
+              style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
             />
             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>範圍: 1 ~ 500 輪</span>
           </div>

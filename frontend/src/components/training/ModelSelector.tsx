@@ -380,8 +380,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                   fontWeight: isTabActive ? 700 : 500,
                   borderRadius: 'var(--radius-sm)',
                   border: `1px solid ${isTabActive ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
-                  background: isTabActive ? 'rgba(235, 126, 131, 0.16)' : 'var(--bg-surface-elevated)',
-                  color: isTabActive ? '#EB7E83' : 'var(--text-secondary)',
+                  background: isTabActive ? 'var(--accent-primary-glow)' : 'var(--bg-surface-elevated)',
+                  color: isTabActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                   display: 'flex',
@@ -393,8 +393,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                 <span
                   style={{
                     fontSize: '0.68rem',
-                    background: isTabActive ? 'rgba(235, 126, 131, 0.25)' : 'rgba(255, 255, 255, 0.06)',
-                    color: isTabActive ? '#fcd2d4' : 'var(--text-muted)',
+                    background: isTabActive ? 'var(--accent-primary-glow)' : 'rgba(128, 128, 128, 0.1)',
+                    color: isTabActive ? 'var(--accent-primary)' : 'var(--text-muted)',
                     padding: '1px 5px',
                     borderRadius: '10px',
                   }}
@@ -411,7 +411,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.85rem' }}>
         {displayedModels.map((m) => {
           const isSelected = selectedModel === m.id;
-          const badgeColor = m.badgeColor || '#EB7E83';
+          const badgeColor = m.badgeColor || 'var(--accent-primary)';
 
           return (
             <div
@@ -420,9 +420,9 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
               style={{
                 padding: '1.1rem',
                 borderRadius: 'var(--radius-md)',
-                background: isSelected ? 'rgba(235, 126, 131, 0.12)' : 'var(--bg-surface-elevated)',
+                background: isSelected ? 'var(--accent-primary-glow)' : 'var(--bg-surface-elevated)',
                 border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
-                boxShadow: isSelected ? '0 0 16px rgba(235, 126, 131, 0.25)' : 'none',
+                boxShadow: isSelected ? 'var(--shadow-glow)' : 'none',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 display: 'flex',
@@ -454,7 +454,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                         style={{
                           fontSize: '0.65rem',
                           color: 'var(--text-muted)',
-                          background: 'rgba(255, 255, 255, 0.05)',
+                          background: 'rgba(128, 128, 128, 0.1)',
                           padding: '2px 5px',
                           borderRadius: '4px',
                         }}
@@ -464,14 +464,14 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                     )}
                   </div>
                   {isSelected ? (
-                    <CheckCircle2 size={18} color="#EB7E83" />
+                    <CheckCircle2 size={18} color="var(--accent-primary)" />
                   ) : (
                     <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '1px solid var(--border-subtle)' }} />
                   )}
                 </div>
 
                 {/* Name */}
-                <h4 style={{ fontSize: '1.08rem', fontWeight: 800, marginBottom: '0.35rem', color: isSelected ? '#fca5a8' : 'var(--text-primary)' }}>
+                <h4 style={{ fontSize: '1.08rem', fontWeight: 800, marginBottom: '0.35rem', color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
                   {m.name}
                 </h4>
 
@@ -484,8 +484,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                 <div
                   style={{
                     fontSize: '0.72rem',
-                    color: isSelected ? '#EB7E83' : 'var(--text-muted)',
-                    background: isSelected ? 'rgba(235, 126, 131, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-muted)',
+                    background: isSelected ? 'var(--accent-primary-glow)' : 'rgba(128, 128, 128, 0.05)',
                     padding: '4px 8px',
                     borderRadius: '4px',
                     marginBottom: '0.85rem',
@@ -494,7 +494,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                     gap: '4px',
                   }}
                 >
-                  <Sparkles size={12} color={isSelected ? '#EB7E83' : 'var(--text-muted)'} />
+                  <Sparkles size={12} color={isSelected ? 'var(--accent-primary)' : 'var(--text-muted)'} />
                   <span>{m.recommendedFor}</span>
                 </div>
               </div>

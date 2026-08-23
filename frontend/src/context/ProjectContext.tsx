@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Project, ProjectCreateInput, SystemHealth, NavView, ActiveWorkspace } from '../types';
+import { Project, ProjectCreateInput, SystemHealth, NavView, ActiveWorkspace, AppTheme, THEME_REGISTRY } from '../types';
 import { api } from '../services/api';
 
 interface ProjectContextType {
@@ -10,8 +10,8 @@ interface ProjectContextType {
   activeWorkspace: ActiveWorkspace;
   currentView: NavView;
   isCreateModalOpen: boolean;
-  theme: 'dark' | 'light';
-  setTheme: (theme: 'dark' | 'light') => void;
+  theme: AppTheme;
+  setTheme: (theme: AppTheme) => void;
   setIsCreateModalOpen: (open: boolean) => void;
   setActiveWorkspace: (ws: ActiveWorkspace) => void;
   setCurrentView: (view: NavView) => void;
@@ -31,12 +31,13 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeWorkspace, setActiveWorkspace] = useState<ActiveWorkspace>('training');
   const [currentView, setCurrentView] = useState<NavView>('dashboard');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem('visionforge_theme');
-    return saved === 'dark' ? 'dark' : 'light';
+  const [theme, setThemeState] = useState<AppTheme>(() => {
+    const saved = localStorage.getItem('visionforge_theme') as AppTheme;
+    const isValid = THEME_REGISTRY.some((t) => t.id === saved);
+    return isValid ? saved : 'nordic-frost';
   });
 
-  const setTheme = (newTheme: 'dark' | 'light') => {
+  const setTheme = (newTheme: AppTheme) => {
     setThemeState(newTheme);
     localStorage.setItem('visionforge_theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Settings, 
   Server, 
@@ -12,9 +12,18 @@ import {
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { Card } from '../../components/common/Card';
+import { THEME_REGISTRY } from '../../types';
 
 export const SettingsView: React.FC = () => {
   const { systemHealth, theme, setTheme } = useProject();
+  const [themeFilter, setThemeFilter] = useState<'all' | 'palette' | 'dark' | 'light'>('all');
+
+  const filteredThemes = THEME_REGISTRY.filter((t) => {
+    if (themeFilter === 'palette') return t.category === 'palette';
+    if (themeFilter === 'dark') return t.mode === 'dark';
+    if (themeFilter === 'light') return t.mode === 'light';
+    return true;
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '850px' }}>
@@ -29,127 +38,172 @@ export const SettingsView: React.FC = () => {
 
       {/* Theme & Appearance Switcher */}
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Palette size={18} color="#EB7E83" /> 介面外觀風格 (Theme & Aesthetics)
-          </h3>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            即時切換 · 自動保存至本機偏好
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Palette size={20} color="var(--accent-primary)" /> 介面外觀風格 (Theme & Aesthetics)
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              共 10 款特調主題 · 包含依您提供色票特調與現代專業設計推薦 · 即時切換自動儲存
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-surface-elevated)', padding: '3px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+            {[
+              { key: 'all', label: '全部 (10)' },
+              { key: 'palette', label: '🎨 色票特調 (4)' },
+              { key: 'dark', label: '🌙 深色 (5)' },
+              { key: 'light', label: '☀️ 淺色 (5)' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setThemeFilter(tab.key as any)}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.75rem',
+                  fontWeight: themeFilter === tab.key ? 700 : 500,
+                  borderRadius: 'var(--radius-xs)',
+                  background: themeFilter === tab.key ? 'var(--accent-primary)' : 'transparent',
+                  color: themeFilter === tab.key ? '#ffffff' : 'var(--text-secondary)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
-          {/* Dark Mode Card */}
-          <div
-            onClick={() => setTheme('dark')}
-            style={{
-              padding: '1.15rem',
-              borderRadius: 'var(--radius-md)',
-              background: theme === 'dark' ? 'rgba(235, 126, 131, 0.12)' : 'var(--bg-surface-elevated)',
-              border: `1.5px solid ${theme === 'dark' ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
-              boxShadow: theme === 'dark' ? '0 0 16px rgba(235, 126, 131, 0.22)' : 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem',
-              position: 'relative',
-            }}
-          >
-            {/* Mini Visual Preview Mockup */}
-            <div
-              style={{
-                height: '60px',
-                borderRadius: 'var(--radius-sm)',
-                background: '#141217',
-                border: '1px solid rgba(184, 143, 137, 0.25)',
-                padding: '8px 10px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <div style={{ width: '28px', height: '100%', background: '#1c1921', borderRadius: '4px', border: '1px solid rgba(184,143,137,0.2)' }} />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <div style={{ width: '65%', height: '8px', background: '#EB7E83', borderRadius: '3px' }} />
-                <div style={{ width: '40%', height: '6px', background: '#557B86', borderRadius: '3px' }} />
-              </div>
-              <span style={{ fontSize: '0.65rem', color: '#EB7E83', background: 'rgba(235,126,131,0.2)', padding: '2px 6px', borderRadius: '10px', fontWeight: 700 }}>深色</span>
-            </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+          {filteredThemes.map((item) => {
+            const isSelected = theme === item.id;
+            return (
+              <div
+                key={item.id}
+                onClick={() => setTheme(item.id)}
+                style={{
+                  padding: '1.15rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: isSelected ? 'var(--accent-primary-glow)' : 'var(--bg-surface-elevated)',
+                  border: `1.5px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
+                  boxShadow: isSelected ? 'var(--shadow-glow)' : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-highlight)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                }}
+              >
+                {/* Mini Visual Preview Mockup Box */}
+                <div
+                  style={{
+                    height: '68px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: item.bgSample,
+                    border: `1px solid ${isSelected ? 'var(--border-highlight)' : 'var(--border-subtle)'}`,
+                    padding: '8px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: item.mode === 'dark' ? 'inset 0 0 12px rgba(0,0,0,0.5)' : 'inset 0 0 8px rgba(0,0,0,0.04)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '26px',
+                      height: '100%',
+                      background: item.cardSample,
+                      borderRadius: '4px',
+                      border: '1px solid rgba(128,128,128,0.2)',
+                    }}
+                  />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <div style={{ width: '70%', height: '8px', background: item.accentSample, borderRadius: '3px' }} />
+                    <div style={{ width: '45%', height: '6px', background: item.palette[1] || item.accentSample, borderRadius: '3px', opacity: 0.8 }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        color: item.accentSample,
+                        background: `${item.accentSample}22`,
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        border: `1px solid ${item.accentSample}44`,
+                      }}
+                    >
+                      {item.mode === 'dark' ? '🌙 深色' : '☀️ 淺色'}
+                    </span>
+                    {item.tag && (
+                      <span
+                        style={{
+                          fontSize: '0.6rem',
+                          color: 'var(--text-muted)',
+                          padding: '1px 4px',
+                        }}
+                      >
+                        {item.tag}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(235, 126, 131, 0.18)', color: '#EB7E83', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Moon size={15} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
-                    🌙 煙燻暖岩暗色 (Dark)
+                {/* Color Swatch Dots */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {item.palette.map((color, idx) => (
+                      <div
+                        key={idx}
+                        title={color}
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          background: color,
+                          border: '1.5px solid rgba(255,255,255,0.4)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                        }}
+                      />
+                    ))}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    沉穩岩灰底蘊 · 護眼溫潤低刺激
-                  </div>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                    {item.categoryLabel}
+                  </span>
                 </div>
-              </div>
-              {theme === 'dark' && <CheckCircle2 size={18} color="#EB7E83" />}
-            </div>
-          </div>
 
-          {/* Light Mode Card */}
-          <div
-            onClick={() => setTheme('light')}
-            style={{
-              padding: '1.15rem',
-              borderRadius: 'var(--radius-md)',
-              background: theme === 'light' ? 'rgba(219, 102, 108, 0.1)' : 'var(--bg-surface-elevated)',
-              border: `1.5px solid ${theme === 'light' ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
-              boxShadow: theme === 'light' ? '0 0 16px rgba(219, 102, 108, 0.2)' : 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem',
-              position: 'relative',
-            }}
-          >
-            {/* Mini Visual Preview Mockup */}
-            <div
-              style={{
-                height: '60px',
-                borderRadius: 'var(--radius-sm)',
-                background: '#f9f6f4',
-                border: '1px solid rgba(161, 120, 114, 0.25)',
-                padding: '8px 10px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <div style={{ width: '28px', height: '100%', background: '#ffffff', borderRadius: '4px', border: '1px solid rgba(161,120,114,0.2)' }} />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <div style={{ width: '65%', height: '8px', background: '#db666c', borderRadius: '3px' }} />
-                <div style={{ width: '40%', height: '6px', background: '#436a75', borderRadius: '3px' }} />
-              </div>
-              <span style={{ fontSize: '0.65rem', color: '#db666c', background: 'rgba(219,102,108,0.15)', padding: '2px 6px', borderRadius: '10px', fontWeight: 700 }}>預設</span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(225, 153, 138, 0.22)', color: '#cf7c6a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Sun size={15} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
-                    ☀️ 溫潤燕麥亮色 (Light)
+                {/* Theme Title & Meta */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {item.name}
+                      <span style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-muted)' }}>
+                        {item.nameEn}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: 1.35 }}>
+                      {item.description}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    自然亞麻白底 · 清爽通透雜誌感
-                  </div>
+                  {isSelected && (
+                    <div style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }}>
+                      <CheckCircle2 size={20} />
+                    </div>
+                  )}
                 </div>
               </div>
-              {theme === 'light' && <CheckCircle2 size={18} color="#db666c" />}
-            </div>
-          </div>
+            );
+          })}
         </div>
       </Card>
 

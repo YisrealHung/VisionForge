@@ -140,10 +140,25 @@ start.bat
 ```
 *(PowerShell 使用者可執行 `.\start.ps1`)*
 
-#### 🛑 一鍵停止服務：
+#### 🐧 Linux / NVIDIA Jetson Orin 環境：
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+#### 🛑 一鍵停止服務 (Windows)：
 ```cmd
 stop.bat
 ```
+
+---
+
+### 📖 平台專屬部署手冊 (Deployment Guides)
+
+針對不同作業系統與邊緣硬體平台，請參閱詳細的步驟指南與 GPU/CUDA 安裝說明：
+
+- 🪟 **[Windows 部署與 GPU 加速指南 (docs/DEPLOYMENT_WINDOWS.md)](docs/DEPLOYMENT_WINDOWS.md)**：包含 Windows 10/11 系統需求、NVIDIA GPU 驅動、CUDA 12.1、cuDNN 安裝、CPU 模式與常見問題排解。
+- 🐧 **[Linux (ARM64 / NVIDIA Jetson Orin) 部署指南 (docs/DEPLOYMENT_JETSON_ORIN.md)](docs/DEPLOYMENT_JETSON_ORIN.md)**：專為 Jetson Orin Nano / Orin NX / AGX Orin 打造，包含 JetPack 6/5.1 配置、NVIDIA 官方 PyTorch for Jetson、Torchvision 編譯、TensorRT、CSI 相機與 systemd 開機自啟動服務設定。
 
 ---
 

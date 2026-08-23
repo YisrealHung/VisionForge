@@ -31,7 +31,7 @@ export const DashboardView: React.FC = () => {
       <div
         className="glass-card"
         style={{
-          background: 'linear-gradient(135deg, rgba(235, 126, 131, 0.14) 0%, rgba(225, 153, 138, 0.1) 50%, rgba(85, 123, 134, 0.12) 100%)',
+          background: 'var(--gradient-brand-subtle)',
           border: '1px solid var(--border-highlight)',
           position: 'relative',
           overflow: 'hidden',
@@ -50,9 +50,9 @@ export const DashboardView: React.FC = () => {
 
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.6rem', lineHeight: '1.2' }}>
             {activeProject ? (
-              <>當前專案：<span style={{ color: '#EB7E83' }}>{activeProject.name}</span></>
+              <>當前專案：<span style={{ color: 'var(--accent-primary)' }}>{activeProject.name}</span></>
             ) : (
-              <>鍛造屬於你的專屬 <span style={{ color: '#E1998A' }}>AI 視覺模型</span></>
+              <>鍛造屬於你的專屬 <span style={{ color: 'var(--accent-primary)' }}>AI 視覺模型</span></>
             )}
           </h1>
 
@@ -88,7 +88,7 @@ export const DashboardView: React.FC = () => {
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>總專案數量</span>
-            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(235, 126, 131, 0.16)', color: '#EB7E83', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent-primary-glow)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FolderGit2 size={16} />
             </div>
           </div>
@@ -101,11 +101,11 @@ export const DashboardView: React.FC = () => {
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>算力裝置</span>
-            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(103, 163, 144, 0.16)', color: '#67a390', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.18)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Cpu size={16} />
             </div>
           </div>
-          <div style={{ fontSize: '1.15rem', fontWeight: 700, color: systemHealth?.gpu.available ? '#67a390' : 'var(--text-primary)' }}>
+          <div style={{ fontSize: '1.15rem', fontWeight: 700, color: systemHealth?.gpu.available ? '#10b981' : 'var(--text-primary)' }}>
             {systemHealth?.gpu.available ? systemHealth.gpu.device : 'CPU 運算模式'}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
@@ -116,7 +116,7 @@ export const DashboardView: React.FC = () => {
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>架構雙模式</span>
-            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(85, 123, 134, 0.18)', color: '#557B86', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent-teal-glow)', color: 'var(--accent-teal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Boxes size={16} />
             </div>
           </div>
