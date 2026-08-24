@@ -3,6 +3,7 @@ import { Play, Send, FileJson, CheckCircle2, AlertCircle, UploadCloud, Layers } 
 import { api } from '../../services/api';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
+import { useProject } from '../../context/ProjectContext';
 
 interface ApiPlaygroundProps {
   projectId: string;
@@ -17,6 +18,8 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
   const [latency, setLatency] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const { language } = useProject();
+  const isZh = language === 'zh-TW';
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +45,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
 
   const handleSendRequest = async () => {
     if (!selectedFile) {
-      setErrorMsg('請先選擇一張測試圖片');
+      setErrorMsg(isZh ? '請先選擇一張測試圖片' : 'Please select a test image first');
       return;
     }
 
@@ -74,7 +77,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
       setResponseJson(result);
     } catch (err: any) {
       setStatusCode(400);
-      setErrorMsg(err.message || 'API 請求失敗');
+      setErrorMsg(err.message || (isZh ? 'API 請求失敗' : 'API request failed'));
       setResponseJson({ error: err.message });
     } finally {
       setLoading(false);
@@ -86,7 +89,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <FileJson size={18} color="#818cf8" />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>互動式 API 測試工作台 (Playground)</h3>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>{isZh ? '互動式 API 測試工作台 (Playground)' : 'Interactive API Playground'}</h3>
         </div>
 
         {/* Endpoint Selector Tabs */}
@@ -134,7 +137,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
               fontWeight: 600,
             }}
           >
-            POST /batch (批次)
+             POST /batch {isZh ? '(批次)' : '(Batch)'}
           </button>
         </div>
       </div>
@@ -172,16 +175,16 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
                   style={{ maxHeight: '130px', maxWidth: '100%', objectFit: 'contain', borderRadius: '4px' }}
                 />
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  已選取: {selectedFile?.name} (點擊更換)
+                  {isZh ? `已選取: ${selectedFile?.name} (點擊更換)` : `Selected: ${selectedFile?.name} (click to change)`}
                 </div>
               </div>
             ) : (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                 <UploadCloud size={28} style={{ margin: '0 auto 6px', color: '#818cf8' }} />
                 <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  點擊選擇測試圖片
+                  {isZh ? '點擊選擇測試圖片' : 'Click to select a test image'}
                 </div>
-                <div style={{ fontSize: '0.7rem' }}>作為 API 請求 Payload 內容</div>
+                <div style={{ fontSize: '0.7rem' }}>{isZh ? '作為 API 請求 Payload 內容' : 'Used as API request payload'}</div>
               </div>
             )}
           </div>
@@ -192,7 +195,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
             loading={loading}
             onClick={handleSendRequest}
           >
-            發送 API 請求 (Send Request)
+            {isZh ? '發送 API 請求 (Send Request)' : 'Send API Request'}
           </Button>
 
           {errorMsg && (
@@ -206,7 +209,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-              API 回傳結果 (Response Body)
+              {isZh ? 'API 回傳結果 (Response Body)' : 'Response Body'}
             </span>
             {statusCode && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -249,7 +252,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
             <code>
               {responseJson
                 ? JSON.stringify(responseJson, null, 2)
-                : '// 點擊「發送 API 請求」後，JSON 回應將即時在此格式化顯示...'}
+                : (isZh ? '// 點擊「發送 API 請求」後，JSON 回應將即時在此格式化顯示...' : '// Click "Send API Request" to see the JSON response here...')}
             </code>
           </pre>
         </div>

@@ -30,7 +30,8 @@ import { PresetSelector, PRESET_CONFIGS } from '../../components/training/Preset
 import { ModelSelector, ALL_MODELS } from '../../components/training/ModelSelector';
 
 export const ModelTrainView: React.FC = () => {
-  const { activeProject, setCurrentView, systemHealth } = useProject();
+  const { activeProject, setCurrentView, systemHealth, language } = useProject();
+  const isZh = language === 'zh-TW';
 
   const taskType: TaskType = activeProject?.task_type || 'classification';
 
@@ -139,7 +140,7 @@ export const ModelTrainView: React.FC = () => {
   if (!activeProject) {
     return (
       <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <p style={{ color: 'var(--text-muted)' }}>請先在頂部選單選擇或建立一個專案</p>
+        <p style={{ color: 'var(--text-muted)' }}>{isZh ? '請先在頂部選單選擇或建立一個專案' : 'Please select or create a project from the top menu first'}</p>
       </div>
     );
   }
@@ -147,28 +148,28 @@ export const ModelTrainView: React.FC = () => {
   const getTaskTitle = (task: TaskType) => {
     switch (task) {
       case 'detection':
-        return '物件偵測模型架構 (Object Detection)';
+        return isZh ? '物件偵測模型架構 (Object Detection)' : 'Object Detection Architecture';
       case 'regression':
-        return '圖像迴歸模型架構 (Image Regression)';
+        return isZh ? '圖像迴歸模型架構 (Image Regression)' : 'Image Regression Architecture';
       case 'feature':
-        return '特徵提取模型架構 (Feature Extraction)';
+        return isZh ? '特徵提取模型架構 (Feature Extraction)' : 'Feature Extraction Architecture';
       case 'classification':
       default:
-        return '視覺分類模型架構 (Image Classification)';
+        return isZh ? '視覺分類模型架構 (Image Classification)' : 'Image Classification Architecture';
     }
   };
 
   const getPretrainedLabel = (task: TaskType) => {
     switch (task) {
       case 'detection':
-        return '載入 COCO 預訓練權重 (COCO Pretrained Transfer Learning)';
+        return isZh ? '載入 COCO 預訓練權重 (COCO Pretrained Transfer Learning)' : 'Load COCO Pretrained Weights';
       case 'regression':
-        return '載入特徵提取預訓練權重 (Transfer Learning)';
+        return isZh ? '載入特徵提取預訓練權重 (Transfer Learning)' : 'Load Pretrained Feature Weights';
       case 'feature':
-        return '載入多尺度特徵預訓練權重 (Pretrained Feature Backbone)';
+        return isZh ? '載入多尺度特徵預訓練權重 (Pretrained Feature Backbone)' : 'Load Pretrained Backbone Weights';
       case 'classification':
       default:
-        return '載入 ImageNet 預訓練權重 (ImageNet Transfer Learning)';
+        return isZh ? '載入 ImageNet 預訓練權重 (ImageNet Transfer Learning)' : 'Load ImageNet Pretrained Weights';
     }
   };
 
@@ -178,10 +179,10 @@ export const ModelTrainView: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-            🧠 模型配置與訓練中心
+            🧠 {isZh ? '模型配置與訓練中心' : 'Model Configuration & Training Center'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            專案：<span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{activeProject.name}</span> · 任務類型：<span style={{ color: 'var(--accent-teal)', fontWeight: 600 }}>{activeProject.task_type.toUpperCase()}</span> · 選擇深度學習架構與超參數調整
+            {isZh ? '專案：' : 'Project: '}<span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{activeProject.name}</span> · {isZh ? '任務類型：' : 'Task: '}<span style={{ color: 'var(--accent-teal)', fontWeight: 600 }}>{activeProject.task_type.toUpperCase()}</span> · {isZh ? '選擇深度學習架構與超參數調整' : 'Select deep learning architecture and tune hyperparameters'}
           </p>
         </div>
 
@@ -192,7 +193,7 @@ export const ModelTrainView: React.FC = () => {
           loading={starting}
           onClick={handleStartTraining}
         >
-          🚀 立即啟動模型訓練
+          🚀 {isZh ? '立即啟動模型訓練' : 'Start Training'}
         </Button>
       </div>
 
@@ -205,7 +206,7 @@ export const ModelTrainView: React.FC = () => {
       {/* Step 1: Preset Templates */}
       <div>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sparkles size={17} color="var(--accent-teal)" /> 步驟一：選擇訓練預設模板
+          <Sparkles size={17} color="var(--accent-teal)" /> {isZh ? '步驟一：選擇訓練預設模板' : 'Step 1: Select Training Preset'}
         </h3>
         <PresetSelector currentPreset={preset} onSelectPreset={handleSelectPreset} />
       </div>
@@ -213,7 +214,7 @@ export const ModelTrainView: React.FC = () => {
       {/* Step 2: Model Architecture */}
       <div>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <BrainCircuit size={17} color="var(--accent-primary)" /> 步驟二：選擇{getTaskTitle(taskType)}
+          <BrainCircuit size={17} color="var(--accent-primary)" /> {isZh ? `步驟二：選擇${getTaskTitle(taskType)}` : `Step 2: Select ${getTaskTitle(taskType)}`}
         </h3>
         <ModelSelector
           taskType={taskType}
@@ -225,14 +226,14 @@ export const ModelTrainView: React.FC = () => {
       {/* Step 3: Hyperparameter Fine-tuning */}
       <Card>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sliders size={17} color="var(--accent-peach)" /> 步驟三：超參數設定 (Hyperparameters)
+          <Sliders size={17} color="var(--accent-peach)" /> {isZh ? '步驟三：超參數設定 (Hyperparameters)' : 'Step 3: Hyperparameter Settings'}
         </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
           {/* Epochs */}
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <label className="form-label" style={{ marginBottom: 0 }}>訓練輪數 (Epochs)</label>
+              <label className="form-label" style={{ marginBottom: 0 }}>{isZh ? '訓練輪數 (Epochs)' : 'Epochs'}</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input
                   type="number"
@@ -256,7 +257,7 @@ export const ModelTrainView: React.FC = () => {
                     textAlign: 'center',
                   }}
                 />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>輪</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isZh ? '輪' : 'ep'}</span>
               </div>
             </div>
             <input
@@ -270,12 +271,12 @@ export const ModelTrainView: React.FC = () => {
               }}
               style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
             />
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>範圍: 1 ~ 500 輪</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? '範圍: 1 ~ 500 輪' : 'Range: 1 ~ 500'}</span>
           </div>
 
           {/* Batch Size */}
           <div className="form-group">
-            <label className="form-label">批次大小 (Batch Size)</label>
+            <label className="form-label">{isZh ? '批次大小 (Batch Size)' : 'Batch Size'}</label>
             <select
               className="form-select"
               value={batchSize}
@@ -284,17 +285,17 @@ export const ModelTrainView: React.FC = () => {
                 setPreset('custom');
               }}
             >
-              <option value={4}>4 (超微批次 / 低顯存)</option>
-              <option value={8}>8 (省記憶體 / 偵測推薦)</option>
-              <option value={16}>16 (標準推薦預設)</option>
-              <option value={32}>32 (快速批次訓練)</option>
-              <option value={64}>64 (大型批次)</option>
+              <option value={4}>{isZh ? '4 (超微批次 / 低顯存)' : '4 (Micro batch / Low VRAM)'}</option>
+              <option value={8}>{isZh ? '8 (省記憶體 / 偵測推薦)' : '8 (Memory saving / Rec. for Detection)'}</option>
+              <option value={16}>{isZh ? '16 (標準推薦預設)' : '16 (Standard / Default)'}</option>
+              <option value={32}>{isZh ? '32 (快速批次訓練)' : '32 (Fast batch)'}</option>
+              <option value={64}>{isZh ? '64 (大型批次)' : '64 (Large batch)'}</option>
             </select>
           </div>
 
           {/* Learning Rate */}
           <div className="form-group">
-            <label className="form-label">學習率 (Learning Rate)</label>
+            <label className="form-label">{isZh ? '學習率 (Learning Rate)' : 'Learning Rate'}</label>
             <select
               className="form-select"
               value={learningRate}
@@ -303,16 +304,16 @@ export const ModelTrainView: React.FC = () => {
                 setPreset('custom');
               }}
             >
-              <option value={0.01}>0.01 (較快收斂)</option>
-              <option value={0.001}>0.001 (標準推薦)</option>
-              <option value={0.0005}>0.0005 (微調推薦)</option>
-              <option value={0.0001}>0.0001 (高精細微調)</option>
+              <option value={0.01}>{isZh ? '0.01 (較快收斂)' : '0.01 (Faster convergence)'}</option>
+              <option value={0.001}>{isZh ? '0.001 (標準推薦)' : '0.001 (Standard recommended)'}</option>
+              <option value={0.0005}>{isZh ? '0.0005 (微調推薦)' : '0.0005 (Fine-tuning recommended)'}</option>
+              <option value={0.0001}>{isZh ? '0.0001 (高精細微調)' : '0.0001 (High-precision fine-tuning)'}</option>
             </select>
           </div>
 
           {/* Optimizer */}
           <div className="form-group">
-            <label className="form-label">優化器 (Optimizer)</label>
+            <label className="form-label">{isZh ? '優化器 (Optimizer)' : 'Optimizer'}</label>
             <select
               className="form-select"
               value={optimizer}
@@ -321,15 +322,15 @@ export const ModelTrainView: React.FC = () => {
                 setPreset('custom');
               }}
             >
-              <option value="adamw">AdamW (權重衰減，最穩定)</option>
-              <option value="adam">Adam (經典自適應)</option>
-              <option value="sgd">SGD + Momentum (傳統動量)</option>
+              <option value="adamw">{isZh ? 'AdamW (權重衰減，最穩定)' : 'AdamW (Weight Decay, Stable)'}</option>
+              <option value="adam">{isZh ? 'Adam (經典自適應)' : 'Adam (Classic Adaptive)'}</option>
+              <option value="sgd">{isZh ? 'SGD + Momentum (傳統動量)' : 'SGD + Momentum'}</option>
             </select>
           </div>
 
           {/* Image Size Resolution */}
           <div className="form-group">
-            <label className="form-label">輸入影像尺寸 (Input Resolution)</label>
+            <label className="form-label">{isZh ? '輸入影像尺寸 (Input Resolution)' : 'Input Resolution'}</label>
             <select
               className="form-select"
               value={imageSize}
@@ -340,17 +341,17 @@ export const ModelTrainView: React.FC = () => {
             >
               {taskType === 'detection' ? (
                 <>
-                  <option value={640}>640 × 640 (標準高精度偵測，推薦)</option>
-                  <option value={512}>512 × 512 (均衡解析度)</option>
-                  <option value={416}>416 × 416 (經典 YOLO 尺寸)</option>
-                  <option value={320}>320 × 320 (極速邊緣推論)</option>
+                  <option value={640}>{isZh ? '640 × 640 (標準高精度偵測，推薦)' : '640 × 640 (Standard High-Res, Recommended)'}</option>
+                  <option value={512}>{isZh ? '512 × 512 (均衡解析度)' : '512 × 512 (Balanced)'}</option>
+                  <option value={416}>{isZh ? '416 × 416 (經典 YOLO 尺寸)' : '416 × 416 (Classic YOLO)'}</option>
+                  <option value={320}>{isZh ? '320 × 320 (極速邊緣推論)' : '320 × 320 (Edge Inference)'}</option>
                 </>
               ) : (
                 <>
-                  <option value={224}>224 × 224 (標準 ImageNet 推薦)</option>
-                  <option value={256}>256 × 256 (高解析度分類)</option>
-                  <option value={384}>384 × 384 (細粒度分類)</option>
-                  <option value={128}>128 × 128 (快速輕量)</option>
+                  <option value={224}>{isZh ? '224 × 224 (標準 ImageNet 推薦)' : '224 × 224 (ImageNet Standard)'}</option>
+                  <option value={256}>{isZh ? '256 × 256 (高解析度分類)' : '256 × 256 (High-Res Classification)'}</option>
+                  <option value={384}>{isZh ? '384 × 384 (細粒度分類)' : '384 × 384 (Fine-grained)'}</option>
+                  <option value={128}>{isZh ? '128 × 128 (快速輕量)' : '128 × 128 (Lightweight & Fast)'}</option>
                 </>
               )}
             </select>
@@ -374,7 +375,7 @@ export const ModelTrainView: React.FC = () => {
               checked={earlyStoppingPatience > 0}
               onChange={(e) => setEarlyStoppingPatience(e.target.checked ? 5 : 0)}
             />
-            <span>啟用早停機制 (Early Stopping, 容忍 5 輪無提升)</span>
+            <span>{isZh ? '啟用早停機制 (Early Stopping, 容忍 5 輪無提升)' : 'Enable Early Stopping (Patience: 5 Epochs)'}</span>
           </label>
         </div>
       </Card>
@@ -382,7 +383,7 @@ export const ModelTrainView: React.FC = () => {
       {/* Step 4: Data Augmentation */}
       <Card>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Layers size={17} color="#10b981" /> 步驟四：資料增強配置 (Data Augmentation)
+          <Layers size={17} color="#10b981" /> {isZh ? '步驟四：資料增強配置 (Data Augmentation)' : 'Step 4: Data Augmentation'}
         </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
@@ -402,9 +403,9 @@ export const ModelTrainView: React.FC = () => {
             >
               <div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 600, color: mosaic ? '#67e8f9' : 'inherit' }}>
-                  🧩 Mosaic 馬賽克拼接
+                  🧩 {isZh ? 'Mosaic 馬賽克拼接' : 'Mosaic Augmentation'}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>4 圖隨機拼接增強多尺度特徵 (p=0.5)</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? '4 圖隨機拼接增強多尺度特徵 (p=0.5)' : '4-image random mosaic (p=0.5)'}</div>
               </div>
               <input
                 type="checkbox"
@@ -427,8 +428,8 @@ export const ModelTrainView: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>水平隨機翻轉</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Random Horizontal Flip (p=0.5)</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{isZh ? '水平隨機翻轉' : 'Random Horizontal Flip'}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? 'Random Horizontal Flip (p=0.5)' : 'p=0.5'}</div>
             </div>
             <input
               type="checkbox"
@@ -450,8 +451,8 @@ export const ModelTrainView: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>隨機微角度旋轉</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Random Rotation (±15°)</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{isZh ? '隨機微角度旋轉' : 'Random Rotation'}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? 'Random Rotation (±15°)' : '±15°'}</div>
             </div>
             <input
               type="checkbox"
@@ -473,8 +474,8 @@ export const ModelTrainView: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>色彩擾動</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Color Jitter (亮度/對比)</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{isZh ? '色彩擾動' : 'Color Jitter'}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? 'Color Jitter (亮度/對比)' : 'Brightness/Contrast'}</div>
             </div>
             <input
               type="checkbox"
@@ -497,8 +498,8 @@ export const ModelTrainView: React.FC = () => {
               }}
             >
               <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>隨機縮放與裁切</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Random Scale & Crop (0.8~1.2)</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{isZh ? '隨機縮放與裁切' : 'Random Scale & Crop'}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? 'Random Scale & Crop (0.8~1.2)' : '0.8~1.2'}</div>
               </div>
               <input
                 type="checkbox"
@@ -520,7 +521,7 @@ export const ModelTrainView: React.FC = () => {
           onClick={handleStartTraining}
           style={{ width: '100%', maxWidth: '320px' }}
         >
-          🚀 立即啟動模型訓練
+          🚀 {isZh ? '立即啟動模型訓練' : 'Start Training'}
         </Button>
       </div>
     </div>

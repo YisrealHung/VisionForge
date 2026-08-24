@@ -22,7 +22,9 @@ export const DashboardView: React.FC = () => {
     deleteProject,
     setIsCreateModalOpen,
     setCurrentView,
-    systemHealth
+    systemHealth,
+    language,
+    t
   } = useProject();
 
   return (
@@ -44,22 +46,22 @@ export const DashboardView: React.FC = () => {
               <Sparkles size={13} /> VisionForge v1.0
             </span>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              本地 No-Code AI 影像模型訓練與推論平台
+              {t.platformSubtitle}
             </span>
           </div>
 
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.6rem', lineHeight: '1.2' }}>
             {activeProject ? (
-              <>當前專案：<span style={{ color: 'var(--accent-primary)' }}>{activeProject.name}</span></>
+              <>{t.dashboardHeroCurrentProject}<span style={{ color: 'var(--accent-primary)' }}>{activeProject.name}</span></>
             ) : (
-              <>鍛造屬於你的專屬 <span style={{ color: 'var(--accent-primary)' }}>AI 視覺模型</span></>
+              <>{language === 'zh-TW' ? '鍛造屬於你的專屬 ' : 'Forge Your Custom '}<span style={{ color: 'var(--accent-primary)' }}>{language === 'zh-TW' ? 'AI 視覺模型' : 'AI Vision Models'}</span></>
             )}
           </h1>
 
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
             {activeProject
-              ? activeProject.description || '零程式碼匯入資料、影像標註、GPU 加速訓練與一鍵匯出 ONNX 模型。'
-              : '透過直覺的圖形化介面，輕鬆完成資料集管理、模型訓練與即時推論。'}
+              ? activeProject.description || t.dashboardHeroCurrentDesc
+              : t.dashboardHeroSubtitleDefault}
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -68,7 +70,7 @@ export const DashboardView: React.FC = () => {
               icon={<FolderPlus size={16} />}
               onClick={() => setIsCreateModalOpen(true)}
             >
-              建立新專案
+              {t.dashboardBtnNewProject}
             </Button>
             {activeProject && (
               <Button
@@ -76,7 +78,7 @@ export const DashboardView: React.FC = () => {
                 icon={<ArrowRight size={16} />}
                 onClick={() => setCurrentView('dataset')}
               >
-                前往資料集管理
+                {t.dashboardBtnGoDataset}
               </Button>
             )}
           </div>
@@ -87,42 +89,42 @@ export const DashboardView: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>總專案數量</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t.dashboardStatsTotalProjects}</span>
             <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent-primary-glow)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FolderGit2 size={16} />
             </div>
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>{projects.length}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            本地 SQLite 儲存庫
+            {language === 'zh-TW' ? '本地 SQLite 儲存庫' : 'Local SQLite Storage'}
           </div>
         </Card>
 
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>算力裝置</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t.dashboardStatsGpuStatus}</span>
             <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.18)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Cpu size={16} />
             </div>
           </div>
           <div style={{ fontSize: '1.15rem', fontWeight: 700, color: systemHealth?.gpu.available ? '#10b981' : 'var(--text-primary)' }}>
-            {systemHealth?.gpu.available ? systemHealth.gpu.device : 'CPU 運算模式'}
+            {systemHealth?.gpu.available ? systemHealth.gpu.device : (language === 'zh-TW' ? 'CPU 運算模式' : 'CPU Mode')}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            {systemHealth?.gpu.available ? '🟢 CUDA 加速已啟用' : '🟡 未偵測到 GPU，將使用 CPU'}
+            {systemHealth?.gpu.available ? (language === 'zh-TW' ? '🟢 CUDA 加速已啟用' : '🟢 CUDA Accelerated') : (language === 'zh-TW' ? '🟡 未偵測到 GPU，將使用 CPU' : '🟡 CPU compute mode')}
           </div>
         </Card>
 
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>架構雙模式</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>{language === 'zh-TW' ? '架構雙模式' : 'Workspace Mode'}</span>
             <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent-teal-glow)', color: 'var(--accent-teal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Boxes size={16} />
             </div>
           </div>
-          <div style={{ fontSize: '1.15rem', fontWeight: 700 }}>訓練 + 獨立推論</div>
+          <div style={{ fontSize: '1.15rem', fontWeight: 700 }}>{language === 'zh-TW' ? '訓練 + 獨立推論' : 'Train & Inference'}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            支援 WebSocket / MQTT API
+            {language === 'zh-TW' ? '支援 WebSocket / REST API' : 'REST & WebSocket API'}
           </div>
         </Card>
       </div>
@@ -131,9 +133,9 @@ export const DashboardView: React.FC = () => {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>所有專案清單</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{t.dashboardProjectsTitle}</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              點選即可將專案切換為當前工作目標
+              {language === 'zh-TW' ? '點選即可將專案切換為當前工作目標' : 'Click to select project as current working target'}
             </p>
           </div>
           <Button
@@ -142,7 +144,7 @@ export const DashboardView: React.FC = () => {
             icon={<FolderPlus size={14} />}
             onClick={() => setIsCreateModalOpen(true)}
           >
-            建立專案
+            {t.dashboardBtnNewProject}
           </Button>
         </div>
 
@@ -174,10 +176,10 @@ export const DashboardView: React.FC = () => {
             </div>
             <div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.35rem' }}>
-                目前尚無任何專案
+                {t.dashboardNoProjects}
               </h3>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', maxWidth: '400px' }}>
-                立即建立您的第一個 AI 專案，開始匯入圖片或啟動攝影機進行訓練！
+                {t.dashboardCreateFirstPrompt}
               </p>
             </div>
             <Button
@@ -185,7 +187,7 @@ export const DashboardView: React.FC = () => {
               icon={<FolderPlus size={16} />}
               onClick={() => setIsCreateModalOpen(true)}
             >
-              建立第一個專案
+              {t.dashboardBtnNewProject}
             </Button>
           </div>
         ) : (

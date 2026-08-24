@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Project } from '../../types';
 import { TaskBadge } from '../common/Badge';
+import { useProject } from '../../context/ProjectContext';
 
 interface ProjectCardProps {
   project: Project;
@@ -24,6 +25,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   onDelete,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const { language } = useProject();
+  const isZh = language === 'zh-TW';
 
   return (
     <div
@@ -66,26 +69,30 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         {/* Top bar with TaskBadge and active indicator / delete button */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
           <TaskBadge taskType={project.task_type} />
-          {isActive ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700 }}>
-              <CheckCircle2 size={14} color="var(--accent-primary)" /> 當前啟用中
-            </span>
-          ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {isActive && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700 }}>
+                <CheckCircle2 size={14} color="var(--accent-primary)" /> {isZh ? '當前啟用中' : 'Active'}
+              </span>
+            )}
             <button
               type="button"
               className="btn btn-ghost btn-sm"
               style={{ color: 'var(--text-muted)', padding: '4px' }}
-              title="刪除專案"
+              title={isZh ? '刪除專案' : 'Delete Project'}
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm(`確定要刪除專案「${project.name}」嗎？所有資料集與模型將一併移除。`)) {
+                const msg = isZh 
+                  ? `確定要刪除專案「${project.name}」嗎？所有資料集與模型將一併移除。`
+                  : `Are you sure you want to delete project "${project.name}"? All datasets and models will be removed.`;
+                if (confirm(msg)) {
                   onDelete(project.id);
                 }
               }}
             >
               <Trash2 size={14} />
             </button>
-          )}
+          </div>
         </div>
 
         {/* Project Name & Description */}
@@ -93,14 +100,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           {project.name}
         </h3>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', minHeight: '2.4em', marginBottom: '1.25rem', lineHeight: '1.4' }}>
-          {project.description || '無描述資訊'}
+          {project.description || (isZh ? '無描述資訊' : 'No description')}
         </p>
 
         {/* Stats Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem', marginBottom: '1.25rem' }}>
           <div style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>
-              <Images size={13} /> 圖片數量
+              <Images size={13} /> {isZh ? '圖片數量' : 'Images'}
             </div>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               {project.dataset_count}
@@ -108,7 +115,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </div>
           <div style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>
-              <Boxes size={13} /> 模型數量
+              <Boxes size={13} /> {isZh ? '模型數量' : 'Models'}
             </div>
             <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               {project.model_count}
@@ -124,11 +131,11 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
         {isActive ? (
           <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-            ● 操作中
+            ● {isZh ? '操作中' : 'In Use'}
           </span>
         ) : (
           <span style={{ fontSize: '0.75rem', color: isHovered ? 'var(--accent-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', transition: 'color 0.15s' }}>
-            點擊切換 <ArrowRight size={12} />
+            {isZh ? '點擊切換' : 'Click to switch'} <ArrowRight size={12} />
           </span>
         )}
       </div>

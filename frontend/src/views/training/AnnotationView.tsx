@@ -27,7 +27,8 @@ import { CanvasAnnotator } from '../../components/annotation/CanvasAnnotator';
 import { CategoryManager } from '../../components/annotation/CategoryManager';
 
 export const AnnotationView: React.FC = () => {
-  const { activeProject, setCurrentView } = useProject();
+  const { activeProject, setCurrentView, language } = useProject();
+  const isZh = language === 'zh-TW';
   const [images, setImages] = useState<ImageItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -64,10 +65,10 @@ export const AnnotationView: React.FC = () => {
     try {
       setImporting(true);
       const res = await api.importDataset(activeProject.id, Array.from(files));
-      alert(`🎉 成功匯入 ${res.imported_images} 張圖片與 ${res.imported_annotations} 筆標註！`);
+      alert(isZh ? `🎉 成功匯入 ${res.imported_images} 張圖片與 ${res.imported_annotations} 筆標註！` : `🎉 Successfully imported ${res.imported_images} images and ${res.imported_annotations} annotations!`);
       await loadInitialData();
     } catch (err: any) {
-      alert(`匯入失敗: ${err.message || '檔案格式不支援'}`);
+      alert(isZh ? `匯入失敗: ${err.message || '檔案格式不支援'}` : `Import failed: ${err.message || 'Unsupported format'}`);
     } finally {
       setImporting(false);
       if (importInputRef.current) {
@@ -256,7 +257,7 @@ export const AnnotationView: React.FC = () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 1500);
     } catch (err) {
-      alert('批次標註失敗');
+      alert(isZh ? '批次標註失敗' : 'Batch annotation failed');
     } finally {
       setSaving(false);
     }
@@ -354,7 +355,7 @@ export const AnnotationView: React.FC = () => {
     if (!activeProject) return;
 
     const targetCat = categories.find((c) => c.id === catId);
-    const catName = targetCat ? targetCat.name : '此';
+    const catName = targetCat ? targetCat.name : (isZh ? '此' : 'this');
 
     // Count how many images in the project are labeled with this category
     let affectedImageCount = 0;
@@ -373,8 +374,12 @@ export const AnnotationView: React.FC = () => {
     }
 
     const confirmMsg = affectedImageCount > 0
-      ? `⚠️ 目前共有 ${affectedImageCount} 張照片標註了「${catName}」標籤！\n\n確定要刪除此標籤嗎？一旦確認，這 ${affectedImageCount} 張照片上的相關標註將一併全數移除。`
-      : `確定要刪除標籤「${catName}」嗎？`;
+      ? (isZh 
+          ? `⚠️ 目前共有 ${affectedImageCount} 張照片標註了「${catName}」標籤！\n\n確定要刪除此標籤嗎？一旦確認，這 ${affectedImageCount} 張照片上的相關標註將一併全數移除。`
+          : `⚠️ There are ${affectedImageCount} images labeled with "${catName}"!\n\nAre you sure you want to delete this category? All related annotations will be removed.`)
+      : (isZh 
+          ? `確定要刪除標籤「${catName}」嗎？`
+          : `Are you sure you want to delete category "${catName}"?`);
 
     if (!window.confirm(confirmMsg)) {
       return;
@@ -403,7 +408,7 @@ export const AnnotationView: React.FC = () => {
 
       await loadInitialData();
     } catch (err: any) {
-      alert(`刪除標籤失敗: ${err.message || err}`);
+      alert(isZh ? `刪除標籤失敗: ${err.message || err}` : `Failed to delete category: ${err.message || err}`);
     } finally {
       setSaving(false);
     }
@@ -413,20 +418,20 @@ export const AnnotationView: React.FC = () => {
   const progressPercent = images.length > 0 ? Math.round((labeledCount / images.length) * 100) : 0;
 
   if (!activeProject) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>請先在頂部選單選擇專案</div>;
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>{isZh ? '請先在頂部選單選擇專案' : 'Please select a project from the top menu first'}</div>;
   }
 
   if (images.length === 0 && !loading) {
     return (
       <div className="glass-card" style={{ textAlign: 'center', padding: '4rem 1.5rem' }}>
         <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-          資料集中目前沒有任何圖片
+          {isZh ? '資料集中目前沒有任何圖片' : 'No images in the dataset'}
         </h3>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          請先前往「資料集管理」上傳圖片或透過攝影機進行擷取。
+          {isZh ? '請先前往「資料集管理」上傳圖片或透過攝影機進行擷取。' : 'Please go to Dataset Management to upload or capture images first.'}
         </p>
         <Button variant="primary" onClick={() => setCurrentView('dataset')}>
-          前往資料集管理
+          {isZh ? '前往資料集管理' : 'Go to Dataset Management'}
         </Button>
       </div>
     );
@@ -452,7 +457,7 @@ export const AnnotationView: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Tag size={16} color="#818cf8" />
-            {activeImage ? activeImage.filename : '載入中...'}
+            {activeImage ? activeImage.filename : (isZh ? '載入中...' : 'Loading...')}
           </span>
           <TaskBadge taskType={taskType} />
           {currentAssignedCat ? (
@@ -470,10 +475,10 @@ export const AnnotationView: React.FC = () => {
                 gap: '6px'
               }}
             >
-              <Check size={13} /> 當前標籤: {currentAssignedCat.name}
+              <Check size={13} /> {isZh ? '當前標籤:' : 'Current Tag:'} {currentAssignedCat.name}
               <button
                 onClick={handleClearCurrentLabel}
-                title="清除此圖片的標籤"
+                title={isZh ? '清除此圖片的標籤' : 'Clear tag for this image'}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -489,7 +494,7 @@ export const AnnotationView: React.FC = () => {
             </div>
           ) : (
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-surface-elevated)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
-              尚未標註
+              {isZh ? '尚未標註' : 'Unlabeled'}
             </span>
           )}
         </div>
@@ -498,7 +503,7 @@ export const AnnotationView: React.FC = () => {
           {/* Progress Indicator */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '0.5rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              標註: <strong style={{ color: '#818cf8' }}>{labeledCount}</strong>/{images.length}
+              {isZh ? '標註:' : 'Labeled:'} <strong style={{ color: '#818cf8' }}>{labeledCount}</strong>/{images.length}
             </span>
             <div style={{ width: '80px', height: '6px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
               <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--gradient-brand)', transition: 'width 0.3s' }} />
@@ -521,9 +526,9 @@ export const AnnotationView: React.FC = () => {
             icon={<UploadCloud size={14} />}
             loading={importing}
             onClick={() => importInputRef.current?.click()}
-            title="匯入圖片與標註 JSON / ZIP"
+            title={isZh ? '匯入圖片與標註 JSON / ZIP' : 'Import images and annotations JSON / ZIP'}
           >
-            匯入
+            {isZh ? '匯入' : 'Import'}
           </Button>
 
           <Button
@@ -531,9 +536,9 @@ export const AnnotationView: React.FC = () => {
             size="sm"
             icon={<Download size={14} />}
             onClick={handleExportDataset}
-            title="匯出資料集與標註檔 (ZIP)"
+            title={isZh ? '匯出資料集與標註檔 (ZIP)' : 'Export dataset and annotations (ZIP)'}
           >
-            匯出
+            {isZh ? '匯出' : 'Export'}
           </Button>
 
           {taskType === 'classification' && (
@@ -546,7 +551,7 @@ export const AnnotationView: React.FC = () => {
                 setSelectedImageIds([]);
               }}
             >
-              {isBatchMode ? `退出批次 (${selectedImageIds.length})` : '批次模式'}
+              {isBatchMode ? (isZh ? `退出批次 (${selectedImageIds.length})` : `Exit Batch (${selectedImageIds.length})`) : (isZh ? '批次模式' : 'Batch Mode')}
             </Button>
           )}
 
@@ -558,7 +563,7 @@ export const AnnotationView: React.FC = () => {
               loading={saving}
               icon={saveSuccess ? <Check size={14} /> : <Save size={14} />}
             >
-              {saveSuccess ? '已儲存！' : '儲存標註'}
+              {saveSuccess ? (isZh ? '已儲存！' : 'Saved!') : (isZh ? '儲存標註' : 'Save Annotations')}
             </Button>
           )}
         </div>
@@ -580,33 +585,33 @@ export const AnnotationView: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.85rem' }}>
             <span style={{ fontWeight: 700, color: '#818cf8' }}>
-              已選取 {selectedImageIds.length} 張圖片
+              {isZh ? `已選取 ${selectedImageIds.length} 張圖片` : `${selectedImageIds.length} images selected`}
             </span>
             <button
               className="btn btn-ghost btn-sm"
               style={{ fontSize: '0.75rem', padding: '2px 6px' }}
               onClick={() => setSelectedImageIds(images.map(i => i.filename))}
             >
-              全選 ({images.length})
+              {isZh ? `全選 (${images.length})` : `Select All (${images.length})`}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               style={{ fontSize: '0.75rem', padding: '2px 6px' }}
               onClick={() => setSelectedImageIds(images.filter(i => !i.labeled).map(i => i.filename))}
             >
-              選取未標註 ({images.filter(i => !i.labeled).length})
+              {isZh ? `選取未標註 (${images.filter(i => !i.labeled).length})` : `Select Unlabeled (${images.filter(i => !i.labeled).length})`}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               style={{ fontSize: '0.75rem', padding: '2px 6px', color: 'var(--text-muted)' }}
               onClick={() => setSelectedImageIds([])}
             >
-              清除選取
+              {isZh ? '清除選取' : 'Clear Selection'}
             </button>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>批次套用標籤：</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{isZh ? '批次套用標籤：' : 'Batch apply tags:'}</span>
             {categories.map((c) => (
               <button
                 key={c.id}
@@ -664,7 +669,7 @@ export const AnnotationView: React.FC = () => {
                     style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
                   />
                 ) : (
-                  <div style={{ color: 'var(--text-muted)' }}>無圖片</div>
+                  <div style={{ color: 'var(--text-muted)' }}>{isZh ? '無圖片' : 'No image'}</div>
                 )}
 
                 {/* Current Tag Floating Indicator on Image */}
@@ -708,7 +713,7 @@ export const AnnotationView: React.FC = () => {
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="點此輸入類別名稱（例如：正常品、刮痕瑕疵、貓、狗）..."
+                    placeholder={isZh ? '點此輸入類別名稱（例如：正常品、刮痕瑕疵、貓、狗）...' : 'Enter category name (e.g. Cat, Dog, Defect)...'}
                     value={classInputText}
                     onChange={(e) => setClassInputText(e.target.value)}
                     style={{ flex: 1, fontSize: '0.9rem', padding: '0.5rem 0.8rem' }}
@@ -721,7 +726,7 @@ export const AnnotationView: React.FC = () => {
                     icon={<Send size={14} />}
                     disabled={!classInputText.trim()}
                   >
-                    套用標籤
+                    {isZh ? '套用標籤' : 'Apply Tag'}
                   </Button>
 
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer', marginLeft: '8px', userSelect: 'none' }}>
@@ -731,20 +736,20 @@ export const AnnotationView: React.FC = () => {
                       onChange={(e) => setAutoAdvance(e.target.checked)}
                       style={{ accentColor: '#818cf8', cursor: 'pointer' }}
                     />
-                    標註後自動下一張
+                    {isZh ? '標註後自動下一張' : 'Auto-advance on tag'}
                   </label>
                 </form>
 
                 {/* 2. Direct Click Category Pills */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Tag size={13} /> 點選下方類別直接標註此圖片：
+                    <Tag size={13} /> {isZh ? '點選下方類別直接標註此圖片：' : 'Click category below to tag this image:'}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     {categories.length === 0 ? (
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        尚未建立任何類別，可在上方輸入框輸入名稱直接建立！
+                        {isZh ? '尚未建立任何類別，可在上方輸入框輸入名稱直接建立！' : 'No categories yet. Type above to create one!'}
                       </div>
                     ) : (
                       categories.map((cat) => {
@@ -805,17 +810,17 @@ export const AnnotationView: React.FC = () => {
               <div className="glass-card" style={{ padding: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sliders size={15} color="#06b6d4" /> 圖像迴歸 (2D 座標標註)
+                    <Sliders size={15} color="#06b6d4" /> {isZh ? '圖像迴歸 (2D 座標標註)' : 'Image Regression (2D Coordinate)'}
                   </span>
                   <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#06b6d4' }}>
-                    {regressionPoint ? `( X: ${regressionPoint.x.toFixed(3)}, Y: ${regressionPoint.y.toFixed(3)} )` : '尚未標註'}
+                    {regressionPoint ? `( X: ${regressionPoint.x.toFixed(3)}, Y: ${regressionPoint.y.toFixed(3)} )` : (isZh ? '尚未標註' : 'Unlabeled')}
                   </span>
                 </div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  請在下方圖片中點擊標註目標位置。點擊後將自動儲存並顯示十字標記。
+                  {isZh ? '請在下方圖片中點擊標註目標位置。點擊後將自動儲存並顯示十字標記。' : 'Click on the image to mark the target location. It will automatically save and show a crosshair.'}
                 </p>
                 <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button variant="primary" size="sm" onClick={handleNext}>確認並下一張</Button>
+                  <Button variant="primary" size="sm" onClick={handleNext}>{isZh ? '確認並下一張' : 'Confirm & Next'}</Button>
                 </div>
               </div>
 
@@ -924,7 +929,7 @@ export const AnnotationView: React.FC = () => {
                 />
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                  無圖片
+                  {isZh ? '無圖片' : 'No image'}
                 </div>
               )}
             </div>
@@ -970,7 +975,7 @@ export const AnnotationView: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                  {taskType === 'feature' ? `特徵 ROI 區域 (${annotations.length})` : `已標註框 (${annotations.length})`}
+                  {taskType === 'feature' ? (isZh ? `特徵 ROI 區域 (${annotations.length})` : `Feature ROI (${annotations.length})`) : (isZh ? `已標註框 (${annotations.length})` : `Bounding Boxes (${annotations.length})`)}
                 </span>
                 {selectedBoxId && (
                   <button
@@ -981,7 +986,7 @@ export const AnnotationView: React.FC = () => {
                       setSelectedBoxId(null);
                     }}
                   >
-                    <Trash2 size={12} /> 刪除選中框
+                    <Trash2 size={12} /> {isZh ? '刪除選中框' : 'Delete Box'}
                   </button>
                 )}
               </div>
@@ -989,7 +994,7 @@ export const AnnotationView: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '160px', overflowY: 'auto' }}>
                 {annotations.length === 0 ? (
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.75rem 0' }}>
-                    {taskType === 'feature' ? '可拖曳框選局部特徵，未框選時將自動以全圖標記' : '在畫布上按住滑鼠拖曳以繪製框選'}
+                    {taskType === 'feature' ? (isZh ? '可拖曳框選局部特徵，未框選時將自動以全圖標記' : 'Drag to crop ROI, or leave empty for full image') : (isZh ? '在畫布上按住滑鼠拖曳以繪製框選' : 'Click and drag on canvas to draw a bounding box')}
                   </div>
                 ) : (
                   annotations.map((anno) => {
@@ -1013,7 +1018,7 @@ export const AnnotationView: React.FC = () => {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: cat?.color || '#6366f1' }} />
-                          <span style={{ fontWeight: 600 }}>{cat?.name || '未命名標籤'}</span>
+                          <span style={{ fontWeight: 600 }}>{cat?.name || (isZh ? '未命名標籤' : 'Unnamed tag')}</span>
                         </div>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
                           [{anno.bbox[0]}, {anno.bbox[1]}, {anno.bbox[2]}×{anno.bbox[3]}]
@@ -1047,11 +1052,11 @@ export const AnnotationView: React.FC = () => {
           disabled={currentIndex === 0}
           icon={<ChevronLeft size={15} />}
         >
-          上一張
+          {isZh ? '上一張' : 'Prev'}
         </Button>
 
         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-          第 <strong style={{ color: '#818cf8' }}>{currentIndex + 1}</strong> / {images.length} 張
+          {isZh ? '第' : 'Image'} <strong style={{ color: '#818cf8' }}>{currentIndex + 1}</strong> / {images.length} {isZh ? '張' : ''}
         </span>
 
         <Button
@@ -1060,7 +1065,7 @@ export const AnnotationView: React.FC = () => {
           onClick={handleNext}
           disabled={currentIndex === images.length - 1}
         >
-          下一張 <ChevronRight size={15} />
+          {isZh ? '下一張' : 'Next'} <ChevronRight size={15} />
         </Button>
       </div>
     </div>

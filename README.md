@@ -14,7 +14,7 @@
 [![ONNX](https://img.shields.io/badge/ONNX-Runtime-005CED?style=for-the-badge&logo=onnx&logoColor=white)](https://onnx.ai/)
 [![License](https://img.shields.io/badge/License-AGPL_3.0-blue?style=for-the-badge)](LICENSE)
 
-[功能亮點](#-核心功能亮點) • [架構與模型](#-支援任務與模型體系) • [快速開始](#-快速開始) • [推論與部署](#-獨立推論工作站與-api-伺服器) • [開源授權](#-開源授權-license)
+[功能亮點](#-核心功能亮點) • [12 款風格主題](#-12-款三色特調風格主題) • [模型體系](#-支援任務與模型體系) • [快速開始](#-快速開始) • [推論與部署](#-獨立推論工作站與-api-伺服器) • [未來演進計畫](#-未來演進計畫無狀態算力節點架構) • [開源授權](#-開源授權-license)
 
 </div>
 
@@ -74,16 +74,27 @@
   - 📦 **數量達標**：偵測數量達到目標閾值（數量 ≥ N）。
   - 🚨 **缺失警報**：未偵測到指定物件（缺件 / 瑕疵檢查）。
 - **多語言客戶端程式碼生成**：自動產生 Python、JavaScript (Node.js)、cURL、C# 串接範例。
-- **多協定 API 伺服器**：內建 RESTful API (`POST /api/v1/predict`)、WebSocket 即時串流 (`/ws/inference`) 及 MQTT Broker 邊緣推播。
+- **多協定 API 伺服器**：內建 RESTful API (`POST /api/v1/inference/predict`)、WebSocket 即時串流 (`/ws/inference`) 及批次預測介面。
 
-### 7. 🎨 人文溫潤雙主題 (Artisanal Dual Theme)
-- 告別生硬刺眼的 AI 紫藍樣板風格，全面導入 **大地人文 5 色色票卡**：
-  - 🌸 **暖夕珊瑚 (Warm Coral - `#EB7E83`)**：核心操作與重點焦點
-  - 🍑 **陶土暖桃 (Terracotta Peach - `#E1998A`)**：輔助資訊與數值過渡
-  - 🪵 **柔霧藕灰 (Dusty Mauve - `#B88F89`)**：邊框架構與細緻次級文字
-  - 🌌 **煙燻岩紫 (Slate Plum - `#52495A`)**：暗色模式基底
-  - 🌊 **海鼠尾草 (Ocean Sage Teal - `#557B86`)**：平衡對比指標
-- **支援模式**：☀️ **溫潤燕麥亮色 (預設)** ✕ 🌙 **煙燻暖岩暗色**，支援頂部快捷按鈕與系統設定無縫切換。
+### 7. 🎨 12 款三色特調風格主題 (12-Theme Color Architecture)
+VisionForge 捨棄傳統單一死板的主題樣式，全面由 **12 組經典三色調色盤** 精心建構，完美涵蓋 **6 款柔雅淺色** 與 **6 款深邃暗夜**，每款主題均支援三主色之間的線性漸層 (`linear-gradient`)、環境氛圍光暈 (`--ambient-glow`) 與高對比度易讀文字：
+
+| # | 主題名稱 | 模式 | 官方指定 3 色調色盤 | 風格氛圍與漸層設計 |
+|:---:|:---|:---:|:---|:---|
+| **1** | **香草冰藍** (*Vanilla Mist*) | ☀️ 淺色 | `[#FFFFFF, #FFF2C9, #CBD7EF]` | 純白基底揉合暖香奶油與晨曦冰霧藍，澄淨溫潤、長時間專注不疲勞 |
+| **2** | **嫩綠丁香** (*Pistachio Lilac*) | ☀️ 淺色 | `[#FFFFFF, #EBFFC9, #E2CBFE]` | 青檸開心果嫩芽搭配夢幻丁香紫，清新活潑且富自然藝術氣息 |
+| **3** | **晴空落櫻** (*Sky Blossom*) 🌟 | ☀️ 淺色 **(系統預設)** | `[#FFFFFF, #C9E0FF, #FECBCC]` | **蔚藍晴空映襯嬌嫩粉櫻，經典雙色柔和調，空氣感十足、高雅透亮** |
+| **4** | **薄荷櫻雪** (*Mint Sakura*) | ☀️ 淺色 | `[#FFFFFF, #C9FFF2, #FECBCC]` | 清涼冰薄荷海風與蜜桃櫻花漸層，如同初夏微風，清爽舒適 |
+| **5** | **初春長春花** (*Spring Periwinkle*) | ☀️ 淺色 | `[#FFFFFF, #E0FFC9, #CBD7FE]` | 初春露水嫩綠與靜謐長春花藍紫，淡雅理性且富生機 |
+| **6** | **糖霜青晶** (*Bubblegum Cyan*) | ☀️ 淺色 | `[#FFFFFF, #FFC9ED, #C8FCFE]` | 甜心糖霜粉與晶瑩冰晶水藍，洋溢現代科技感與輕奢美學 |
+| **7** | **星夜靛藍** (*Indigo Starlight*) | 🌙 深色 | `[#FFCEE3, #678EC9, #262277]` | 深邃靛藍極夜為底，鋼藍為階，星河櫻粉為點睛高光，沉穩優雅 |
+| **8** | **暮光極夜** (*Amber Abyss*) | 🌙 深色 | `[#FFE28D, #FAC1A8, #13193D]` | 深海夜幕基底，融合暮光暖金與蜜桃珊瑚光暈，奢華典雅 |
+| **9** | **湖水青櫻** (*Lagoon Bloom*) | 🌙 深色 | `[#F9D2E4, #67C9B5, #007E79]` | 幽深松綠碧潭為底，浮水青翠薄荷與幽雅荷粉漸層相映 |
+| **10** | **電光極光** (*Cyber Pulse*) | 🌙 深色 | `[#FF128D, #21A7CF, #D4FEFA]` | 矩陣電光洋紅與賽博青藍，高對比度極致未來科技衝擊感 |
+| **11** | **幽林蘭影** (*Forest Orchid*) | 🌙 深色 | `[#FEDFCB, #106816, #FCC2EB]` | 深林墨翠底蘊，映襯杏桃絲綢與蘭花粉紫，自然尊榮且極致護眼 |
+| **12** | **幻紫夜魅** (*Royal Amethyst*) | 🌙 深色 | `[#FEDFCB, #391A77, #FCC2EB]` | 皇家宇宙深紫為底，搭配紫晶星雲與溫潤蜜桃光澤，神秘尊貴 |
+
+- **即時切換與個人化儲存**：可透過頂部 Header 快捷下拉選單或進入「⚙️ 系統設定」依深淺分頁切換，偏好設定自動儲存於瀏覽器 LocalStorage。
 
 ---
 
@@ -184,37 +195,82 @@ npm run dev
 
 ## 📡 獨立推論工作站與 API 伺服器 (API Endpoints)
 
-VisionForge 後端提供標準的 RESTful 與 WebSocket 介面，供外部物聯網設備、工業電腦或後端系統即時串接：
+VisionForge 後端提供標準的 RESTful 與批次預測介面，供外部物聯網設備、工業電腦或後端系統即時串接：
 
-### 1. 影像推論 API (`POST /api/v1/predict`)
+### 1. 影像推論 API (`POST /api/v1/inference/predict`)
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/predict" \
-     -H "Content-Type: multipart/form-data" \
-     -F "file=@test_image.jpg" \
-     -F "project_id=proj_your_project_id" \
-     -F "confidence_threshold=0.5"
+curl -X POST "http://127.0.0.1:8000/api/v1/inference/predict" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "model_id": "proj_defect_inspection",
+       "image_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+       "confidence_threshold": 0.5
+     }'
 ```
 
 **回傳範例 (JSON)**：
 ```json
 {
-  "project_id": "proj_your_project_id",
-  "task_type": "classification",
-  "model_architecture": "mobilenet_v3_small",
-  "inference_time_ms": 14.2,
-  "top_prediction": {
-    "class_name": "Pass_良品",
-    "confidence": 0.982
-  },
+  "model_id": "proj_defect_inspection",
+  "task_type": "detection",
+  "architecture": "yolo26_s",
+  "inference_time_ms": 13.8,
   "predictions": [
-    { "class_name": "Pass_良品", "confidence": 0.982 },
-    { "class_name": "NG_瑕疵", "confidence": 0.018 }
+    {
+      "label": "scratch_刮痕",
+      "confidence": 98.2,
+      "bbox": [0.32, 0.45, 0.18, 0.09]
+    }
+  ],
+  "trigger_matched": true,
+  "triggered_events": [
+    {
+      "rule_id": "rule_1",
+      "rule_name": "重大刮痕警報",
+      "message": "偵測到 scratch_刮痕 (98.2%)，已觸發自動警報",
+      "timestamp": "2026-08-24T14:30:00.000Z"
+    }
   ]
 }
 ```
 
-### 2. WebSocket 實時串流推論 (`/ws/inference/{project_id}`)
-- 支援以 Base64 或二進位串流傳輸影像幀，後端即時推播檢測結果與觸發警報事件。
+---
+
+## 🔮 未來演進計畫：無狀態算力節點架構 (Stateless AI Compute Node)
+
+為滿足未來跨工廠、跨部門之**極致隱私保護**與**高併發彈性擴展**需求，VisionForge 規劃在未來架構演進中導入 **「方案 2：無狀態算力節點架構 (Stateless AI Compute Node Architecture)」**：
+
+```
+                    ┌──────────────────────────────────────────────────────────┐
+                    │               ⚖️ Nginx / 負載平衡器 (Load Balancer)        │
+                    └─────────────────────────────┬────────────────────────────┘
+                                                  │ (純記憶體傳輸，零磁碟 I/O)
+                    ┌─────────────────────────────┴────────────────────────────┐
+                    ▼                                                          ▼
+    ┌───────────────────────────────┐                          ┌───────────────────────────────┐
+    │ 🖥️ 無狀態算力節點 A1 (GPU 1)   │                          │ 🖥️ 無狀態算力節點 A2 (GPU 2)   │
+    │  • VRAM 模型快取 (In-Memory)  │                          │  • VRAM 模型快取 (In-Memory)  │
+    │  • 零硬碟寫入 (Zero-Disk I/O) │                          │  • 零硬碟寫入 (Zero-Disk I/O) │
+    │  • 算完即釋放 (Instant GC)    │                          │  • 算完即釋放 (Instant GC)    │
+    └───────────────────────────────┘                          └───────────────────────────────┘
+```
+
+### 🌟 架構核心特點：
+
+1. **共享硬體算力，隔離用戶數據 (Shared Compute, Isolated Data)**
+   - **算力主機零數據殘留**：伺服器硬碟不儲存任何客戶端的照片、標註資訊或專案資料。
+   - **客戶端私有保存**：所有樣本照片與資料集完整保留於各客戶端電腦（B、C、D）本機，徹底杜絕主機端資料外洩風險。
+
+2. **全內存管線運算 (In-Memory Zero-Disk I/O Pipeline)**
+   - 影像串流經由 HTTP/WebSocket 進入伺服器 RAM 後，直接轉為 Tensor 載入 GPU 顯存運算，輸出 JSON 後**立即垃圾回收釋放**。
+   - 消除磁碟 I/O 瓶頸，單幀推論延遲降低至 10~15ms，伺服器永遠不會有硬碟爆滿的維護負擔。
+
+3. **支援多客戶端高併發與多伺服器水平擴展 (Horizontal Scalability)**
+   - **多對一併發**：單台 GPU 伺服器支援數十台產線設備或相機同時呼叫推論 API。
+   - **多對多叢集**：透過前端搭配 Nginx 負載平衡器，可隨意橫向新增 GPU 伺服器節點（A1, A2, A3...），實現企業級高可用性 (High Availability)。
+
+4. **攜帶型模型推論 (Bring-Your-Own-Model & Data)**
+   - 支援客戶端在請求中動態攜帶輕量化模型權重與圖片，算力節點臨時加載、運算完畢即刻銷毀，提供軍工級與跨企業租賃等級的隱私隔離。
 
 ---
 
@@ -239,10 +295,10 @@ ai_trainer_app/
 ├── frontend/                 # Vite + React 前端介面
 │   ├── src/
 │   │   ├── components/       # UI 元件 (標註畫布、圖表、模型選擇器、推論工作台)
-│   │   ├── context/          # ProjectContext (專案狀態與外觀主題管理)
+│   │   ├── context/          # ProjectContext (專案狀態與 12 款主題風格管理)
 │   │   ├── services/         # 前端 API 客戶端封裝
-│   │   ├── styles/           # 全域樣式與 5 色調色盤系統 (index.css)
-│   │   ├── views/            # 各分頁視圖 (Dashboard, Dataset, Annotation, Train, Inference)
+│   │   ├── styles/           # 全域樣式與 12 款三色調色盤系統 (index.css)
+│   │   ├── views/            # 各分頁視圖 (Dashboard, Dataset, Annotation, Train, Inference, Settings)
 │   │   ├── App.tsx           # 主應用程式佈局
 │   │   └── main.tsx          # 前端程式入口
 │   ├── package.json          # Node.js 依賴設定

@@ -24,7 +24,9 @@ export const Header: React.FC = () => {
     setIsCreateModalOpen,
     systemHealth,
     theme,
-    setTheme
+    setTheme,
+    language,
+    t
   } = useProject();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -56,11 +58,11 @@ export const Header: React.FC = () => {
           <button
             className="project-selector-btn"
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            title="點擊切換專案"
+            title={t.switchProject}
           >
             <FolderGit2 size={16} color="var(--accent-primary)" />
             <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {activeProject ? activeProject.name : '選擇或建立專案'}
+              {activeProject ? activeProject.name : t.selectOrCreateProject}
             </span>
             {activeProject && <TaskBadge taskType={activeProject.task_type} />}
             <ChevronDown size={14} color="var(--text-muted)" />
@@ -83,12 +85,12 @@ export const Header: React.FC = () => {
               }}
             >
               <div style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                切換專案 ({projects.length})
+                {t.switchProject} ({projects.length})
               </div>
               <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
                 {projects.length === 0 ? (
                   <div style={{ padding: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                    尚無專案，請先建立新專案
+                    {t.noProjectsFound}
                   </div>
                 ) : (
                   projects.map((p) => (
@@ -142,7 +144,7 @@ export const Header: React.FC = () => {
                     setIsCreateModalOpen(true);
                   }}
                 >
-                  建立新專案
+                  {t.createNewProject}
                 </Button>
               </div>
             </div>
@@ -155,7 +157,7 @@ export const Header: React.FC = () => {
         <div style={{ position: 'relative' }} ref={themeDropdownRef}>
           <button
             onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
-            title={`目前主題：${currentThemeDef.name} (${currentThemeDef.nameEn}) · 點擊切換`}
+            title={`${t.themeSelector}：${language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}`}
             style={{
               background: 'var(--bg-surface-elevated)',
               border: '1px solid var(--border-card)',
@@ -187,7 +189,7 @@ export const Header: React.FC = () => {
             ) : (
               <Sun size={13} color="var(--accent-primary)" />
             )}
-            <span style={{ fontSize: '0.78rem' }}>{currentThemeDef.name}</span>
+            <span style={{ fontSize: '0.78rem' }}>{language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}</span>
             <ChevronDown size={13} style={{ opacity: 0.6, transform: themeDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
           </button>
 
@@ -223,18 +225,18 @@ export const Header: React.FC = () => {
                   justifyContent: 'space-between',
                 }}
               >
-                <span>風格主題快速切換</span>
-                <span style={{ fontSize: '0.65rem' }}>共 10 款</span>
+                <span>{t.themeSelector}</span>
+                <span style={{ fontSize: '0.65rem' }}>{THEME_REGISTRY.length} {t.themeCountLabel}</span>
               </div>
 
-              <div style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                {THEME_REGISTRY.map((t) => {
-                  const isCur = theme === t.id;
+              <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {THEME_REGISTRY.map((tItem) => {
+                  const isCur = theme === tItem.id;
                   return (
                     <div
-                      key={t.id}
+                      key={tItem.id}
                       onClick={() => {
-                        setTheme(t.id);
+                        setTheme(tItem.id);
                         setThemeDropdownOpen(false);
                       }}
                       style={{
@@ -257,8 +259,8 @@ export const Header: React.FC = () => {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ display: 'flex', gap: '2px' }}>
-                          {t.palette.slice(0, 3).map((c, i) => (
+                        <div style={{ display: 'flex', gap: '3px' }}>
+                          {tItem.palette.slice(0, 3).map((c, i) => (
                             <div
                               key={i}
                               style={{
@@ -266,16 +268,17 @@ export const Header: React.FC = () => {
                                 height: '10px',
                                 borderRadius: '50%',
                                 background: c,
+                                border: '1px solid rgba(128, 128, 128, 0.35)',
                               }}
                             />
                           ))}
                         </div>
                         <div>
                           <div style={{ fontSize: '0.8rem', fontWeight: isCur ? 700 : 500, color: 'var(--text-primary)' }}>
-                            {t.name}
+                            {language === 'zh-TW' ? tItem.name : tItem.nameEn}
                           </div>
                           <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>
-                            {t.nameEn} · {t.mode === 'dark' ? '深色' : '淺色'}
+                            {language === 'zh-TW' ? tItem.nameEn : tItem.name} · {tItem.mode === 'dark' ? (language === 'zh-TW' ? '深色' : 'Dark') : (language === 'zh-TW' ? '淺色' : 'Light')}
                           </div>
                         </div>
                       </div>
@@ -290,10 +293,10 @@ export const Header: React.FC = () => {
         </div>
 
         {/* System Health / GPU Indicator */}
-        <div className="system-status-indicator" title={isOnline ? `Python: ${systemHealth?.python_version} | ${systemHealth?.platform}` : '後端服務未啟動'}>
+        <div className="system-status-indicator" title={isOnline ? `Python: ${systemHealth?.python_version} | ${systemHealth?.platform}` : t.offline}>
           <div className={`project-status-dot ${!isOnline ? 'offline' : ''}`} />
           <Server size={13} />
-          <span>{isOnline ? '後端已連線' : '後端離線'}</span>
+          <span>{isOnline ? t.online : t.offline}</span>
           {isOnline && systemHealth?.gpu.available && (
             <span style={{ display: 'flex', alignItems: 'center', gap: '3px', marginLeft: '6px', color: '#67a390' }}>
               <Cpu size={13} />
@@ -309,7 +312,7 @@ export const Header: React.FC = () => {
           icon={<Plus size={15} />}
           onClick={() => setIsCreateModalOpen(true)}
         >
-          新增專案
+          {t.createNewProject}
         </Button>
       </div>
     </header>

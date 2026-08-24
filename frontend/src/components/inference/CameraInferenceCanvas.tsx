@@ -14,6 +14,7 @@ import {
 import { RoiBox, TriggerRule, InferenceResponse, ImageItem } from '../../types';
 import { api } from '../../services/api';
 import { Button } from '../common/Button';
+import { useProject } from '../../context/ProjectContext';
 
 interface CameraInferenceCanvasProps {
   projectId: string;
@@ -52,6 +53,8 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [categoryColorMap, setCategoryColorMap] = useState<Record<string, string>>({});
+  const { language } = useProject();
+  const isZh = language === 'zh-TW';
 
   // Load project categories & dataset images
   useEffect(() => {
@@ -85,7 +88,9 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       }
     } catch (err: any) {
       console.warn('Webcam not accessible:', err);
-      setErrorMsg('無法開啟攝影機（可點擊「載入專案樣本」或「上傳圖片」進行推論）');
+      setErrorMsg(isZh
+        ? '無法開啟攝影機（可點擊「載入專案樣本」或「上傳圖片」進行推論）'
+        : 'Cannot open camera. Click “Load Sample” or “Upload” to run inference.');
     }
   };
 
@@ -140,7 +145,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   // Load sample image from dataset
   const handleLoadDatasetSample = () => {
     if (datasetImages.length === 0) {
-      alert('專案資料集中暫無圖片');
+      alert(isZh ? '專案資料集中暫無圖片' : 'No images in the project dataset');
       return;
     }
     const randomImg = datasetImages[Math.floor(Math.random() * datasetImages.length)];
@@ -203,7 +208,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         const ph = bh * canvas.height;
 
         const isAlert = triggerMatched && triggerRules.some(
-          (r) => r.enabled && (r.class_name === '全部類別' || r.class_name === p.label) && p.confidence >= r.min_confidence
+          (r) => r.enabled && (r.class_name === '全部類別' || r.class_name === 'All Classes' || r.class_name === p.label) && p.confidence >= r.min_confidence
         );
         const catColor = categoryColorMap[p.label] || '#10b981';
         const boxColor = isAlert ? '#f43f5e' : catColor;
@@ -304,7 +309,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       ctx.fillStyle = '#64748b';
       ctx.font = '14px Inter, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('攝影機尚未開啟 · 請點擊「攝影機」或「載入專案樣本」', 320, 240);
+      ctx.fillText(isZh ? '攝影機尚未開啟 · 請點擊「攝影機」或「載入專案樣本」' : 'Camera not started · Click “Camera” or “Load Sample”', 320, 240);
       ctx.textAlign = 'left';
     }
 
@@ -487,7 +492,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
                 fontWeight: 700,
               }}
             >
-              ROI 關注區域
+              ROI {isZh ? '關注區域' : 'Region of Interest'}
             </span>
           </div>
         )}
@@ -527,7 +532,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
                 background: isRunning ? '#10b981' : '#64748b',
               }}
             />
-            {isRunning ? `${fps} FPS` : '已暫停'}
+            {isRunning ? `${fps} FPS` : (isZh ? '已暫停' : 'Paused')}
           </span>
 
           <span
@@ -601,10 +606,10 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.8)' }}>
                   {isAlert
-                    ? '🚨 觸發條件命中'
+                    ? (isZh ? '🚨 觸發條件命中' : '🚨 Trigger Hit')
                     : (prediction.predictions?.some((p) => p.bbox)
-                      ? `🎯 檢出 ${validPredictionsCount} 個目標 (≥${confThreshold}%)`
-                      : '即時辨識結果')}
+                      ? (isZh ? `🎯 檢出 ${validPredictionsCount} 個目標 (≥${confThreshold}%)` : `🎯 ${validPredictionsCount} object(s) detected (≥${confThreshold}%)`)
+                      : (isZh ? '即時辨識結果' : 'Live Result'))}
                 </div>
                 <div style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
                   <span
@@ -648,7 +653,9 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
             backdropFilter: 'blur(4px)',
           }}
         >
-          💡 在畫面上拖曳可設定 ROI 關注區域 · 支援攝影機 / 上傳圖片 / 載入專案樣本
+          {isZh
+            ? '💡 在畫面上拖曳可設定 ROI 關注區域 · 支援攝影機 / 上傳圖片 / 載入專案樣本'
+            : '💡 Drag on canvas to set ROI · Supports Camera / Upload / Dataset Sample'}
         </div>
       </div>
 
@@ -691,7 +698,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
             icon={isRunning ? <Square size={14} /> : <Play size={14} />}
             onClick={toggleRunning}
           >
-            {isRunning ? '停止即時推論' : '啟動即時推論'}
+            {isRunning ? (isZh ? '停止即時推論' : 'Stop Inference') : (isZh ? '啟動即時推論' : 'Start Inference')}
           </Button>
 
           <Button
@@ -700,7 +707,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
             icon={<Camera size={14} />}
             onClick={() => setFeedMode('webcam')}
           >
-            攝影機
+            {isZh ? '攝影機' : 'Camera'}
           </Button>
 
           <Button
@@ -709,7 +716,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
             icon={<Upload size={14} />}
             onClick={() => fileInputRef.current?.click()}
           >
-            上傳圖片
+            {isZh ? '上傳圖片' : 'Upload Image'}
           </Button>
 
           {datasetImages.length > 0 && (
@@ -719,7 +726,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
               icon={<ImageIcon size={14} />}
               onClick={handleLoadDatasetSample}
             >
-              載入專案樣本
+              {isZh ? '載入專案樣本' : 'Load Dataset Sample'}
             </Button>
           )}
         </div>
@@ -728,7 +735,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Sliders size={14} color="#818cf8" />
           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-            信心度門檻:
+            {isZh ? '信心度門檻:' : 'Confidence:'}
           </span>
           <input
             type="range"
@@ -757,14 +764,14 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         {roi && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 600 }}>
-              ROI 已啟用 ({Math.round(roi.width)}×{Math.round(roi.height)} px)
+              ROI {isZh ? `已啟用 (${Math.round(roi.width)}×${Math.round(roi.height)} px)` : `Active (${Math.round(roi.width)}×${Math.round(roi.height)} px)`}
             </span>
             <button
               className="btn btn-ghost btn-sm"
               onClick={clearRoi}
               style={{ fontSize: '0.75rem', padding: '2px 8px', color: 'var(--text-muted)' }}
             >
-              <RotateCcw size={12} /> 清除 ROI
+              <RotateCcw size={12} /> {isZh ? '清除 ROI' : 'Clear ROI'}
             </button>
           </div>
         )}

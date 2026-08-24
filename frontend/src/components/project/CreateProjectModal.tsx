@@ -6,7 +6,7 @@ import { Button } from '../common/Button';
 import { TaskType } from '../../types';
 
 export const CreateProjectModal: React.FC = () => {
-  const { isCreateModalOpen, setIsCreateModalOpen, createProject } = useProject();
+  const { isCreateModalOpen, setIsCreateModalOpen, createProject, language, t } = useProject();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [taskType, setTaskType] = useState<TaskType>('classification');
@@ -22,29 +22,29 @@ export const CreateProjectModal: React.FC = () => {
   }[] = [
     {
       type: 'classification',
-      title: '影像分類',
-      desc: '為整張圖片指定分類標籤（如：良品/瑕疵、種類辨識）。支援 ResNet、ViT 等深度架構。',
+      title: language === 'zh-TW' ? '影像分類' : 'Image Classification',
+      desc: language === 'zh-TW' ? '為整張圖片指定分類標籤（如：良品/瑕疵、種類辨識）。支援 ResNet、ViT 等深度架構。' : 'Assign category label to whole image (Pass/NG, object class). Supports ResNet, ViT.',
       icon: <Layers size={18} />,
       color: '#EB7E83',
     },
     {
       type: 'detection',
-      title: '物件偵測',
-      desc: '在影像中定位多個目標物並繪製 Bounding Box。支援 YOLO26、D-FINE HGNetv2 等即時架構。',
+      title: language === 'zh-TW' ? '物件偵測' : 'Object Detection',
+      desc: language === 'zh-TW' ? '在影像中定位多個目標物並繪製 Bounding Box。支援 YOLO26、D-FINE HGNetv2 等即時架構。' : 'Locate multiple objects with Bounding Boxes. Supports YOLO26, D-FINE HGNetv2.',
       icon: <Scan size={18} />,
       color: '#557B86',
     },
     {
       type: 'regression',
-      title: '圖像迴歸',
-      desc: '依據影像特徵輸出連續數值預測（如：溫度估算、角度測量、關鍵點座標定位）。',
+      title: language === 'zh-TW' ? '圖像迴歸' : 'Feature Regression',
+      desc: language === 'zh-TW' ? '依據影像特徵輸出連續數值預測（如：溫度估算、角度測量、關鍵點座標定位）。' : 'Predict continuous numerical outputs (angle, temperature, coordinates).',
       icon: <TrendingUp size={18} />,
       color: '#E1998A',
     },
     {
       type: 'feature',
-      title: '特徵辨識',
-      desc: '自訂 ROI 關注區域或全圖高維特徵提取，支援 Swin-Tiny、ResNet-50+FPN 比對。',
+      title: language === 'zh-TW' ? '特徵辨識' : 'Feature Representation',
+      desc: language === 'zh-TW' ? '自訂 ROI 關注區域或全圖高維特徵提取，支援 Swin-Tiny、ResNet-50+FPN 比對。' : 'Extract high-dimensional ROI or full image features with Swin / ResNet-50 FPN.',
       icon: <Sparkles size={18} />,
       color: '#67a390',
     },
@@ -53,7 +53,7 @@ export const CreateProjectModal: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError('請輸入專案名稱');
+      setError(language === 'zh-TW' ? '請輸入專案名稱' : 'Please enter project name');
       return;
     }
 
@@ -70,7 +70,7 @@ export const CreateProjectModal: React.FC = () => {
       setTaskType('classification');
       setIsCreateModalOpen(false);
     } catch (err: any) {
-      setError(err.message || '建立專案失敗');
+      setError(err.message || (language === 'zh-TW' ? '建立專案失敗' : 'Failed to create project'));
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export const CreateProjectModal: React.FC = () => {
     <Modal
       isOpen={isCreateModalOpen}
       onClose={() => setIsCreateModalOpen(false)}
-      title="🚀 建立新 AI 視覺專案"
+      title={`🚀 ${t.createProjectModalTitle}`}
       maxWidth="620px"
     >
       <form onSubmit={handleSubmit}>
@@ -101,11 +101,11 @@ export const CreateProjectModal: React.FC = () => {
         )}
 
         <div className="form-group">
-          <label className="form-label">專案名稱 *</label>
+          <label className="form-label">{t.createProjectNameLabel} *</label>
           <input
             type="text"
             className="form-input"
-            placeholder="例如：晶片表面瑕疵檢測器、貓狗分類器"
+            placeholder={t.createProjectNamePlaceholder}
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
@@ -113,18 +113,18 @@ export const CreateProjectModal: React.FC = () => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">專案描述 (選填)</label>
+          <label className="form-label">{t.createProjectDescLabel}</label>
           <textarea
             className="form-textarea"
             rows={2}
-            placeholder="簡述此專案的應用場景與目標..."
+            placeholder={t.createProjectDescPlaceholder}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
 
         <div className="form-group">
-          <label className="form-label">選擇 AI 任務類型 *</label>
+          <label className="form-label">{t.createProjectTaskLabel} *</label>
           <div className="task-type-grid">
             {taskOptions.map((opt) => {
               const isSelected = taskType === opt.type;
@@ -161,10 +161,10 @@ export const CreateProjectModal: React.FC = () => {
             onClick={() => setIsCreateModalOpen(false)}
             disabled={loading}
           >
-            取消
+            {t.cancel}
           </Button>
           <Button type="submit" variant="primary" loading={loading}>
-            立即建立專案
+            {t.btnCreateProject}
           </Button>
         </div>
       </form>

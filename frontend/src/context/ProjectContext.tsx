@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Project, ProjectCreateInput, SystemHealth, NavView, ActiveWorkspace, AppTheme, THEME_REGISTRY } from '../types';
 import { api } from '../services/api';
+import { Language, TranslationDictionary, translations } from '../i18n/translations';
 
 interface ProjectContextType {
   projects: Project[];
@@ -12,6 +13,9 @@ interface ProjectContextType {
   isCreateModalOpen: boolean;
   theme: AppTheme;
   setTheme: (theme: AppTheme) => void;
+  language: Language;
+  setLanguage: (lang: Language) => void;
+  t: TranslationDictionary;
   setIsCreateModalOpen: (open: boolean) => void;
   setActiveWorkspace: (ws: ActiveWorkspace) => void;
   setCurrentView: (view: NavView) => void;
@@ -34,8 +38,27 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [theme, setThemeState] = useState<AppTheme>(() => {
     const saved = localStorage.getItem('visionforge_theme') as AppTheme;
     const isValid = THEME_REGISTRY.some((t) => t.id === saved);
-    return isValid ? saved : 'nordic-frost';
+    return isValid ? saved : 'sky-blossom';
   });
+  const [language, setLanguageState] = useState<Language>(() => {
+    const savedLang = localStorage.getItem('visionforge_lang') as Language;
+    if (savedLang === 'zh-TW' || savedLang === 'en-US') {
+      return savedLang;
+    }
+    return 'zh-TW';
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('visionforge_lang', lang);
+    document.documentElement.setAttribute('lang', lang);
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('lang', language);
+  }, [language]);
+
+  const t = translations[language];
 
   const setTheme = (newTheme: AppTheme) => {
     setThemeState(newTheme);
@@ -113,6 +136,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isCreateModalOpen,
         theme,
         setTheme,
+        language,
+        setLanguage,
+        t,
         setIsCreateModalOpen,
         setActiveWorkspace,
         setCurrentView,
@@ -133,4 +159,9 @@ export const useProject = () => {
     throw new Error('useProject must be used within a ProjectProvider');
   }
   return context;
+};
+
+export const useLanguage = () => {
+  const { language, setLanguage, t } = useProject();
+  return { language, setLanguage, t };
 };

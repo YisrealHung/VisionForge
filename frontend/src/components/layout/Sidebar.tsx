@@ -20,21 +20,22 @@ export const Sidebar: React.FC = () => {
     activeWorkspace, 
     setActiveWorkspace, 
     currentView, 
-    setCurrentView 
+    setCurrentView,
+    t
   } = useProject();
 
   const trainingNavItems = [
-    { id: 'dashboard' as NavView, label: '專案總覽', icon: LayoutDashboard },
-    { id: 'dataset' as NavView, label: '資料集與相機', icon: FolderSearch },
-    { id: 'annotator' as NavView, label: '影像標註工具', icon: Tag },
-    { id: 'train' as NavView, label: '模型配置與訓練', icon: BrainCircuit },
-    { id: 'monitor' as NavView, label: '即時訓練監控', icon: Activity },
-    { id: 'export' as NavView, label: '模型管理與匯出', icon: PackageCheck },
+    { id: 'dashboard' as NavView, label: t.navDashboard, icon: LayoutDashboard },
+    { id: 'dataset' as NavView, label: t.navDataset, icon: FolderSearch },
+    { id: 'annotator' as NavView, label: t.navAnnotator, icon: Tag },
+    { id: 'train' as NavView, label: t.navTrain, icon: BrainCircuit },
+    { id: 'monitor' as NavView, label: t.navMonitor, icon: Activity },
+    { id: 'export' as NavView, label: t.navExport, icon: PackageCheck },
   ];
 
   const inferenceNavItems = [
-    { id: 'inference_station' as NavView, label: '獨立推論工作站', icon: ScanEye },
-    { id: 'api_server' as NavView, label: '推論 API 伺服器', icon: Radio },
+    { id: 'inference_station' as NavView, label: t.navInferenceStation, icon: ScanEye },
+    { id: 'api_server' as NavView, label: t.navApiServer, icon: Radio },
   ];
 
   const handleNavClick = (view: NavView, ws: 'training' | 'inference') => {
@@ -64,8 +65,8 @@ export const Sidebar: React.FC = () => {
         {/* Workspace 1: Training Section */}
         <div>
           <div className="nav-section-title">
-            <span>🛠️ 訓練區塊</span>
-            <span className="nav-section-badge">Training</span>
+            <span>🛠️ {t.trainingWorkspace}</span>
+            <span className="nav-section-badge">{t.trainingWorkspaceBadge}</span>
           </div>
           <ul className="nav-list">
             {trainingNavItems.map((item) => {
@@ -89,9 +90,9 @@ export const Sidebar: React.FC = () => {
         {/* Workspace 2: Inference Section */}
         <div>
           <div className="nav-section-title">
-            <span>🚀 推論區塊</span>
+            <span>🚀 {t.inferenceWorkspace}</span>
             <span className="nav-section-badge" style={{ color: '#06b6d4', background: 'rgba(6, 182, 212, 0.1)' }}>
-              Inference
+              {t.inferenceWorkspaceBadge}
             </span>
           </div>
           <ul className="nav-list">
@@ -121,7 +122,7 @@ export const Sidebar: React.FC = () => {
           onClick={() => setCurrentView('settings')}
         >
           <Settings className="nav-item-icon" />
-          <span>系統設定</span>
+          <span>{t.navSettings}</span>
         </button>
       </div>
     </aside>

@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Terminal, Trash2 } from 'lucide-react';
+import { useProject } from '../../context/ProjectContext';
 
 interface TerminalLoggerProps {
   logs: string[];
@@ -9,6 +10,8 @@ interface TerminalLoggerProps {
 
 export const TerminalLogger: React.FC<TerminalLoggerProps> = ({ logs, onClear, height = 220 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { language } = useProject();
+  const isZh = language === 'zh-TW';
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -41,7 +44,7 @@ export const TerminalLogger: React.FC<TerminalLoggerProps> = ({ logs, onClear, h
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           <Terminal size={13} color="#818cf8" />
-          <span>即時訓練終端輸出 (Terminal Log)</span>
+          <span>{isZh ? '即時訓練終端輸出 (Terminal Log)' : 'Training Terminal Log'}</span>
         </div>
 
         {onClear && logs.length > 0 && (
@@ -49,9 +52,9 @@ export const TerminalLogger: React.FC<TerminalLoggerProps> = ({ logs, onClear, h
             className="btn btn-ghost btn-sm"
             onClick={onClear}
             style={{ fontSize: '0.7rem', padding: '2px 6px', color: 'var(--text-muted)' }}
-            title="清除記錄"
+            title={isZh ? '清除記錄' : 'Clear logs'}
           >
-            <Trash2 size={12} /> 清除
+            <Trash2 size={12} /> {isZh ? '清除' : 'Clear'}
           </button>
         )}
       </div>
@@ -74,12 +77,12 @@ export const TerminalLogger: React.FC<TerminalLoggerProps> = ({ logs, onClear, h
       >
         {logs.length === 0 ? (
           <div style={{ color: '#475569', fontStyle: 'italic' }}>
-            尚未啟動訓練，即時訓練終端訊息將會在此顯示...
+            {isZh ? '尚未啟動訓練，即時訓練終端訊息將會在此顯示...' : 'Training has not started yet. Real-time terminal output will appear here...'}
           </div>
         ) : (
           logs.map((line, idx) => {
             const isError = line.includes('❌') || line.includes('Error');
-            const isSuccess = line.includes('🎉') || line.includes('完成');
+            const isSuccess = line.includes('🎉') || line.includes('完成') || line.includes('Done');
             const isBest = line.includes('New Best');
             const isWarn = line.includes('⚠️');
 

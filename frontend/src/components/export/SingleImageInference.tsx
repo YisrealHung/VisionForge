@@ -3,6 +3,7 @@ import { UploadCloud, Zap, Image as ImageIcon, CheckCircle, AlertCircle } from '
 import { PredictionResponse } from '../../types';
 import { api } from '../../services/api';
 import { Button } from '../common/Button';
+import { useProject } from '../../context/ProjectContext';
 
 interface SingleImageInferenceProps {
   projectId: string;
@@ -16,6 +17,8 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
   const [errorMsg, setErrorMsg] = useState('');
   const [categoryColorMap, setCategoryColorMap] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { language } = useProject();
+  const isZh = language === 'zh-TW';
 
   React.useEffect(() => {
     if (projectId) {
@@ -54,7 +57,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
       const res = await api.predictImage(projectId, file);
       setResult(res);
     } catch (err: any) {
-      setErrorMsg(err.message || '推論失敗');
+      setErrorMsg(err.message || (isZh ? '推論失敗' : 'Inference failed'));
     } finally {
       setLoading(false);
     }
@@ -104,7 +107,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
                   borderRadius: 'var(--radius-sm)',
                 }}
               />
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>點擊或拖曳更換測試圖片</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? '點擊或拖曳更換測試圖片' : 'Click or drag to change image'}</span>
             </div>
           ) : (
             <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
@@ -123,10 +126,10 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
                 <UploadCloud size={22} />
               </div>
               <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                拖曳圖片至此，或點擊選擇檔案
+                {isZh ? '拖曳圖片至此，或點擊選擇檔案' : 'Drag & drop an image, or click to select'}
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                支援 JPG, PNG, WebP · 自動進行即時推論
+                {isZh ? '支援 JPG, PNG, WebP · 自動進行即時推論' : 'Supports JPG, PNG, WebP · Auto inference'}
               </div>
             </div>
           )}
@@ -147,7 +150,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                即時預測結果
+                {isZh ? '即時預測結果' : 'Live Prediction'}
               </span>
               {result && (
                 <span
@@ -162,7 +165,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
                     gap: '4px',
                   }}
                 >
-                  <Zap size={11} /> 耗時 {result.inference_time_ms} ms
+                  <Zap size={11} /> {isZh ? `耗時 ${result.inference_time_ms} ms` : `${result.inference_time_ms} ms`}
                 </span>
               )}
             </div>
@@ -170,7 +173,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
             {loading ? (
               <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 <span className="spinner" style={{ marginRight: '8px' }} />
-                正在進行 PyTorch 影像特徵提取與分類...
+                {isZh ? '正在進行 PyTorch 影像特徵提取與分類...' : 'Running PyTorch feature extraction & classification...'}
               </div>
             ) : errorMsg ? (
               <div style={{ padding: '1rem', color: '#fda4af', fontSize: '0.8rem', background: 'rgba(244,63,94,0.1)', borderRadius: 'var(--radius-sm)' }}>
@@ -197,7 +200,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
                       <div>
                         <div style={{ fontSize: '0.7rem', color: topColor, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: topColor }} />
-                          最高機率預測
+                          {isZh ? '最高機率預測' : 'Top Prediction'}
                         </div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
                           {result.top_label}
@@ -213,7 +216,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
                 {/* All Classes Breakdown */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    各類別機率分佈 (Softmax Confidence):
+                    {isZh ? '各類別機率分佈 (Softmax Confidence):' : 'Class Probability Distribution (Softmax):'}
                   </span>
                   {result.predictions.map((p, idx) => {
                     const cColor = categoryColorMap[p.label] || (idx === 0 ? '#10b981' : '#818cf8');
@@ -244,7 +247,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
               </div>
             ) : (
               <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                請上傳或拖入一張圖片以開始即時推論
+                {isZh ? '請上傳或拖入一張圖片以開始即時推論' : 'Upload or drag an image to start inference'}
               </div>
             )}
           </div>

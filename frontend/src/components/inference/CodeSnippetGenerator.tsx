@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Code2, Copy, Check, Terminal } from 'lucide-react';
+import { Code2, Copy, Check } from 'lucide-react';
 import { Card } from '../common/Card';
+import { useProject } from '../../context/ProjectContext';
 
 interface CodeSnippetGeneratorProps {
   projectId: string;
@@ -11,6 +12,8 @@ type LangKey = 'python' | 'javascript' | 'csharp' | 'curl' | 'esp32';
 export const CodeSnippetGenerator: React.FC<CodeSnippetGeneratorProps> = ({ projectId }) => {
   const [selectedLang, setSelectedLang] = useState<LangKey>('python');
   const [copied, setCopied] = useState(false);
+  const { language } = useProject();
+  const isZh = language === 'zh-TW';
 
   const getSnippet = (lang: LangKey): string => {
     const endpoint = 'http://127.0.0.1:8000/api/inference/predict';
@@ -20,25 +23,25 @@ export const CodeSnippetGenerator: React.FC<CodeSnippetGeneratorProps> = ({ proj
         return `import requests
 import base64
 
-# 1. 讀取圖片並進行 Base64 編碼
+# 1. Read image and encode as Base64
 with open("test.jpg", "rb") as f:
     img_b64 = base64.b64encode(f.read()).decode("utf-8")
 
-# 2. 發送推論請求至 VisionForge API
+# 2. Send inference request to VisionForge API
 payload = {
     "model_id": "${projectId}",
     "image_base64": img_b64,
-    # "roi": {"x": 0.1, "y": 0.1, "width": 0.8, "height": 0.8} # 可選關注區域
+    # "roi": {"x": 0.1, "y": 0.1, "width": 0.8, "height": 0.8}  # Optional ROI
 }
 
 response = requests.post("${endpoint}", json=payload)
 data = response.json()
 
-print(f"Top 預測類別: {data['top_label']} ({data['top_confidence']}%)")
-print(f"推論延遲: {data['inference_time_ms']} ms")`;
+print(f"Top Prediction: {data['top_label']} ({data['top_confidence']}%)")
+print(f"Inference latency: {data['inference_time_ms']} ms")`;
 
       case 'javascript':
-        return `// Node.js 或 瀏覽器 Fetch 範例
+        return `// Node.js / Browser Fetch example
 const fs = require('fs');
 
 async function runInference() {
@@ -55,7 +58,7 @@ async function runInference() {
   });
 
   const result = await response.json();
-  console.log('預測結果:', result);
+  console.log('Prediction result:', result);
 }
 
 runInference();`;
@@ -87,12 +90,12 @@ class Program
         var response = await client.PostAsync("${endpoint}", content);
         string jsonResult = await response.Content.ReadAsStringAsync();
 
-        Console.WriteLine($"VisionForge 推論結果: {jsonResult}");
+        Console.WriteLine($"VisionForge inference result: {jsonResult}");
     }
 }`;
 
       case 'curl':
-        return `# cURL 呼叫推論 API 範例
+        return `# cURL Inference API example
 curl -X POST "${endpoint}" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -101,7 +104,7 @@ curl -X POST "${endpoint}" \\
   }'`;
 
       case 'esp32':
-        return `// ESP32 Arduino HTTPClient 範例
+        return `// ESP32 Arduino HTTPClient example
 #include <WiFi.h>
 #include <HTTPClient.h>
 
@@ -147,7 +150,7 @@ void sendInference(String base64Image) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Code2 size={18} color="#06b6d4" />
-          <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>多語言 API 串接程式碼產生器</h3>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>{isZh ? '多語言 API 串接程式碼產生器' : 'Multi-Language API Code Generator'}</h3>
         </div>
 
         <button
@@ -156,7 +159,7 @@ void sendInference(String base64Image) {
           style={{ fontSize: '0.75rem', gap: '4px' }}
         >
           {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-          {copied ? '已複製到剪貼簿！' : '複製代碼'}
+          {copied ? isZh ? '已複製到剪貼簿！' : 'Copied!' : isZh ? '複製代碼' : 'Copy Code'}
         </button>
       </div>
 

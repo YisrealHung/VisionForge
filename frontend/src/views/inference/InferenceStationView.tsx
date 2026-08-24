@@ -23,12 +23,13 @@ import { TriggerRulePanel } from '../../components/inference/TriggerRulePanel';
 import { CodeSnippetGenerator } from '../../components/inference/CodeSnippetGenerator';
 
 export const InferenceStationView: React.FC = () => {
-  const { activeProject, setCurrentView, projects, activateProject } = useProject();
-  const [categories, setCategories] = useState<string[]>(['貓', '狗', '鳥']);
+  const { activeProject, setCurrentView, projects, activateProject, language } = useProject();
+  const isZh = language === 'zh-TW';
+  const [categories, setCategories] = useState<string[]>([isZh ? '貓' : 'Cat', isZh ? '狗' : 'Dog', isZh ? '鳥' : 'Bird']);
   const [trainedModels, setTrainedModels] = useState<TrainedModelInfo[]>([]);
   const [selectedArchitecture, setSelectedArchitecture] = useState<string>('');
   const [rules, setRules] = useState<TriggerRule[]>([
-    { id: 'rule_1', class_name: '全部類別', min_confidence: 40, enabled: true, action_type: 'alert' },
+    { id: 'rule_1', class_name: isZh ? '全部類別' : 'All Classes', min_confidence: 40, enabled: true, action_type: 'alert' },
   ]);
   const [events, setEvents] = useState<TriggerEvent[]>([]);
 
@@ -40,7 +41,7 @@ export const InferenceStationView: React.FC = () => {
           const names = cats.map((c) => c.name);
           setCategories(names);
           setRules([
-            { id: 'rule_1', class_name: names[0] || '全部類別', min_confidence: 40, enabled: true, action_type: 'alert' },
+            { id: 'rule_1', class_name: names[0] || (isZh ? '全部類別' : 'All Classes'), min_confidence: 40, enabled: true, action_type: 'alert' },
           ]);
         }
       }).catch(() => { });
@@ -82,7 +83,7 @@ export const InferenceStationView: React.FC = () => {
   if (!activeProject) {
     return (
       <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <p style={{ color: 'var(--text-muted)' }}>請先在頂部選單選擇或建立一個專案</p>
+        <p style={{ color: 'var(--text-muted)' }}>{isZh ? '請先在頂部選單選擇或建立一個專案' : 'Please select or create a project from the top menu first'}</p>
       </div>
     );
   }
@@ -95,17 +96,17 @@ export const InferenceStationView: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.25rem' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>🚀 獨立推論工作站</h1>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>🚀 {isZh ? '獨立推論工作站' : 'Standalone Inference Station'}</h1>
             {currentModelInfo ? (
               <span className="badge badge-indigo" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Cpu size={12} /> {currentModelInfo.name} · {currentModelInfo.best_val_acc}%
               </span>
             ) : (
-              <span className="badge badge-cyan">即時推論引擎</span>
+              <span className="badge badge-cyan">{isZh ? '即時推論引擎' : 'Live Inference Engine'}</span>
             )}
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            多模型隨選推論 · 關注區域 (ROI) 裁剪 · 條件觸發規則 · 多語言 API 串接
+            {isZh ? '多模型隨選推論 · 關注區域 (ROI) 裁剪 · 條件觸發規則 · 多語言 API 串接' : 'Multi-model inference · ROI cropping · Trigger rules · Multi-language API integration'}
           </p>
         </div>
 
@@ -123,7 +124,7 @@ export const InferenceStationView: React.FC = () => {
               boxShadow: 'var(--shadow-sm)'
             }}>
               <Boxes size={15} color="var(--accent-primary)" />
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>切換推論模型:</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{isZh ? '切換推論模型:' : 'Switch Model:'}</span>
               <select
                 style={{
                   background: 'transparent',
@@ -144,7 +145,7 @@ export const InferenceStationView: React.FC = () => {
                     value={m.architecture} 
                     style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
                   >
-                    {m.name} ({m.best_val_acc}%){m.is_latest ? ' ★最新' : ''}
+                    {m.name} ({m.best_val_acc}%){m.is_latest ? (isZh ? ' ★最新' : ' ★Latest') : ''}
                   </option>
                 ))}
               </select>
@@ -163,7 +164,7 @@ export const InferenceStationView: React.FC = () => {
             boxShadow: 'var(--shadow-sm)'
           }}>
             <Cpu size={14} color="var(--accent-teal)" />
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>專案:</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{isZh ? '專案:' : 'Project:'}</span>
             <select
               style={{
                 background: 'transparent',
@@ -197,7 +198,7 @@ export const InferenceStationView: React.FC = () => {
             icon={<ArrowRight size={15} />}
             onClick={() => setCurrentView('api_server')}
           >
-            前往推論 API 伺服器
+            {isZh ? '前往推論 API 伺服器' : 'Go to Inference API Server'}
           </Button>
         </div>
       </div>
@@ -209,7 +210,7 @@ export const InferenceStationView: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Video size={18} color="#06b6d4" />
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>即時視覺串流與 ROI 監控</h3>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>{isZh ? '即時視覺串流與 ROI 監控' : 'Live Visual Stream & ROI Monitor'}</h3>
             </div>
           </div>
           <CameraInferenceCanvas

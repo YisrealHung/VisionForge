@@ -24,7 +24,8 @@ import { ImageUploader } from '../../components/dataset/ImageUploader';
 import { CameraCaptureModal } from '../../components/dataset/CameraCaptureModal';
 
 export const DatasetView: React.FC = () => {
-  const { activeProject, setCurrentView } = useProject();
+  const { activeProject, setCurrentView, language } = useProject();
+  const isZh = language === 'zh-TW';
   const [images, setImages] = useState<ImageItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterSplit, setFilterSplit] = useState<string>('all');
@@ -62,7 +63,7 @@ export const DatasetView: React.FC = () => {
       await api.uploadImages(activeProject.id, files);
       await loadImages();
     } catch (err) {
-      alert('圖片上傳失敗');
+      alert(isZh ? '圖片上傳失敗' : 'Failed to upload images');
     } finally {
       setUploading(false);
     }
@@ -76,7 +77,7 @@ export const DatasetView: React.FC = () => {
 
   const handleDeleteImage = async (filename: string) => {
     if (!activeProject) return;
-    if (confirm(`確定要刪除圖片「${filename}」嗎？`)) {
+    if (confirm(isZh ? `確定要刪除圖片「${filename}」嗎？` : `Are you sure you want to delete image "${filename}"?`)) {
       await api.deleteImage(activeProject.id, filename);
       setImages((prev) => prev.filter((img) => img.filename !== filename));
     }
@@ -93,7 +94,7 @@ export const DatasetView: React.FC = () => {
       setIsSplitModalOpen(false);
       await loadImages();
     } catch (err) {
-      alert('分割資料集失敗');
+      alert(isZh ? '分割資料集失敗' : 'Failed to split dataset');
     }
   };
 
@@ -113,10 +114,10 @@ export const DatasetView: React.FC = () => {
       setImporting(true);
       setImportSuccessMsg('');
       const res = await api.importDataset(activeProject.id, Array.from(files));
-      setImportSuccessMsg(`🎉 成功匯入 ${res.imported_images} 張圖片與 ${res.imported_annotations} 筆標註資料（總計 ${res.total_images} 張）！`);
+      setImportSuccessMsg(isZh ? `🎉 成功匯入 ${res.imported_images} 張圖片與 ${res.imported_annotations} 筆標註資料（總計 ${res.total_images} 張）！` : `🎉 Successfully imported ${res.imported_images} images and ${res.imported_annotations} annotations (Total ${res.total_images})!`);
       await loadImages();
     } catch (err: any) {
-      alert(`匯入失敗: ${err.message || '檔案格式不支援'}`);
+      alert(isZh ? `匯入失敗: ${err.message || '檔案格式不支援'}` : `Import failed: ${err.message || 'Unsupported format'}`);
     } finally {
       setImporting(false);
       if (importDatasetInputRef.current) {
@@ -139,7 +140,7 @@ export const DatasetView: React.FC = () => {
   if (!activeProject) {
     return (
       <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <p style={{ color: 'var(--text-muted)' }}>請先在頂部選單選擇或建立一個專案</p>
+        <p style={{ color: 'var(--text-muted)' }}>{isZh ? '請先在頂部選單選擇或建立一個專案' : 'Please select or create a project from the top menu first'}</p>
       </div>
     );
   }
@@ -160,10 +161,10 @@ export const DatasetView: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-            📁 資料集管理中心
+            📁 {isZh ? '資料集管理中心' : 'Dataset Management Center'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            專案：<span style={{ color: '#818cf8', fontWeight: 600 }}>{activeProject.name}</span> · 匯入/匯出圖片與標註檔、相機拍攝與資料集分割
+            {isZh ? '專案：' : 'Project: '}<span style={{ color: '#818cf8', fontWeight: 600 }}>{activeProject.name}</span> · {isZh ? '匯入/匯出圖片與標註檔、相機拍攝與資料集分割' : 'Import/Export images and annotations, camera capture, and dataset split'}
           </p>
         </div>
 
@@ -175,7 +176,7 @@ export const DatasetView: React.FC = () => {
             loading={importing}
             onClick={() => importDatasetInputRef.current?.click()}
           >
-            匯入資料集 (ZIP / 標註)
+            {isZh ? '匯入資料集 (ZIP / 標註)' : 'Import Dataset (ZIP / Annotations)'}
           </Button>
 
           {/* Export Button */}
@@ -185,7 +186,7 @@ export const DatasetView: React.FC = () => {
             onClick={handleExportDataset}
             disabled={images.length === 0}
           >
-            匯出資料集 (ZIP)
+            {isZh ? '匯出資料集 (ZIP)' : 'Export Dataset (ZIP)'}
           </Button>
 
           {/* Camera Button */}
@@ -194,7 +195,7 @@ export const DatasetView: React.FC = () => {
             icon={<Camera size={15} />}
             onClick={() => setIsCameraOpen(true)}
           >
-            啟動相機拍攝
+            {isZh ? '啟動相機拍攝' : 'Start Camera Capture'}
           </Button>
 
           {/* Split Button */}
@@ -203,7 +204,7 @@ export const DatasetView: React.FC = () => {
             icon={<PieChart size={15} />}
             onClick={() => setIsSplitModalOpen(!isSplitModalOpen)}
           >
-            資料集分割
+            {isZh ? '資料集分割' : 'Split Dataset'}
           </Button>
 
           {/* Annotator Navigation */}
@@ -212,7 +213,7 @@ export const DatasetView: React.FC = () => {
             icon={<ArrowRight size={15} />}
             onClick={() => setCurrentView('annotator')}
           >
-            前往標註工具
+            {isZh ? '前往標註工具' : 'Go to Annotator'}
           </Button>
         </div>
       </div>
@@ -240,7 +241,7 @@ export const DatasetView: React.FC = () => {
             onClick={() => setImportSuccessMsg('')}
             style={{ background: 'transparent', border: 'none', color: '#34d399', cursor: 'pointer', fontSize: '0.8rem' }}
           >
-            關閉
+            {isZh ? '關閉' : 'Close'}
           </button>
         </div>
       )}
@@ -248,26 +249,26 @@ export const DatasetView: React.FC = () => {
       {/* Dataset Statistics Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
         <Card>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>總圖片數</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{isZh ? '總圖片數' : 'Total Images'}</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{images.length}</div>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            已標註: <span style={{ color: '#10b981', fontWeight: 600 }}>{labeledCount}</span> / 未標註: {images.length - labeledCount}
+            {isZh ? '已標註:' : 'Labeled:'} <span style={{ color: '#10b981', fontWeight: 600 }}>{labeledCount}</span> / {isZh ? '未標註:' : 'Unlabeled:'} {images.length - labeledCount}
           </div>
         </Card>
 
         <Card>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>訓練集 (Train)</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{isZh ? '訓練集 (Train)' : 'Train Set'}</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#818cf8' }}>{trainCount}</div>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            佔比 {images.length > 0 ? Math.round((trainCount / images.length) * 100) : 0}%
+            {isZh ? '佔比' : 'Ratio'} {images.length > 0 ? Math.round((trainCount / images.length) * 100) : 0}%
           </div>
         </Card>
 
         <Card>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>驗證集 (Val)</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{isZh ? '驗證集 (Val)' : 'Val Set'}</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#06b6d4' }}>{valCount}</div>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            佔比 {images.length > 0 ? Math.round((valCount / images.length) * 100) : 0}%
+            {isZh ? '佔比' : 'Ratio'} {images.length > 0 ? Math.round((valCount / images.length) * 100) : 0}%
           </div>
         </Card>
       </div>
@@ -276,11 +277,11 @@ export const DatasetView: React.FC = () => {
       {isSplitModalOpen && (
         <Card style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-highlight)' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <PieChart size={16} color="#818cf8" /> 自動依比例劃分訓練集與驗證集
+            <PieChart size={16} color="#818cf8" /> {isZh ? '自動依比例劃分訓練集與驗證集' : 'Auto-split Train and Val Sets'}
           </h3>
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.85rem' }}>訓練集比例:</span>
+              <span style={{ fontSize: '0.85rem' }}>{isZh ? '訓練集比例:' : 'Train Ratio:'}</span>
               <input
                 type="range"
                 min="0.5"
@@ -298,12 +299,12 @@ export const DatasetView: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.85rem' }}>驗證集比例:</span>
+              <span style={{ fontSize: '0.85rem' }}>{isZh ? '驗證集比例:' : 'Val Ratio:'}</span>
               <span style={{ fontWeight: 700, color: '#06b6d4' }}>{Math.round(valRatio * 100)}%</span>
             </div>
 
             <Button variant="primary" size="sm" onClick={handleSplitDataset}>
-              確認執行隨機劃分
+              {isZh ? '確認執行隨機劃分' : 'Confirm Random Split'}
             </Button>
           </div>
         </Card>
@@ -316,7 +317,7 @@ export const DatasetView: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Filter size={15} color="var(--text-muted)" />
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>子集篩選:</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{isZh ? '子集篩選:' : 'Filter:'}</span>
           {['all', 'train', 'val', 'labeled', 'unlabeled'].map((split) => (
             <button
               key={split}
@@ -328,24 +329,24 @@ export const DatasetView: React.FC = () => {
                 borderColor: filterSplit === split ? '#818cf8' : undefined,
               }}
             >
-              {split === 'all' && '全部'}
-              {split === 'train' && '訓練集'}
-              {split === 'val' && '驗證集'}
-              {split === 'labeled' && '已標註'}
-              {split === 'unlabeled' && '未標註'}
+              {split === 'all' && (isZh ? '全部' : 'All')}
+              {split === 'train' && (isZh ? '訓練集' : 'Train')}
+              {split === 'val' && (isZh ? '驗證集' : 'Val')}
+              {split === 'labeled' && (isZh ? '已標註' : 'Labeled')}
+              {split === 'unlabeled' && (isZh ? '未標註' : 'Unlabeled')}
             </button>
           ))}
         </div>
 
         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          顯示 {filteredImages.length} / {images.length} 張圖片
+          {isZh ? `顯示 ${filteredImages.length} / ${images.length} 張圖片` : `Showing ${filteredImages.length} / ${images.length} images`}
         </span>
       </div>
 
       {/* Images Thumbnail Grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>
-          載入圖片列表中...
+          {isZh ? '載入圖片列表中...' : 'Loading images...'}
         </div>
       ) : filteredImages.length === 0 ? (
         <div
@@ -358,9 +359,9 @@ export const DatasetView: React.FC = () => {
           }}
         >
           <FolderSearch size={40} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>資料集中尚無相符圖片</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{isZh ? '資料集中尚無相符圖片' : 'No matching images in dataset'}</h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', maxWidth: '400px', margin: '0 auto 1.25rem' }}>
-            您可以點擊上方「匯入資料集 (ZIP)」、拖放照片上傳，或開啟攝影機即時拍攝採集樣本。
+            {isZh ? '您可以點擊上方「匯入資料集 (ZIP)」、拖放照片上傳，或開啟攝影機即時拍攝採集樣本。' : 'You can click "Import Dataset", upload photos by drag-and-drop, or use the camera to collect samples.'}
           </p>
         </div>
       ) : (
@@ -411,7 +412,7 @@ export const DatasetView: React.FC = () => {
                       gap: '2px',
                     }}
                   >
-                    <CheckCircle2 size={10} /> {img.annotation_count > 0 ? `${img.annotation_count} 標記` : '已標'}
+                    <CheckCircle2 size={10} /> {img.annotation_count > 0 ? `${img.annotation_count} ${isZh ? '標記' : 'box'}` : (isZh ? '已標' : 'L')}
                   </span>
                 ) : (
                   <span
@@ -424,7 +425,7 @@ export const DatasetView: React.FC = () => {
                       backdropFilter: 'blur(4px)',
                     }}
                   >
-                    未標註
+                    {isZh ? '未標註' : 'Unlabeled'}
                   </span>
                 )}
 
@@ -464,7 +465,7 @@ export const DatasetView: React.FC = () => {
                   justifyContent: 'center',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 }}
-                title="刪除此圖片"
+                title={isZh ? '刪除此圖片' : 'Delete image'}
               >
                 <Trash2 size={12} />
               </button>

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { Button } from '../common/Button';
+import { useProject } from '../../context/ProjectContext';
 
 interface ImageUploaderProps {
   onUpload: (files: File[]) => Promise<void>;
@@ -10,6 +11,8 @@ interface ImageUploaderProps {
 export const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload, loading = false }) => {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { language } = useProject();
+  const isZh = language === 'zh-TW';
 
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
@@ -83,10 +86,15 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload, loading 
 
       <div>
         <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-          拖放圖片至此處，或 <span style={{ color: '#818cf8', textDecoration: 'underline' }}>點擊瀏覽檔案</span>
+          {isZh
+            ? <>拖放圖片至此處，或 <span style={{ color: '#818cf8', textDecoration: 'underline' }}>點擊瀏覽檔案</span></>
+            : <>Drag & drop images here, or <span style={{ color: '#818cf8', textDecoration: 'underline' }}>click to browse</span></>
+          }
         </h4>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          支援 JPG, PNG, WebP, BMP 格式 · 支援多檔案與資料夾批次匯入
+          {isZh
+            ? 'JPG, PNG, WebP, BMP · 支援多檔案批次匯入'
+            : 'JPG, PNG, WebP, BMP · Supports batch import'}
         </p>
       </div>
 
@@ -101,7 +109,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload, loading 
           fileInputRef.current?.click();
         }}
       >
-        選擇本地圖片
+        {isZh ? '選擇本地圖片' : 'Select Images'}
       </Button>
     </div>
   );

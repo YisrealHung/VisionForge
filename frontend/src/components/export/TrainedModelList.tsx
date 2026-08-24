@@ -11,7 +11,8 @@ interface TrainedModelListProps {
 }
 
 export const TrainedModelList: React.FC<TrainedModelListProps> = ({ onModelChanged }) => {
-  const { activeProject } = useProject();
+  const { activeProject, language } = useProject();
+  const isZh = language === 'zh-TW';
   const [models, setModels] = useState<TrainedModelInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,14 +43,14 @@ export const TrainedModelList: React.FC<TrainedModelListProps> = ({ onModelChang
       await fetchModels();
       onModelChanged();
     } catch (err: any) {
-      setError(err.message || '切換模型失敗');
+      setError(err.message || (isZh ? '切換模型失敗' : 'Failed to switch model'));
       setLoading(false);
     }
   };
 
   const handleDelete = async (architecture: string, name: string) => {
     if (!activeProject) return;
-    if (!window.confirm(`確定要刪除模型「${name}」嗎？權重檔案將被永久刪除且無法復原。`)) return;
+    if (!window.confirm(isZh ? `確定要刪除模型「${name}」嗎？權重檔案將被永久刪除且無法復原。` : `Delete model "${name}"? The checkpoint file will be permanently deleted.`)) return;
     
     try {
       setLoading(true);
@@ -57,7 +58,7 @@ export const TrainedModelList: React.FC<TrainedModelListProps> = ({ onModelChang
       await fetchModels();
       onModelChanged();
     } catch (err: any) {
-      setError(err.message || '刪除模型失敗');
+      setError(err.message || (isZh ? '刪除模型失敗' : 'Failed to delete model'));
       setLoading(false);
     }
   };
@@ -71,9 +72,9 @@ export const TrainedModelList: React.FC<TrainedModelListProps> = ({ onModelChang
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem' }}>
         <Database size={18} color="#f59e0b" />
         <div>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>已訓練模型庫 (Trained Models)</h3>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>{isZh ? '已訓練模型庫 (Trained Models)' : 'Trained Model Library'}</h3>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            管理已訓練完成的模型檢查點，選擇啟用的模型進行測試與匯出
+            {isZh ? '管理已訓練完成的模型檢查點，選擇啟用的模型進行測試與匯出' : 'Manage trained model checkpoints, select a model to test and export'}
           </p>
         </div>
       </div>
@@ -99,12 +100,12 @@ export const TrainedModelList: React.FC<TrainedModelListProps> = ({ onModelChang
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>模型名稱</th>
-              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>狀態</th>
-              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>準確率 (Best Acc)</th>
-              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>權重大小</th>
-              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>訓練時間</th>
-              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>操作</th>
+              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{isZh ? '模型名稱' : 'Model Name'}</th>
+              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{isZh ? '狀態' : 'Status'}</th>
+              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{isZh ? '準確率 (Best Acc)' : 'Best Accuracy'}</th>
+              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{isZh ? '權重大小' : 'Weight Size'}</th>
+              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>{isZh ? '訓練時間' : 'Trained At'}</th>
+              <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>{isZh ? '操作' : 'Actions'}</th>
             </tr>
           </thead>
           <tbody>
@@ -117,10 +118,10 @@ export const TrainedModelList: React.FC<TrainedModelListProps> = ({ onModelChang
                   {model.is_latest ? (
                     <span className="badge badge-emerald" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       <Check size={12} />
-                      使用中
+                      {isZh ? '使用中' : 'Active'}
                     </span>
                   ) : (
-                    <span className="badge badge-gray">已儲存</span>
+                    <span className="badge badge-gray">{isZh ? '已儲存' : 'Saved'}</span>
                   )}
                 </td>
                 <td style={{ padding: '0.75rem 0.5rem', fontSize: '0.875rem' }}>
@@ -144,7 +145,7 @@ export const TrainedModelList: React.FC<TrainedModelListProps> = ({ onModelChang
                         disabled={loading}
                         onClick={() => handleSelect(model.architecture)}
                       >
-                        設為啟用
+                        {isZh ? '設為啟用' : 'Set Active'}
                       </Button>
                     )}
                     <Button 
@@ -154,7 +155,7 @@ export const TrainedModelList: React.FC<TrainedModelListProps> = ({ onModelChang
                       disabled={loading}
                       onClick={() => handleDelete(model.architecture, model.name)}
                     >
-                      刪除
+                      {isZh ? '刪除' : 'Delete'}
                     </Button>
                   </div>
                 </td>
