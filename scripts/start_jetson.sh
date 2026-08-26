@@ -16,13 +16,18 @@ echo ""
 
 cd "${ROOT_DIR}"
 
-# 1. Check Python
-echo -e "\033[0;36m[*] 正在檢查 Python 環境...\033[0m"
-if command -v python3 &>/dev/null; then
-    PY_VER=$(python3 --version)
+# 1. Check Python / Conda Environment
+PY_CMD="python3"
+if [ -f "${ROOT_DIR}/env_config.sh" ]; then
+    source "${ROOT_DIR}/env_config.sh"
+fi
+
+echo -e "\033[0;36m[*] 正在檢查 Python 環境 (${PY_CMD})...\033[0m"
+if command -v "${PY_CMD}" &>/dev/null; then
+    PY_VER=$("${PY_CMD}" --version)
     echo -e "\033[0;32m [+] Python: ${PY_VER}\033[0m"
 else
-    echo -e "\033[0;31m [!] 錯誤: 找不到 python3！請先安裝 Python 3.8+。\033[0m"
+    echo -e "\033[0;31m [!] 錯誤: 找不到 ${PY_CMD}！請確認已安裝 Python 3.8+ 或執行 ./setup_env.sh。\033[0m"
     exit 1
 fi
 
@@ -60,4 +65,4 @@ echo -e "\033[1;32m==========================================================\03
 echo ""
 
 # Start FastAPI backend server binding 0.0.0.0 for LAN access
-exec python3 -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+exec "${PY_CMD}" -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000

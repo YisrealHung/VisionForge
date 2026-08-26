@@ -11,8 +11,6 @@ from pathlib import Path
 from typing import List, Dict, Optional, Any, Callable
 from PIL import Image
 
-import torch
-
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.models.training import (

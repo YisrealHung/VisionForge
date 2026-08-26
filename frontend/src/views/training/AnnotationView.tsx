@@ -334,9 +334,10 @@ export const AnnotationView: React.FC = () => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
-      if (e.key === 'ArrowRight') {
+      const k = e.key.toLowerCase();
+      if (k === 'd' || e.key === '.' || e.key === '>' || e.key === 'ArrowRight') {
         handleNext();
-      } else if (e.key === 'ArrowLeft') {
+      } else if (k === 'a' || e.key === ',' || e.key === '<' || e.key === 'ArrowLeft') {
         handlePrev();
       }
     };
@@ -1051,21 +1052,28 @@ export const AnnotationView: React.FC = () => {
           onClick={handlePrev}
           disabled={currentIndex === 0}
           icon={<ChevronLeft size={15} />}
+          title={isZh ? '上一張圖片 (快捷鍵: A 或 ←)' : 'Previous image (Shortcut: A or ←)'}
         >
-          {isZh ? '上一張' : 'Prev'}
+          {isZh ? '上一張 (A)' : 'Prev (A)'}
         </Button>
 
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-          {isZh ? '第' : 'Image'} <strong style={{ color: '#818cf8' }}>{currentIndex + 1}</strong> / {images.length} {isZh ? '張' : ''}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            {isZh ? '第' : 'Image'} <strong style={{ color: '#818cf8' }}>{currentIndex + 1}</strong> / {images.length} {isZh ? '張' : ''}
+          </span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', background: 'var(--bg-surface-elevated)', padding: '2px 6px', borderRadius: '3px' }}>
+            快捷鍵: <kbd style={{ fontFamily: 'monospace', color: '#818cf8', fontWeight: 700 }}>A</kbd> 上一張 · <kbd style={{ fontFamily: 'monospace', color: '#818cf8', fontWeight: 700 }}>D</kbd> 下一張
+          </span>
+        </div>
 
         <Button
           variant="primary"
           size="sm"
           onClick={handleNext}
           disabled={currentIndex === images.length - 1}
+          title={isZh ? '下一張圖片 (快捷鍵: D 或 →)' : 'Next image (Shortcut: D or →)'}
         >
-          {isZh ? '下一張' : 'Next'} <ChevronRight size={15} />
+          {isZh ? '下一張 (D)' : 'Next (D)'} <ChevronRight size={15} />
         </Button>
       </div>
     </div>

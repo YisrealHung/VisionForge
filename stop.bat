@@ -4,20 +4,34 @@ title VisionForge AI Studio - Stop Services
 echo ==========================================================
 echo   Stopping VisionForge Services...
 echo ==========================================================
+echo.
 
-:: Terminate Backend (port 8000)
+set KILLED=0
+
+:: 1. Terminate Backend on Port 8000
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000" ^| findstr "LISTENING"') do (
-    echo [*] Killing Backend process PID: %%a ...
-    taskkill /F /PID %%a >nul 2>&1
+    echo [*] Stopping Backend on Port 8000, PID: %%a
+    taskkill /F /T /PID %%a >nul 2>&1
+    set KILLED=1
 )
 
-:: Terminate Frontend (port 5173)
+:: 2. Terminate Frontend on Port 5173
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5173" ^| findstr "LISTENING"') do (
-    echo [*] Killing Frontend process PID: %%a ...
-    taskkill /F /PID %%a >nul 2>&1
+    echo [*] Stopping Frontend on Port 5173, PID: %%a
+    taskkill /F /T /PID %%a >nul 2>&1
+    set KILLED=1
 )
+
+:: 3. Close leftover VisionForge terminal windows
+taskkill /FI "WINDOWTITLE eq VisionForge - Backend*" /F /T >nul 2>&1
+taskkill /FI "WINDOWTITLE eq VisionForge - Frontend*" /F /T >nul 2>&1
 
 echo.
-echo [OK] All VisionForge services have been stopped.
+if "%KILLED%"=="1" (
+    echo [OK] All VisionForge services stopped successfully.
+) else (
+    echo [*] No running VisionForge services found.
+)
+echo ==========================================================
 echo.
 pause

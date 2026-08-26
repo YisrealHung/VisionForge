@@ -12,7 +12,6 @@ from backend.app.models.export import (
 )
 from backend.app.models.gradcam import GradCamResponse
 from backend.app.services.export_service import ExportService
-from backend.app.services.gradcam_service import GradCamService
 
 router = APIRouter(prefix="/projects/{project_id}/export", tags=["Model Export & Evaluation"])
 
@@ -45,6 +44,7 @@ async def predict_single_image(project_id: str, file: UploadFile = File(...)):
 async def generate_gradcam(project_id: str, file: UploadFile = File(...)):
     """Generate Grad-CAM attention heatmap for an uploaded image."""
     try:
+        from backend.app.services.gradcam_service import GradCamService
         contents = await file.read()
         return GradCamService.generate_gradcam(project_id, contents)
     except Exception as e:

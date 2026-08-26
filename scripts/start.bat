@@ -1,5 +1,4 @@
 @echo off
-setlocal EnableDelayedExpansion
 title VisionForge AI Studio - Launcher
 
 cd /d "%~dp0..\"
@@ -10,17 +9,17 @@ echo   Local No-Code AI Vision Training and Inference Platform
 echo ==========================================================
 echo.
 
-:: Auto-detect Python executable with uvicorn
-set "PY_CMD="
-if exist "%USERPROFILE%\miniconda3\python.exe" (
-    "%USERPROFILE%\miniconda3\python.exe" -c "import uvicorn" >nul 2>&1
-    if not errorlevel 1 set "PY_CMD=%USERPROFILE%\miniconda3\python.exe"
+if exist "%~dp0..\env_config.bat" (
+    call "%~dp0..\env_config.bat"
+) else (
+    if exist "D:\condaenv\cuda\python.exe" (
+        set "PY_CMD=D:\condaenv\cuda\python.exe"
+        set "CONDA_ENV_DIR=D:\condaenv\cuda"
+        set "PATH=D:\condaenv\cuda;D:\condaenv\cuda\Scripts;D:\condaenv\cuda\Library\bin;%PATH%"
+    ) else (
+        set "PY_CMD=python"
+    )
 )
-if not defined PY_CMD (
-    python -c "import uvicorn" >nul 2>&1
-    if not errorlevel 1 set "PY_CMD=python"
-)
-if not defined PY_CMD set "PY_CMD=python"
 
 echo [*] Checking Python environment...
 "%PY_CMD%" --version
@@ -35,7 +34,7 @@ if errorlevel 1 goto :no_node
 echo.
 echo [*] Checking frontend dependencies...
 if exist "frontend\node_modules" goto :deps_ok
-echo [*] Installing frontend packages (npm install)...
+echo [*] Installing frontend packages...
 cd frontend
 call npm install
 cd ..
@@ -50,17 +49,14 @@ echo ==========================================================
 echo [1/2] Launching Backend Server on http://127.0.0.1:8000 ...
 start "VisionForge - Backend (Port 8000)" cmd /k "%~dp0run_backend.bat"
 
-:: Wait 3 seconds for Python backend to load modules and bind port 8000
-ping 127.0.0.1 -n 4 >nul
-
 :: 2. Launch Vite Frontend (Port 5173)
 echo [2/2] Launching Frontend Server on http://localhost:5173 ...
 start "VisionForge - Frontend (Port 5173)" cmd /k "%~dp0run_frontend.bat"
 
-:: Wait 2 seconds then open browser
+:: Open browser immediately while services initialize
 echo.
-echo [*] Opening browser in 3 seconds...
-ping 127.0.0.1 -n 4 >nul
+echo [*] Opening browser on http://localhost:5173 ...
+ping 127.0.0.1 -n 2 >nul
 start http://localhost:5173
 
 echo.
@@ -78,13 +74,11 @@ pause >nul
 exit /b 0
 
 :no_python
-echo [ERROR] Python not found in PATH!
-echo Please install Python 3.10+ and add it to PATH.
+echo [ERROR] Python not found! Please run setup_env.bat first.
 pause
 exit /b 1
 
 :no_node
-echo [ERROR] Node.js / npm not found in PATH!
-echo Please install Node.js from https://nodejs.org
+echo [ERROR] Node.js / npm not found! Please install Node.js from https://nodejs.org
 pause
 exit /b 1

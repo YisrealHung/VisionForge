@@ -251,7 +251,7 @@ export const MonitorView: React.FC = () => {
 
           {(isFailed || isStopped) && !isTraining && (
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => setCurrentView('train')}
             >
               {isZh ? '重新配置訓練' : 'Reconfigure Training'}

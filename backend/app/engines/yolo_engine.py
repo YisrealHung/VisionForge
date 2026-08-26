@@ -193,6 +193,7 @@ class YOLOModelEngine(BaseModelEngine):
         job.log(f"🚀 初始化專屬 YOLO 目標偵測訓練引擎 (模型: {hp.architecture.value}, 基底: {yolo_base_model})")
         job.log(f"📂 YOLO 正規化資料集建置完成: 訓練集 {num_train} 張, 驗證集 {num_val} 張, 類別數: {len(class_names)}")
 
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
         yolo_model = YOLO(yolo_base_model)
         batch_losses: List[float] = []
 
@@ -203,20 +204,29 @@ class YOLOModelEngine(BaseModelEngine):
                 total = 0.0
                 for v in loss_obj.values():
                     if torch.is_tensor(v):
-                        total += float(v.detach().item())
+                        total += float(v.detach().sum().item())
                     elif isinstance(v, (int, float)):
                         total += float(v)
                 return total
             elif torch.is_tensor(loss_obj):
                 return float(loss_obj.detach().sum().item())
             elif isinstance(loss_obj, (list, tuple)):
-                return sum(float(x.detach().item() if torch.is_tensor(x) else x) for x in loss_obj)
+                total = 0.0
+                for x in loss_obj:
+                    if torch.is_tensor(x):
+                        total += float(x.detach().sum().item())
+                    elif isinstance(x, (int, float)):
+                        total += float(x)
+                return total
             elif isinstance(loss_obj, (int, float)):
                 return float(loss_obj)
             return 0.0
 
         def on_train_batch_end(trainer):
-            loss_val = extract_yolo_loss(getattr(trainer, 'loss_items', None) or getattr(trainer, 'tloss', None))
+            loss_obj = getattr(trainer, 'loss_items', None)
+            if loss_obj is None:
+                loss_obj = getattr(trainer, 'tloss', None)
+            loss_val = extract_yolo_loss(loss_obj)
             if loss_val > 0:
                 batch_losses.append(loss_val)
 
@@ -237,10 +247,13 @@ class YOLOModelEngine(BaseModelEngine):
             epoch = trainer.epoch + 1
             job.current_epoch = min(hp.epochs, epoch)
 
-            train_loss = (sum(batch_losses) / max(1, len(batch_losses))) if batch_losses else extract_yolo_loss(getattr(trainer, 'tloss', None))
+            loss_obj = getattr(trainer, 'tloss', None)
+            train_loss = (sum(batch_losses) / max(1, len(batch_losses))) if batch_losses else extract_yolo_loss(loss_obj)
             batch_losses.clear()
 
-            metrics = getattr(trainer, 'metrics', {}) or {}
+            metrics = getattr(trainer, 'metrics', None)
+            if metrics is None or not isinstance(metrics, dict):
+                metrics = {}
             map50 = float(metrics.get("metrics/mAP50(B)", 0.0)) * 100.0
             map50_95 = float(metrics.get("metrics/mAP50-95(B)", 0.0)) * 100.0
             

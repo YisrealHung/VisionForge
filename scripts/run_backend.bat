@@ -11,26 +11,20 @@ echo   API Docs:   http://127.0.0.1:8000/docs
 echo ==========================================================
 echo.
 
-:: Auto-detect Python executable that has uvicorn
-set "PY_CMD="
-if exist "%USERPROFILE%\miniconda3\python.exe" (
-    "%USERPROFILE%\miniconda3\python.exe" -c "import uvicorn" >nul 2>&1
-    if not errorlevel 1 set "PY_CMD=%USERPROFILE%\miniconda3\python.exe"
-)
-if not defined PY_CMD (
-    python -c "import uvicorn" >nul 2>&1
-    if not errorlevel 1 set "PY_CMD=python"
-)
-if not defined PY_CMD (
-    if exist "C:\Users\PC\AppData\Local\Programs\Python\Python312\python.exe" (
-        set "PY_CMD=C:\Users\PC\AppData\Local\Programs\Python\Python312\python.exe"
+if exist "%~dp0..\env_config.bat" (
+    call "%~dp0..\env_config.bat"
+) else (
+    if exist "D:\condaenv\cuda\python.exe" (
+        set "PY_CMD=D:\condaenv\cuda\python.exe"
+        set "CONDA_ENV_DIR=D:\condaenv\cuda"
+        set "PATH=D:\condaenv\cuda;D:\condaenv\cuda\Scripts;D:\condaenv\cuda\Library\bin;%PATH%"
     ) else (
         set "PY_CMD=python"
     )
 )
 
 echo [*] Using Python: %PY_CMD%
-"%PY_CMD%" -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+"%PY_CMD%" -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload --reload-dir backend/app
 
 if errorlevel 1 (
     echo.

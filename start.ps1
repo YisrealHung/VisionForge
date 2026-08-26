@@ -12,13 +12,27 @@ Set-Location $rootDir
 
 # Check Python
 Write-Host "[*] 正在檢查 Python 環境..." -ForegroundColor DarkCyan
+$condaPath = "D:\condaenv\cuda"
+$pyCmd = "python"
+if (Test-Path "$condaPath\python.exe") {
+    $pyCmd = "$condaPath\python.exe"
+    $env:PATH = "$condaPath;$condaPath\Scripts;$condaPath\Library\bin;$condaPath\Library\usr\bin;$condaPath\Library\mingw-w64\bin;" + $env:PATH
+}
+
 try {
-    $pyVer = python --version 2>&1
-    Write-Host " [+] Python: $pyVer" -ForegroundColor Green
+    $pyVer = & $pyCmd --version 2>&1
+    Write-Host " [+] Python: $pyVer ($pyCmd)" -ForegroundColor Green
 } catch {
     Write-Host " [!] 錯誤: 找不到 Python！請確認已安裝 Python 3.10+。" -ForegroundColor Red
     Read-Host "按 Enter 鍵離開..."
     exit 1
+}
+
+# Check Python backend dependencies
+$checkPkg = & $pyCmd -c "import pydantic_settings" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[*] 正在安裝缺少的後端套件 (pydantic-settings, 等)..." -ForegroundColor Yellow
+    & $pyCmd -m pip install -r "$rootDir\backend\requirements.txt"
 }
 
 # Check Node.js
@@ -47,7 +61,7 @@ Write-Host "==========================================================" -Foregro
 
 # 1. Start Backend in separate window
 Write-Host " [1/2] 啟動後端 FastAPI (Port 8000)..." -ForegroundColor Green
-Start-Process -FilePath "cmd.exe" -ArgumentList "/k cd /d `"$rootDir`" && python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
+Start-Process -FilePath "cmd.exe" -ArgumentList "/k `"$rootDir\scripts\run_backend.bat`""
 
 # Wait 2 seconds for Python backend to initialize
 Start-Sleep -Seconds 2

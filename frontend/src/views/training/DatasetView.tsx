@@ -368,125 +368,147 @@ export const DatasetView: React.FC = () => {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
             gap: '1rem',
+            alignItems: 'start',
           }}
         >
-          {filteredImages.map((img) => (
-            <div
-              key={img.id}
-              style={{
-                position: 'relative',
-                aspectRatio: '4/3',
-                background: '#0b0f19',
-                borderRadius: 'var(--radius-sm)',
-                overflow: 'hidden',
-                border: '1px solid var(--border-subtle)',
-              }}
-            >
-              <img
-                src={img.url}
-                alt={img.filename}
+          {filteredImages.map((img) => {
+            const aspect = (img.width && img.height) ? `${img.width} / ${img.height}` : '16 / 9';
+            return (
+              <div
+                key={img.id}
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-              />
-
-              {/* Status Badges */}
-              <div style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', gap: '4px' }}>
-                {img.labeled ? (
-                  <span
-                    style={{
-                      background: 'rgba(16, 185, 129, 0.85)',
-                      color: 'white',
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      padding: '2px 6px',
-                      borderRadius: '3px',
-                      backdropFilter: 'blur(4px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '2px',
-                    }}
-                  >
-                    <CheckCircle2 size={10} /> {img.annotation_count > 0 ? `${img.annotation_count} ${isZh ? '標記' : 'box'}` : (isZh ? '已標' : 'L')}
-                  </span>
-                ) : (
-                  <span
-                    style={{
-                      background: 'rgba(0, 0, 0, 0.65)',
-                      color: '#94a3b8',
-                      fontSize: '0.65rem',
-                      padding: '2px 6px',
-                      borderRadius: '3px',
-                      backdropFilter: 'blur(4px)',
-                    }}
-                  >
-                    {isZh ? '未標註' : 'Unlabeled'}
-                  </span>
-                )}
-
-                {img.split && img.split !== 'unassigned' && (
-                  <span
-                    style={{
-                      background: img.split === 'train' ? 'rgba(99, 102, 241, 0.85)' : 'rgba(6, 182, 212, 0.85)',
-                      color: 'white',
-                      fontSize: '0.65rem',
-                      fontWeight: 600,
-                      padding: '2px 6px',
-                      borderRadius: '3px',
-                      backdropFilter: 'blur(4px)',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {img.split}
-                  </span>
-                )}
-              </div>
-
-              {/* Delete Button overlay on Hover */}
-              <button
-                onClick={() => handleDeleteImage(img.filename)}
-                style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '6px',
-                  background: 'rgba(244, 63, 94, 0.85)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '3px',
-                  padding: '4px',
-                  cursor: 'pointer',
+                  position: 'relative',
+                  aspectRatio: aspect,
+                  background: '#040711',
+                  borderRadius: 'var(--radius-sm)',
+                  overflow: 'hidden',
+                  border: '1px solid var(--border-card)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  transition: 'transform 0.15s ease, border-color 0.15s ease',
                 }}
-                title={isZh ? '刪除此圖片' : 'Delete image'}
               >
-                <Trash2 size={12} />
-              </button>
+                <img
+                  src={img.url}
+                  alt={img.filename}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                  }}
+                />
 
-              {/* Dimensions info overlay */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '4px',
-                  right: '6px',
-                  fontSize: '0.65rem',
-                  color: 'rgba(255,255,255,0.75)',
-                  background: 'rgba(0,0,0,0.6)',
-                  padding: '1px 4px',
-                  borderRadius: '2px',
-                }}
-              >
-                {img.width}×{img.height}
+                {/* Status Badges */}
+                <div style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', gap: '4px', zIndex: 2 }}>
+                  {img.labeled ? (
+                    <span
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.9)',
+                        color: 'white',
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      }}
+                    >
+                      <CheckCircle2 size={10} /> {img.annotation_count > 0 ? `${img.annotation_count} ${isZh ? '標記' : 'box'}` : (isZh ? '已標' : 'L')}
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        color: '#94a3b8',
+                        fontSize: '0.65rem',
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        backdropFilter: 'blur(4px)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      }}
+                    >
+                      {isZh ? '未標註' : 'Unlabeled'}
+                    </span>
+                  )}
+
+                  {img.split && img.split !== 'unassigned' && (
+                    <span
+                      style={{
+                        background: img.split === 'train' ? 'rgba(99, 102, 241, 0.9)' : 'rgba(6, 182, 212, 0.9)',
+                        color: 'white',
+                        fontSize: '0.65rem',
+                        fontWeight: 600,
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        backdropFilter: 'blur(4px)',
+                        textTransform: 'uppercase',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                      }}
+                    >
+                      {img.split}
+                    </span>
+                  )}
+                </div>
+
+                {/* Delete Button overlay */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteImage(img.filename);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '6px',
+                    right: '6px',
+                    background: 'rgba(244, 63, 94, 0.85)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+                    zIndex: 2,
+                  }}
+                  title={isZh ? '刪除此圖片' : 'Delete image'}
+                >
+                  <Trash2 size={12} />
+                </button>
+
+                {/* Native Camera Resolution Badge */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '6px',
+                    right: '6px',
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    color: '#e2e8f0',
+                    background: 'rgba(15, 23, 42, 0.8)',
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    letterSpacing: '0.02em',
+                    pointerEvents: 'none',
+                    zIndex: 2,
+                  }}
+                >
+                  {img.width} × {img.height}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

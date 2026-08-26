@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, FlipHorizontal, Play, Square } from 'lucide-react';
+import { Camera, FlipHorizontal, Play, Square, Video } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { useProject } from '../../context/ProjectContext';
@@ -26,6 +26,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
   const [isIntervalRunning, setIsIntervalRunning] = useState(false);
   const [intervalSec, setIntervalSec] = useState(2);
   const [errorMsg, setErrorMsg] = useState('');
+  const [videoResolution, setVideoResolution] = useState<{ width: number; height: number; aspect: number } | null>(null);
   const intervalTimerRef = useRef<any>(null);
   const { language } = useProject();
   const isZh = language === 'zh-TW';
@@ -57,6 +58,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
         clearInterval(intervalTimerRef.current);
         setIsIntervalRunning(false);
       }
+      setVideoResolution(null);
       return;
     }
 
@@ -66,13 +68,15 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
         if (stream) stream.getTracks().forEach((t) => t.stop());
         const constraints: MediaStreamConstraints = {
           video: selectedDeviceId
-            ? { deviceId: { exact: selectedDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-            : { width: { ideal: 1280 }, height: { ideal: 720 } },
+            ? { deviceId: { exact: selectedDeviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+            : { width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
         };
         const newStream = await navigator.mediaDevices.getUserMedia(constraints);
         setStream(newStream);
-        if (videoRef.current) videoRef.current.srcObject = newStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = newStream;
+        }
       } catch (err: any) {
         setErrorMsg(
           isZh
@@ -86,6 +90,17 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     startCamera();
     return () => { if (stream) stream.getTracks().forEach((t) => t.stop()); };
   }, [isOpen, selectedDeviceId]);
+
+  const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const v = e.currentTarget;
+    if (v.videoWidth && v.videoHeight) {
+      setVideoResolution({
+        width: v.videoWidth,
+        height: v.videoHeight,
+        aspect: v.videoWidth / v.videoHeight,
+      });
+    }
+  };
 
   const captureFrame = async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -118,12 +133,24 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     }
   };
 
+  // Helper to format aspect ratio string (e.g. 16:9, 4:3, 1:1)
+  const getAspectLabel = (w: number, h: number) => {
+    const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+    const divisor = gcd(w, h);
+    const rw = w / divisor;
+    const rh = h / divisor;
+    if (rw <= 21 && rh <= 16) {
+      return `${rw}:${rh}`;
+    }
+    return `${(w / h).toFixed(2)}:1`;
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={isZh ? '📷 攝影機即時擷取' : '📷 Live Camera Capture'}
-      maxWidth="780px"
+      maxWidth={videoResolution && videoResolution.aspect < 1.3 ? '680px' : '820px'}
       footer={
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <div style={{ fontSize: '0.85rem', color: '#818cf8', fontWeight: 600 }}>
@@ -150,6 +177,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Top Control Bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '220px' }}>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
@@ -195,18 +223,23 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
           </div>
         </div>
 
+        {/* Adaptive Video Viewport (auto-adjusts to camera aspect ratio) */}
         <div
           style={{
             position: 'relative',
             width: '100%',
-            height: '420px',
-            background: '#000',
+            aspectRatio: videoResolution ? `${videoResolution.width} / ${videoResolution.height}` : '16 / 9',
+            maxHeight: '62vh',
+            background: '#040711',
             borderRadius: 'var(--radius-md)',
             overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             border: '1px solid var(--border-card)',
+            boxShadow: 'inset 0 0 20px rgba(0, 0, 0, 0.6)',
+            margin: '0 auto',
+            transition: 'aspect-ratio 0.25s ease-out',
           }}
         >
           {errorMsg ? (
@@ -220,22 +253,55 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
               autoPlay
               playsInline
               muted
+              onLoadedMetadata={handleVideoLoadedMetadata}
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
                 transform: isFlipped ? 'scaleX(-1)' : 'none',
+                display: 'block',
               }}
             />
           )}
 
+          {/* Camera Resolution & Aspect Ratio Badge */}
+          {videoResolution && !errorMsg && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                background: 'rgba(15, 23, 42, 0.75)',
+                backdropFilter: 'blur(6px)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#e2e8f0',
+                padding: '3px 9px',
+                borderRadius: 'var(--radius-full)',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                letterSpacing: '0.02em',
+                pointerEvents: 'none',
+              }}
+            >
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+              <Video size={12} style={{ color: '#38bdf8' }} />
+              <span>
+                {videoResolution.width} × {videoResolution.height} ({getAspectLabel(videoResolution.width, videoResolution.height)})
+              </span>
+            </div>
+          )}
+
+          {/* Auto Interval Indicator */}
           {isIntervalRunning && (
             <div
               style={{
                 position: 'absolute',
-                top: '12px',
-                right: '12px',
-                background: 'rgba(244, 63, 94, 0.85)',
+                top: '10px',
+                right: '10px',
+                background: 'rgba(244, 63, 94, 0.9)',
                 color: 'white',
                 padding: '4px 10px',
                 borderRadius: 'var(--radius-full)',
@@ -245,10 +311,11 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
                 alignItems: 'center',
                 gap: '6px',
                 animation: 'pulse 1.5s infinite',
+                boxShadow: '0 0 12px rgba(244, 63, 94, 0.5)',
               }}
             >
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'white' }} />
-              {isZh ? `自動定時連拍中 (每 ${intervalSec}s)` : `Auto capturing every ${intervalSec}s`}
+              {isZh ? `定時連拍中 (每 ${intervalSec}s)` : `Auto capturing every ${intervalSec}s`}
             </div>
           )}
         </div>
