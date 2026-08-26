@@ -9,7 +9,9 @@ import {
   RotateCcw,
   Sliders,
   AlertTriangle,
-  Cpu
+  Cpu,
+  Video,
+  RefreshCw
 } from 'lucide-react';
 import { RoiBox, TriggerRule, InferenceResponse, ImageItem } from '../../types';
 import { api } from '../../services/api';
@@ -31,6 +33,8 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
 }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [feedMode, setFeedMode] = useState<'webcam' | 'image'>('webcam');
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [customImageSrc, setCustomImageSrc] = useState<string | null>(null);
   const [confThreshold, setConfThreshold] = useState<number>(40); // 1% ~ 100% (Default 40%)
   const [fps, setFps] = useState(0);
@@ -73,24 +77,49 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     }
   }, [projectId]);
 
+  const enumerateDevices = useCallback(async () => {
+    try {
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const videoDevs = devs.filter((d) => d.kind === 'videoinput');
+      setDevices(videoDevs);
+      if (videoDevs.length > 0 && !selectedDeviceId) {
+        setSelectedDeviceId(videoDevs[0].deviceId);
+      }
+    } catch (err) {
+      console.warn('Failed to enumerate video devices:', err);
+    }
+  }, [selectedDeviceId]);
+
+  useEffect(() => {
+    enumerateDevices();
+  }, [enumerateDevices]);
+
   // Start Camera Stream
-  const startCamera = async () => {
+  const startCamera = async (deviceId?: string) => {
     try {
       setErrorMsg('');
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+      stopCamera();
+      const targetId = deviceId !== undefined ? deviceId : selectedDeviceId;
+      const constraints: MediaStreamConstraints = {
+        video: targetId
+          ? { deviceId: { exact: targetId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
+      enumerateDevices();
     } catch (err: any) {
       console.warn('Webcam not accessible:', err);
-      setErrorMsg(isZh
-        ? '無法開啟攝影機（可點擊「載入專案樣本」或「上傳圖片」進行推論）'
-        : 'Cannot open camera. Click “Load Sample” or “Upload” to run inference.');
+      setErrorMsg(
+        isZh
+          ? '無法開啟攝影機（可點擊「載入專案樣本」或「上傳圖片」進行推論）'
+          : 'Cannot open camera. Click “Load Sample” or “Upload” to run inference.'
+      );
     }
   };
 
@@ -572,6 +601,34 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
               <Cpu size={11} /> {prediction.model_architecture.toUpperCase().replace('_', '-')}
             </span>
           )}
+
+          {feedMode === 'webcam' && (
+            <span
+              style={{
+                background: 'rgba(15, 23, 42, 0.85)',
+                color: '#38bdf8',
+                padding: '3px 8px',
+                borderRadius: '4px',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                maxWidth: '180px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={devices.find((d) => d.deviceId === selectedDeviceId)?.label || 'Camera'}
+            >
+              <Video size={11} style={{ flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {devices.find((d) => d.deviceId === selectedDeviceId)?.label || (isZh ? '即時相機' : 'Live Cam')}
+              </span>
+            </span>
+          )}
         </div>
 
         {/* Top Right Live Prediction Badge */}
@@ -709,6 +766,53 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           >
             {isZh ? '攝影機' : 'Camera'}
           </Button>
+
+          {feedMode === 'webcam' && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '2px 6px',
+              }}
+            >
+              <Video size={13} style={{ color: '#818cf8', flexShrink: 0 }} />
+              <select
+                className="form-select"
+                value={selectedDeviceId}
+                onChange={(e) => {
+                  const newId = e.target.value;
+                  setSelectedDeviceId(newId);
+                  startCamera(newId);
+                }}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '2px 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  maxWidth: '180px',
+                  textOverflow: 'ellipsis',
+                  outline: 'none',
+                }}
+                title={isZh ? '選擇攝影機裝置' : 'Select Camera Device'}
+              >
+                {devices.length === 0 ? (
+                  <option value="">{isZh ? '正在偵測相機...' : 'Detecting cameras...'}</option>
+                ) : (
+                  devices.map((d, i) => (
+                    <option key={d.deviceId || i} value={d.deviceId} style={{ background: '#0f172a', color: '#fff' }}>
+                      {d.label || `${isZh ? '攝影機裝置' : 'Camera'} #${i + 1}`}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+          )}
 
           <Button
             variant={feedMode === 'image' ? 'secondary' : 'ghost'}
