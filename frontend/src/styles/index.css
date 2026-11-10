@@ -972,3 +972,131 @@ select option {
   .vf-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .vf-next-step-title { font-size: 1.35rem; }
 }
+
+/* ==========================================================================
+   Header at narrow widths: never wrap text inside the pills (it used to break
+   one character per line). The project name truncates first, then labels
+   collapse to icons (each control keeps a title / aria-label).
+   ========================================================================== */
+.app-header { gap: 0.75rem; }
+.header-left { flex: 1 1 auto; min-width: 0; }
+.project-selector-dropdown { min-width: 0; }
+.project-selector-btn { max-width: 100%; white-space: nowrap; }
+.header-project-name { min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-task-badge { display: inline-flex; flex-shrink: 0; }
+.header-right { flex: 0 0 auto; }
+.header-right > * { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 1280px) {
+  .header-right .header-label { display: none; }
+  .header-gpu { margin-left: 2px !important; }
+}
+@media (max-width: 1024px) {
+  .header-task-badge { display: none; }
+  .header-right { gap: 0.5rem; }
+}
+
+/* ==========================================================================
+   Studio page building blocks (Annotation, Monitor, …)
+   ========================================================================== */
+.vf-page { display: flex; flex-direction: column; gap: 1rem; }
+/* Fills the content area (annotation workspace): header + work area + pager. */
+.vf-page-fill { height: calc(100vh - 140px); min-height: 520px; }
+
+.vf-page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.vf-page-heading { flex: 1 1 320px; min-width: 0; }
+.vf-page-eyebrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.vf-page-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.2rem; }
+.vf-page-title {
+  font-size: 1.75rem;
+  font-weight: 900;
+  line-height: 1.2;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vf-page-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+
+.vf-panel { background: var(--bg-surface); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+
+.vf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-surface-elevated);
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-full);
+}
+.vf-kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--accent-primary);
+  background: var(--bg-surface);
+  border-radius: 6px;
+  padding: 0 0.35rem;
+}
+
+/* Label progress capsule in the annotation header (highlight color) */
+.vf-progress-pill {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0.3rem;
+  background: var(--next-step-bg, var(--bg-surface-elevated));
+  color: var(--next-step-ink, var(--text-primary));
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.9rem;
+  min-width: 190px;
+}
+.vf-progress-pill-value { font-size: 1.3rem; font-weight: 900; line-height: 1; grid-row: span 2; }
+.vf-progress-pill-text { font-size: 0.78rem; font-weight: 700; }
+.vf-progress-pill-track { display: block; height: 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.14); overflow: hidden; }
+.vf-progress-pill-bar { display: block; height: 100%; background: var(--next-step-ink, var(--accent-primary)); transition: width 0.3s; }
+
+/* Pager */
+.vf-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+}
+.vf-pager > div { display: flex; align-items: center; gap: 0.6rem; }
+
+/* Monitor hero progress + metric tiles */
+.vf-hero-progress {
+  margin-top: 1rem;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  max-width: 560px;
+}
+.vf-hero-progress-bar { display: block; height: 100%; background: var(--next-step-ink, var(--accent-primary)); transition: width 0.4s; }
+.vf-next-step-cta:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.vf-stat-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
+.vf-stat-value { font-size: 1.9rem; font-weight: 900; line-height: 1.15; color: var(--text-primary); }
+.vf-stat-sub { display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.3rem; }
+
+.vf-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-amber); }
+.vf-live-dot.on { background: var(--accent-emerald); }
+
+@media (max-width: 900px) {
+  .vf-page-fill { height: auto; }
+  .vf-pager-hint { display: none; }
+}
