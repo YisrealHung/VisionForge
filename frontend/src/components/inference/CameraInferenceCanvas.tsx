@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { RoiBox, TriggerRule, InferenceResponse, ImageItem, isAllClasses } from '../../types';
 import { api } from '../../services/api';
+import { describeCameraError, openCameraStream, stopStream, videoConstraints } from '../../services/camera';
 import { Button } from '../common/Button';
 import { useProject } from '../../context/ProjectContext';
 
@@ -106,16 +107,11 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     try {
       setErrorMsg('');
       const targetId = deviceId !== undefined ? deviceId : selectedDeviceId;
-      const constraints: MediaStreamConstraints = {
-        video: targetId
-          ? { deviceId: { exact: targetId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-          : { width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      // Queued: never overlaps another open (Windows webcams reject a second concurrent open).
+      const stream = await openCameraStream(videoConstraints(targetId || undefined, 1280, 720));
       if (seq !== cameraSeqRef.current) {
         // Stopped / restarted / unmounted while the permission prompt was open: release it.
-        stream.getTracks().forEach((track) => track.stop());
+        stopStream(stream);
         return;
       }
       streamRef.current = stream;
@@ -127,21 +123,39 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     } catch (err: any) {
       if (seq !== cameraSeqRef.current) return;
       console.warn('Webcam not accessible:', err);
-      setErrorMsg(
-        isZh
-          ? '無法開啟攝影機（可點擊「載入專案樣本」或「上傳圖片」進行推論）'
-          : 'Cannot open camera. Click “Load Sample” or “Upload” to run inference.'
-      );
+      setErrorMsg(describeCameraError(err, isZh));
     }
   };
 
   const stopCamera = () => {
     cameraSeqRef.current += 1;
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      stopStream(streamRef.current);
       streamRef.current = null;
     }
   };
+
+  // Live preview while inference is not running: show the camera feed so the user can aim it and
+  // draw an ROI before pressing Start (previously the canvas stayed blank until Start).
+  useEffect(() => {
+    if (feedMode !== 'webcam' || isRunning) return;
+    let raf = 0;
+    const tick = () => {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (canvas && ctx && video && video.readyState >= video.HAVE_CURRENT_DATA && video.videoWidth > 0) {
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [feedMode, isRunning]);
 
   useEffect(() => {
     if (feedMode === 'webcam') {
@@ -776,7 +790,18 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
             gap: '6px',
           }}
         >
-          <AlertTriangle size={14} /> {errorMsg}
+          <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1 }}>{errorMsg}</span>
+          {feedMode === 'webcam' && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => startCamera()}
+              style={{ flexShrink: 0 }}
+            >
+              {isZh ? '重試' : 'Retry'}
+            </button>
+          )}
         </div>
       )}
 
@@ -808,7 +833,13 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
             variant={feedMode === 'webcam' ? 'secondary' : 'ghost'}
             size="sm"
             icon={<Camera size={14} />}
-            onClick={() => setFeedMode('webcam')}
+            onClick={() => {
+              if (feedMode === 'webcam') {
+                if (!streamRef.current) startCamera();
+              } else {
+                setFeedMode('webcam');
+              }
+            }}
           >
             {isZh ? '攝影機' : 'Camera'}
           </Button>

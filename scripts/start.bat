@@ -2,7 +2,7 @@
 if not defined VF_PORT set "VF_PORT=8000"
 title VisionForge AI Studio - Launcher
 
-cd /d "%~dp0..\"
+cd /d "%~dp0"
 
 echo ==========================================================
 echo   VisionForge AI Studio - Launcher
@@ -10,8 +10,8 @@ echo   Local No-Code AI Vision Training and Inference Platform
 echo ==========================================================
 echo.
 
-if exist "%~dp0..\env_config.bat" (
-    call "%~dp0..\env_config.bat"
+if exist "%~dp0env_config.bat" (
+    call "%~dp0env_config.bat"
 ) else (
     if exist "D:\condaenv\cuda\python.exe" (
         set "PY_CMD=D:\condaenv\cuda\python.exe"
@@ -48,11 +48,11 @@ echo ==========================================================
 
 :: 1. Launch FastAPI Backend (Port %VF_PORT%)
 echo [1/2] Launching Backend Server on http://127.0.0.1:%VF_PORT% ...
-start "VisionForge - Backend (Port %VF_PORT%)" cmd /k "%~dp0run_backend.bat"
+start "VisionForge - Backend (Port %VF_PORT%)" cmd /k "%~dp0scripts\run_backend.bat"
 
 :: 2. Launch Vite Frontend (Port 5173)
 echo [2/2] Launching Frontend Server on http://localhost:5173 ...
-start "VisionForge - Frontend (Port 5173)" cmd /k "%~dp0run_frontend.bat"
+start "VisionForge - Frontend (Port 5173)" cmd /k "%~dp0scripts\run_frontend.bat"
 
 :: Open browser immediately while services initialize
 echo.
