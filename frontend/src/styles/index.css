@@ -1,716 +1,16 @@
 /* ==========================================================================
-   VisionForge 12-Theme Color Architecture (三色特調主題系統)
+   VisionForge styles
+   One layout (the "studio" layout: floating dark sidebar, flat rounded cards,
+   pill buttons) with several color themes. Color themes are defined in
+   section 13 as [data-theme="…"] blocks; Maker Studio is also the fallback.
    ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   0. 系統預設變數 (System Default Variables - Sky Blossom)
-   -------------------------------------------------------------------------- */
 :root {
-  --bg-base: #f7faff;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #eaf1fc;
-  --bg-surface-hover: #dbe7f9;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-card: rgba(255, 255, 255, 0.88);
-  --bg-overlay: rgba(18, 25, 42, 0.45);
-
-  --accent-primary: #3470cc;
-  --accent-primary-hover: #2659a8;
-  --accent-primary-glow: rgba(52, 112, 204, 0.2);
-
-  --accent-peach: #db5468;
-  --accent-peach-glow: rgba(219, 84, 104, 0.22);
-  --accent-taupe: #C9E0FF;
-  --accent-plum: #526079;
-  --accent-teal: #439ab8;
-  --accent-teal-glow: rgba(67, 154, 184, 0.22);
-
-  --accent-emerald: #3fa37c;
-  --accent-amber: #d98f3b;
-  --accent-rose: #db5468;
-  --accent-purple: #756dc4;
-
-  --gradient-brand: linear-gradient(135deg, #3470cc 0%, #7ea8f0 50%, #e0687b 100%);
-  --gradient-brand-text: linear-gradient(135deg, #131c2c 35%, #3470cc 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(52, 112, 204, 0.12) 0%, rgba(219, 84, 104, 0.12) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(52, 112, 204, 0.22) 0%, rgba(219, 84, 104, 0.18) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 250, 255, 0.92) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(52, 112, 204, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
-
-  --text-primary: #131c2c;
-  --text-secondary: #42526c;
-  --text-muted: #7488a7;
-  --text-accent: #3470cc;
-
-  --border-subtle: rgba(144, 172, 210, 0.22);
-  --border-card: rgba(144, 172, 210, 0.32);
-  --border-focus: #3470cc;
-  --border-highlight: rgba(52, 112, 204, 0.55);
-
-  --shadow-sm: 0 2px 10px rgba(19, 28, 44, 0.05);
-  --shadow-md: 0 8px 24px -4px rgba(19, 28, 44, 0.08);
-  --shadow-lg: 0 16px 40px -8px rgba(19, 28, 44, 0.12);
-  --shadow-glow: 0 0 20px rgba(52, 112, 204, 0.22);
-  --shadow-teal-glow: 0 0 20px rgba(219, 84, 104, 0.22);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(201, 224, 255, 0.38), rgba(254, 203, 204, 0.3) 45%, transparent 75%);
-
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
   --radius-full: 9999px;
 
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* --------------------------------------------------------------------------
-   1. 🍦 香草冰藍 (Vanilla Mist) - [#FFFFFF, #FFF2C9, #CBD7EF]
-   -------------------------------------------------------------------------- */
-[data-theme="vanilla-ice"] {
-  --bg-base: #f5f8fc;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #eef3f9;
-  --bg-surface-hover: #e0ebf6;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-card: rgba(255, 255, 255, 0.88);
-  --bg-overlay: rgba(20, 30, 48, 0.45);
-
-  --accent-primary: #4472b9;
-  --accent-primary-hover: #335f9e;
-  --accent-primary-glow: rgba(68, 114, 185, 0.2);
-
-  --accent-peach: #dca742;
-  --accent-peach-glow: rgba(220, 167, 66, 0.22);
-  --accent-taupe: #CBD7EF;
-  --accent-plum: #506584;
-  --accent-teal: #489cb5;
-  --accent-teal-glow: rgba(72, 156, 181, 0.22);
-
-  --accent-emerald: #439a7b;
-  --accent-amber: #dca742;
-  --accent-rose: #d66579;
-  --accent-purple: #7481c4;
-
-  --gradient-brand: linear-gradient(135deg, #4472b9 0%, #7fa2dc 50%, #dca742 100%);
-  --gradient-brand-text: linear-gradient(135deg, #162234 35%, #4472b9 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(68, 114, 185, 0.12) 0%, rgba(220, 167, 66, 0.12) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(68, 114, 185, 0.22) 0%, rgba(220, 167, 66, 0.18) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 248, 252, 0.92) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(68, 114, 185, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
-
-  --text-primary: #152233;
-  --text-secondary: #45576f;
-  --text-muted: #798da6;
-  --text-accent: #4472b9;
-
-  --border-subtle: rgba(140, 165, 199, 0.22);
-  --border-card: rgba(140, 165, 199, 0.32);
-  --border-focus: #4472b9;
-  --border-highlight: rgba(68, 114, 185, 0.55);
-
-  --shadow-sm: 0 2px 10px rgba(21, 34, 51, 0.05);
-  --shadow-md: 0 8px 24px -4px rgba(21, 34, 51, 0.08);
-  --shadow-lg: 0 16px 40px -8px rgba(21, 34, 51, 0.12);
-  --shadow-glow: 0 0 20px rgba(68, 114, 185, 0.22);
-  --shadow-teal-glow: 0 0 20px rgba(72, 156, 181, 0.22);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(203, 215, 239, 0.35), rgba(255, 242, 201, 0.25) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   2. 🍃 嫩綠丁香 (Pistachio Lilac) - [#FFFFFF, #EBFFC9, #E2CBFE]
-   -------------------------------------------------------------------------- */
-[data-theme="matcha-lilac"] {
-  --bg-base: #f9fbf6;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #f0f7e6;
-  --bg-surface-hover: #e3efd3;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-card: rgba(255, 255, 255, 0.88);
-  --bg-overlay: rgba(25, 20, 36, 0.45);
-
-  --accent-primary: #7b42c6;
-  --accent-primary-hover: #6531a8;
-  --accent-primary-glow: rgba(123, 66, 198, 0.2);
-
-  --accent-peach: #689622;
-  --accent-peach-glow: rgba(104, 150, 34, 0.22);
-  --accent-taupe: #E2CBFE;
-  --accent-plum: #523f66;
-  --accent-teal: #469688;
-  --accent-teal-glow: rgba(70, 150, 136, 0.22);
-
-  --accent-emerald: #689622;
-  --accent-amber: #cf8a38;
-  --accent-rose: #cf4f82;
-  --accent-purple: #7b42c6;
-
-  --gradient-brand: linear-gradient(135deg, #7b42c6 0%, #b082f0 50%, #76aa28 100%);
-  --gradient-brand-text: linear-gradient(135deg, #1b1626 35%, #7b42c6 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(123, 66, 198, 0.12) 0%, rgba(104, 150, 34, 0.12) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(123, 66, 198, 0.22) 0%, rgba(104, 150, 34, 0.18) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(249, 251, 246, 0.92) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(123, 66, 198, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
-
-  --text-primary: #1b1626;
-  --text-secondary: #4f4661;
-  --text-muted: #857b9c;
-  --text-accent: #7b42c6;
-
-  --border-subtle: rgba(162, 138, 199, 0.22);
-  --border-card: rgba(162, 138, 199, 0.32);
-  --border-focus: #7b42c6;
-  --border-highlight: rgba(123, 66, 198, 0.55);
-
-  --shadow-sm: 0 2px 10px rgba(27, 22, 38, 0.05);
-  --shadow-md: 0 8px 24px -4px rgba(27, 22, 38, 0.08);
-  --shadow-lg: 0 16px 40px -8px rgba(27, 22, 38, 0.12);
-  --shadow-glow: 0 0 20px rgba(123, 66, 198, 0.22);
-  --shadow-teal-glow: 0 0 20px rgba(104, 150, 34, 0.22);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(226, 203, 254, 0.35), rgba(235, 255, 201, 0.3) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   3. 🌸 晴空落櫻 (Sky Blossom) - [#FFFFFF, #C9E0FF, #FECBCC] - 系統預設主題
-   -------------------------------------------------------------------------- */
-[data-theme="sky-blossom"] {
-  --bg-base: #f7faff;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #eaf1fc;
-  --bg-surface-hover: #dbe7f9;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-card: rgba(255, 255, 255, 0.88);
-  --bg-overlay: rgba(18, 25, 42, 0.45);
-
-  --accent-primary: #3470cc;
-  --accent-primary-hover: #2659a8;
-  --accent-primary-glow: rgba(52, 112, 204, 0.2);
-
-  --accent-peach: #db5468;
-  --accent-peach-glow: rgba(219, 84, 104, 0.22);
-  --accent-taupe: #C9E0FF;
-  --accent-plum: #526079;
-  --accent-teal: #439ab8;
-  --accent-teal-glow: rgba(67, 154, 184, 0.22);
-
-  --accent-emerald: #3fa37c;
-  --accent-amber: #d98f3b;
-  --accent-rose: #db5468;
-  --accent-purple: #756dc4;
-
-  --gradient-brand: linear-gradient(135deg, #3470cc 0%, #7ea8f0 50%, #e0687b 100%);
-  --gradient-brand-text: linear-gradient(135deg, #131c2c 35%, #3470cc 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(52, 112, 204, 0.12) 0%, rgba(219, 84, 104, 0.12) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(52, 112, 204, 0.22) 0%, rgba(219, 84, 104, 0.18) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 250, 255, 0.92) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(52, 112, 204, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
-
-  --text-primary: #131c2c;
-  --text-secondary: #42526c;
-  --text-muted: #7488a7;
-  --text-accent: #3470cc;
-
-  --border-subtle: rgba(144, 172, 210, 0.22);
-  --border-card: rgba(144, 172, 210, 0.32);
-  --border-focus: #3470cc;
-  --border-highlight: rgba(52, 112, 204, 0.55);
-
-  --shadow-sm: 0 2px 10px rgba(19, 28, 44, 0.05);
-  --shadow-md: 0 8px 24px -4px rgba(19, 28, 44, 0.08);
-  --shadow-lg: 0 16px 40px -8px rgba(19, 28, 44, 0.12);
-  --shadow-glow: 0 0 20px rgba(52, 112, 204, 0.22);
-  --shadow-teal-glow: 0 0 20px rgba(219, 84, 104, 0.22);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(201, 224, 255, 0.38), rgba(254, 203, 204, 0.3) 45%, transparent 75%);
-
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
-
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* --------------------------------------------------------------------------
-   4. ❄️ 薄荷櫻雪 (Mint Sakura) - [#FFFFFF, #C9FFF2, #FECBCC]
-   -------------------------------------------------------------------------- */
-[data-theme="mint-sakura"] {
-  --bg-base: #f5fcfb;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #e6f7f3;
-  --bg-surface-hover: #d5efe8;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-card: rgba(255, 255, 255, 0.88);
-  --bg-overlay: rgba(16, 32, 29, 0.45);
-
-  --accent-primary: #159381;
-  --accent-primary-hover: #0e7768;
-  --accent-primary-glow: rgba(21, 147, 129, 0.2);
-
-  --accent-peach: #db5468;
-  --accent-peach-glow: rgba(219, 84, 104, 0.22);
-  --accent-taupe: #C9FFF2;
-  --accent-plum: #42635c;
-  --accent-teal: #159381;
-  --accent-teal-glow: rgba(21, 147, 129, 0.22);
-
-  --accent-emerald: #22996e;
-  --accent-amber: #d48b36;
-  --accent-rose: #db5468;
-  --accent-purple: #7966b8;
-
-  --gradient-brand: linear-gradient(135deg, #159381 0%, #4dd2bc 50%, #e06578 100%);
-  --gradient-brand-text: linear-gradient(135deg, #122421 35%, #159381 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(21, 147, 129, 0.12) 0%, rgba(219, 84, 104, 0.12) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(21, 147, 129, 0.22) 0%, rgba(219, 84, 104, 0.18) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 252, 251, 0.92) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(21, 147, 129, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
-
-  --text-primary: #122421;
-  --text-secondary: #3f5e57;
-  --text-muted: #72958e;
-  --text-accent: #159381;
-
-  --border-subtle: rgba(135, 196, 185, 0.24);
-  --border-card: rgba(135, 196, 185, 0.35);
-  --border-focus: #159381;
-  --border-highlight: rgba(21, 147, 129, 0.55);
-
-  --shadow-sm: 0 2px 10px rgba(18, 36, 33, 0.05);
-  --shadow-md: 0 8px 24px -4px rgba(18, 36, 33, 0.08);
-  --shadow-lg: 0 16px 40px -8px rgba(18, 36, 33, 0.12);
-  --shadow-glow: 0 0 20px rgba(21, 147, 129, 0.22);
-  --shadow-teal-glow: 0 0 20px rgba(219, 84, 104, 0.22);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(201, 255, 242, 0.4), rgba(254, 203, 204, 0.3) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   5. 🌱 初春長春花 (Spring Periwinkle) - [#FFFFFF, #E0FFC9, #CBD7FE]
-   -------------------------------------------------------------------------- */
-[data-theme="spring-periwinkle"] {
-  --bg-base: #f7fbf6;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #edf7e9;
-  --bg-surface-hover: #ddedd6;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-card: rgba(255, 255, 255, 0.88);
-  --bg-overlay: rgba(20, 28, 42, 0.45);
-
-  --accent-primary: #455bd4;
-  --accent-primary-hover: #3448b3;
-  --accent-primary-glow: rgba(69, 91, 212, 0.2);
-
-  --accent-peach: #579929;
-  --accent-peach-glow: rgba(87, 153, 41, 0.22);
-  --accent-taupe: #CBD7FE;
-  --accent-plum: #49546f;
-  --accent-teal: #4196b0;
-  --accent-teal-glow: rgba(65, 150, 176, 0.22);
-
-  --accent-emerald: #579929;
-  --accent-amber: #d68f38;
-  --accent-rose: #d64d68;
-  --accent-purple: #455bd4;
-
-  --gradient-brand: linear-gradient(135deg, #455bd4 0%, #7e91ea 50%, #68a83a 100%);
-  --gradient-brand-text: linear-gradient(135deg, #161d2d 35%, #455bd4 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(69, 91, 212, 0.12) 0%, rgba(87, 153, 41, 0.12) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(69, 91, 212, 0.22) 0%, rgba(87, 153, 41, 0.18) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 251, 246, 0.92) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(69, 91, 212, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
-
-  --text-primary: #161d2d;
-  --text-secondary: #48546b;
-  --text-muted: #7987a3;
-  --text-accent: #455bd4;
-
-  --border-subtle: rgba(148, 168, 214, 0.22);
-  --border-card: rgba(148, 168, 214, 0.32);
-  --border-focus: #455bd4;
-  --border-highlight: rgba(69, 91, 212, 0.55);
-
-  --shadow-sm: 0 2px 10px rgba(22, 29, 45, 0.05);
-  --shadow-md: 0 8px 24px -4px rgba(22, 29, 45, 0.08);
-  --shadow-lg: 0 16px 40px -8px rgba(22, 29, 45, 0.12);
-  --shadow-glow: 0 0 20px rgba(69, 91, 212, 0.22);
-  --shadow-teal-glow: 0 0 20px rgba(87, 153, 41, 0.22);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(203, 215, 254, 0.35), rgba(224, 255, 201, 0.3) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   6. 🍬 糖霜青晶 (Bubblegum Cyan) - [#FFFFFF, #FFC9ED, #C8FCFE]
-   -------------------------------------------------------------------------- */
-[data-theme="bubblegum-cyan"] {
-  --bg-base: #f7fcfe;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #ebf8fb;
-  --bg-surface-hover: #dcf1f7;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-card: rgba(255, 255, 255, 0.88);
-  --bg-overlay: rgba(28, 20, 36, 0.45);
-
-  --accent-primary: #1598ad;
-  --accent-primary-hover: #0e7d8f;
-  --accent-primary-glow: rgba(21, 152, 173, 0.2);
-
-  --accent-peach: #c94493;
-  --accent-peach-glow: rgba(201, 68, 147, 0.22);
-  --accent-taupe: #C8FCFE;
-  --accent-plum: #624b5c;
-  --accent-teal: #1598ad;
-  --accent-teal-glow: rgba(21, 152, 173, 0.22);
-
-  --accent-emerald: #36a482;
-  --accent-amber: #d48e3d;
-  --accent-rose: #c94493;
-  --accent-purple: #8655b8;
-
-  --gradient-brand: linear-gradient(135deg, #1598ad 0%, #5ad4e8 50%, #d655a2 100%);
-  --gradient-brand-text: linear-gradient(135deg, #1c272a 35%, #1598ad 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(21, 152, 173, 0.12) 0%, rgba(201, 68, 147, 0.12) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(21, 152, 173, 0.22) 0%, rgba(201, 68, 147, 0.18) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 252, 254, 0.92) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(21, 152, 173, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
-
-  --text-primary: #1c272a;
-  --text-secondary: #4f6168;
-  --text-muted: #80969f;
-  --text-accent: #1598ad;
-
-  --border-subtle: rgba(145, 195, 205, 0.22);
-  --border-card: rgba(145, 195, 205, 0.32);
-  --border-focus: #1598ad;
-  --border-highlight: rgba(21, 152, 173, 0.55);
-
-  --shadow-sm: 0 2px 10px rgba(28, 39, 42, 0.05);
-  --shadow-md: 0 8px 24px -4px rgba(28, 39, 42, 0.08);
-  --shadow-lg: 0 16px 40px -8px rgba(28, 39, 42, 0.12);
-  --shadow-glow: 0 0 20px rgba(21, 152, 173, 0.22);
-  --shadow-teal-glow: 0 0 20px rgba(201, 68, 147, 0.22);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(200, 252, 254, 0.4), rgba(255, 201, 237, 0.3) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   7. 🌌 星夜靛藍 (Indigo Starlight) - [#FFCEE3, #678EC9, #262277]
-   -------------------------------------------------------------------------- */
-[data-theme="indigo-starlight"] {
-  --bg-base: #0c0a22;
-  --bg-surface: #15123a;
-  --bg-surface-elevated: #1f1b52;
-  --bg-surface-hover: #2c276e;
-  --bg-glass: rgba(21, 18, 58, 0.88);
-  --bg-glass-card: rgba(31, 27, 82, 0.72);
-  --bg-overlay: rgba(6, 5, 16, 0.82);
-
-  --accent-primary: #678EC9;
-  --accent-primary-hover: #527bb8;
-  --accent-primary-glow: rgba(103, 142, 201, 0.28);
-
-  --accent-peach: #FFCEE3;
-  --accent-peach-glow: rgba(255, 206, 227, 0.28);
-  --accent-taupe: #8878b3;
-  --accent-plum: #322d63;
-  --accent-teal: #78a5e8;
-  --accent-teal-glow: rgba(120, 165, 232, 0.25);
-
-  --accent-emerald: #4ecdc4;
-  --accent-amber: #f6b26b;
-  --accent-rose: #FFCEE3;
-  --accent-purple: #9585d9;
-
-  --gradient-brand: linear-gradient(135deg, #678EC9 0%, #a476c8 50%, #FFCEE3 100%);
-  --gradient-brand-text: linear-gradient(135deg, #ffffff 35%, #FFCEE3 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(103, 142, 201, 0.16) 0%, rgba(255, 206, 227, 0.16) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(103, 142, 201, 0.28) 0%, rgba(255, 206, 227, 0.2) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(44, 39, 110, 0.5) 0%, rgba(21, 18, 58, 0.88) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(103, 142, 201, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
-
-  --text-primary: #f7f5ff;
-  --text-secondary: #b6b0d9;
-  --text-muted: #79739e;
-  --text-accent: #678EC9;
-
-  --border-subtle: rgba(103, 142, 201, 0.2);
-  --border-card: rgba(103, 142, 201, 0.3);
-  --border-focus: #678EC9;
-  --border-highlight: rgba(103, 142, 201, 0.6);
-
-  --shadow-sm: 0 2px 10px rgba(6, 5, 16, 0.5);
-  --shadow-md: 0 8px 24px -4px rgba(6, 5, 16, 0.65);
-  --shadow-lg: 0 16px 40px -8px rgba(6, 5, 16, 0.8);
-  --shadow-glow: 0 0 25px rgba(103, 142, 201, 0.28);
-  --shadow-teal-glow: 0 0 25px rgba(255, 206, 227, 0.25);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(103, 142, 201, 0.16), rgba(255, 206, 227, 0.1) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   8. 🌙 暮光極夜 (Amber Abyss) - [#FFE28D, #FAC1A8, #13193D]
-   -------------------------------------------------------------------------- */
-[data-theme="amber-abyss"] {
-  --bg-base: #090c1f;
-  --bg-surface: #101533;
-  --bg-surface-elevated: #18204b;
-  --bg-surface-hover: #222c66;
-  --bg-glass: rgba(16, 21, 51, 0.88);
-  --bg-glass-card: rgba(24, 32, 75, 0.72);
-  --bg-overlay: rgba(4, 6, 15, 0.82);
-
-  --accent-primary: #FFE28D;
-  --accent-primary-hover: #f0cf67;
-  --accent-primary-glow: rgba(255, 226, 141, 0.28);
-
-  --accent-peach: #FAC1A8;
-  --accent-peach-glow: rgba(250, 193, 168, 0.28);
-  --accent-taupe: #FAC1A8;
-  --accent-plum: #2c325c;
-  --accent-teal: #6392c9;
-  --accent-teal-glow: rgba(99, 146, 201, 0.25);
-
-  --accent-emerald: #47cca5;
-  --accent-amber: #FFE28D;
-  --accent-rose: #f28b7e;
-  --accent-purple: #8679ba;
-
-  --gradient-brand: linear-gradient(135deg, #FFE28D 0%, #FAC1A8 50%, #5d75b3 100%);
-  --gradient-brand-text: linear-gradient(135deg, #ffffff 35%, #FFE28D 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(255, 226, 141, 0.16) 0%, rgba(250, 193, 168, 0.16) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(255, 226, 141, 0.28) 0%, rgba(250, 193, 168, 0.2) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(34, 44, 102, 0.5) 0%, rgba(16, 21, 51, 0.88) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(255, 226, 141, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
-
-  --text-primary: #fffdf5;
-  --text-secondary: #cfc7e0;
-  --text-muted: #857c9c;
-  --text-accent: #FFE28D;
-
-  --border-subtle: rgba(250, 193, 168, 0.2);
-  --border-card: rgba(250, 193, 168, 0.3);
-  --border-focus: #FFE28D;
-  --border-highlight: rgba(255, 226, 141, 0.6);
-
-  --shadow-sm: 0 2px 10px rgba(4, 6, 15, 0.5);
-  --shadow-md: 0 8px 24px -4px rgba(4, 6, 15, 0.65);
-  --shadow-lg: 0 16px 40px -8px rgba(4, 6, 15, 0.8);
-  --shadow-glow: 0 0 25px rgba(255, 226, 141, 0.28);
-  --shadow-teal-glow: 0 0 25px rgba(250, 193, 168, 0.25);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(255, 226, 141, 0.15), rgba(250, 193, 168, 0.1) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   9. 🪷 湖水青櫻 (Lagoon Bloom) - [#F9D2E4, #67C9B5, #007E79]
-   -------------------------------------------------------------------------- */
-[data-theme="lagoon-bloom"] {
-  --bg-base: #031413;
-  --bg-surface: #072120;
-  --bg-surface-elevated: #0e3230;
-  --bg-surface-hover: #164643;
-  --bg-glass: rgba(7, 33, 32, 0.88);
-  --bg-glass-card: rgba(14, 50, 48, 0.72);
-  --bg-overlay: rgba(2, 9, 8, 0.82);
-
-  --accent-primary: #67C9B5;
-  --accent-primary-hover: #4fb8a2;
-  --accent-primary-glow: rgba(103, 201, 181, 0.3);
-
-  --accent-peach: #F9D2E4;
-  --accent-peach-glow: rgba(249, 210, 228, 0.28);
-  --accent-taupe: #007E79;
-  --accent-plum: #1c4542;
-  --accent-teal: #67C9B5;
-  --accent-teal-glow: rgba(103, 201, 181, 0.3);
-
-  --accent-emerald: #5edbbd;
-  --accent-amber: #f2ba68;
-  --accent-rose: #F9D2E4;
-  --accent-purple: #b592cf;
-
-  --gradient-brand: linear-gradient(135deg, #67C9B5 0%, #007E79 50%, #F9D2E4 100%);
-  --gradient-brand-text: linear-gradient(135deg, #ffffff 35%, #67C9B5 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(103, 201, 181, 0.16) 0%, rgba(249, 210, 228, 0.16) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(103, 201, 181, 0.28) 0%, rgba(249, 210, 228, 0.2) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(22, 70, 67, 0.5) 0%, rgba(7, 33, 32, 0.88) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(103, 201, 181, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
-
-  --text-primary: #edfbf9;
-  --text-secondary: #9ecec8;
-  --text-muted: #5e9791;
-  --text-accent: #67C9B5;
-
-  --border-subtle: rgba(103, 201, 181, 0.2);
-  --border-card: rgba(103, 201, 181, 0.3);
-  --border-focus: #67C9B5;
-  --border-highlight: rgba(103, 201, 181, 0.6);
-
-  --shadow-sm: 0 2px 10px rgba(2, 9, 8, 0.5);
-  --shadow-md: 0 8px 24px -4px rgba(2, 9, 8, 0.65);
-  --shadow-lg: 0 16px 40px -8px rgba(2, 9, 8, 0.8);
-  --shadow-glow: 0 0 25px rgba(103, 201, 181, 0.28);
-  --shadow-teal-glow: 0 0 25px rgba(249, 210, 228, 0.25);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(103, 201, 181, 0.16), rgba(249, 210, 228, 0.1) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   10. ⚡ 電光極光 (Cyber Pulse) - [#FF128D, #21A7CF, #D4FEFA]
-   -------------------------------------------------------------------------- */
-[data-theme="cyber-pulse"] {
-  --bg-base: #070c12;
-  --bg-surface: #0e1722;
-  --bg-surface-elevated: #152334;
-  --bg-surface-hover: #1e324a;
-  --bg-glass: rgba(14, 23, 34, 0.88);
-  --bg-glass-card: rgba(21, 35, 52, 0.72);
-  --bg-overlay: rgba(3, 5, 8, 0.85);
-
-  --accent-primary: #21A7CF;
-  --accent-primary-hover: #1793b8;
-  --accent-primary-glow: rgba(33, 167, 207, 0.35);
-
-  --accent-peach: #FF128D;
-  --accent-peach-glow: rgba(255, 18, 141, 0.35);
-  --accent-taupe: #D4FEFA;
-  --accent-plum: #20172e;
-  --accent-teal: #21A7CF;
-  --accent-teal-glow: rgba(33, 167, 207, 0.35);
-
-  --accent-emerald: #2fe0b8;
-  --accent-amber: #ffbb33;
-  --accent-rose: #FF128D;
-  --accent-purple: #a634cc;
-
-  --gradient-brand: linear-gradient(135deg, #21A7CF 0%, #9e289e 50%, #FF128D 100%);
-  --gradient-brand-text: linear-gradient(135deg, #D4FEFA 30%, #21A7CF 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(33, 167, 207, 0.16) 0%, rgba(255, 18, 141, 0.16) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(33, 167, 207, 0.3) 0%, rgba(255, 18, 141, 0.25) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(30, 50, 74, 0.5) 0%, rgba(14, 23, 34, 0.88) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(33, 167, 207, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
-
-  --text-primary: #f0fcff;
-  --text-secondary: #9ac2d4;
-  --text-muted: #598094;
-  --text-accent: #21A7CF;
-
-  --border-subtle: rgba(33, 167, 207, 0.22);
-  --border-card: rgba(33, 167, 207, 0.32);
-  --border-focus: #21A7CF;
-  --border-highlight: rgba(33, 167, 207, 0.65);
-
-  --shadow-sm: 0 2px 10px rgba(3, 5, 8, 0.6);
-  --shadow-md: 0 8px 24px -4px rgba(3, 5, 8, 0.75);
-  --shadow-lg: 0 16px 40px -8px rgba(3, 5, 8, 0.9);
-  --shadow-glow: 0 0 25px rgba(33, 167, 207, 0.32);
-  --shadow-teal-glow: 0 0 25px rgba(255, 18, 141, 0.32);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(33, 167, 207, 0.16), rgba(255, 18, 141, 0.12) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   11. 🌲 幽林蘭影 (Forest Orchid) - [#FEDFCB, #106816, #FCC2EB]
-   -------------------------------------------------------------------------- */
-[data-theme="forest-orchid"] {
-  --bg-base: #061308;
-  --bg-surface: #0d2110;
-  --bg-surface-elevated: #15331a;
-  --bg-surface-hover: #1e4726;
-  --bg-glass: rgba(13, 33, 16, 0.88);
-  --bg-glass-card: rgba(21, 51, 26, 0.72);
-  --bg-overlay: rgba(3, 9, 4, 0.82);
-
-  --accent-primary: #3db84b;
-  --accent-primary-hover: #319e3e;
-  --accent-primary-glow: rgba(61, 184, 75, 0.3);
-
-  --accent-peach: #FCC2EB;
-  --accent-peach-glow: rgba(252, 194, 235, 0.28);
-  --accent-taupe: #FEDFCB;
-  --accent-plum: #1c3620;
-  --accent-teal: #3db84b;
-  --accent-teal-glow: rgba(61, 184, 75, 0.3);
-
-  --accent-emerald: #3db84b;
-  --accent-amber: #e8a864;
-  --accent-rose: #FCC2EB;
-  --accent-purple: #c48ec9;
-
-  --gradient-brand: linear-gradient(135deg, #3db84b 0%, #106816 50%, #FCC2EB 100%);
-  --gradient-brand-text: linear-gradient(135deg, #ffffff 35%, #FCC2EB 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(61, 184, 75, 0.16) 0%, rgba(252, 194, 235, 0.16) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(61, 184, 75, 0.28) 0%, rgba(252, 194, 235, 0.2) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(30, 71, 38, 0.5) 0%, rgba(13, 33, 16, 0.88) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(61, 184, 75, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
-
-  --text-primary: #f5fcf6;
-  --text-secondary: #afd4b3;
-  --text-muted: #6a9b70;
-  --text-accent: #3db84b;
-
-  --border-subtle: rgba(252, 194, 235, 0.2);
-  --border-card: rgba(252, 194, 235, 0.28);
-  --border-focus: #3db84b;
-  --border-highlight: rgba(61, 184, 75, 0.6);
-
-  --shadow-sm: 0 2px 10px rgba(3, 9, 4, 0.5);
-  --shadow-md: 0 8px 24px -4px rgba(3, 9, 4, 0.65);
-  --shadow-lg: 0 16px 40px -8px rgba(3, 9, 4, 0.8);
-  --shadow-glow: 0 0 25px rgba(61, 184, 75, 0.28);
-  --shadow-teal-glow: 0 0 25px rgba(252, 194, 235, 0.25);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(16, 104, 22, 0.2), rgba(252, 194, 235, 0.12) 45%, transparent 75%);
-}
-
-/* --------------------------------------------------------------------------
-   12. 🔮 幻紫夜魅 (Royal Amethyst) - [#FEDFCB, #391A77, #FCC2EB]
-   -------------------------------------------------------------------------- */
-[data-theme="royal-amethyst"] {
-  --bg-base: #0d0618;
-  --bg-surface: #190c2e;
-  --bg-surface-elevated: #261444;
-  --bg-surface-hover: #351c5e;
-  --bg-glass: rgba(25, 12, 46, 0.88);
-  --bg-glass-card: rgba(38, 20, 68, 0.72);
-  --bg-overlay: rgba(6, 3, 12, 0.82);
-
-  --accent-primary: #9b5de5;
-  --accent-primary-hover: #8644d6;
-  --accent-primary-glow: rgba(155, 93, 229, 0.3);
-
-  --accent-peach: #FCC2EB;
-  --accent-peach-glow: rgba(252, 194, 235, 0.28);
-  --accent-taupe: #FEDFCB;
-  --accent-plum: #391A77;
-  --accent-teal: #7e74dc;
-  --accent-teal-glow: rgba(126, 116, 220, 0.28);
-
-  --accent-emerald: #43c9a0;
-  --accent-amber: #e8a864;
-  --accent-rose: #FCC2EB;
-  --accent-purple: #9b5de5;
-
-  --gradient-brand: linear-gradient(135deg, #9b5de5 0%, #391A77 50%, #FCC2EB 100%);
-  --gradient-brand-text: linear-gradient(135deg, #ffffff 35%, #FCC2EB 100%);
-  --gradient-brand-subtle: linear-gradient(135deg, rgba(155, 93, 229, 0.16) 0%, rgba(252, 194, 235, 0.16) 100%);
-  --gradient-brand-glow: linear-gradient(135deg, rgba(155, 93, 229, 0.28) 0%, rgba(252, 194, 235, 0.2) 100%);
-  --gradient-card: linear-gradient(180deg, rgba(53, 28, 94, 0.5) 0%, rgba(25, 12, 46, 0.88) 100%);
-  --gradient-surface: linear-gradient(180deg, rgba(155, 93, 229, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
-
-  --text-primary: #faf5ff;
-  --text-secondary: #c9badb;
-  --text-muted: #85749c;
-  --text-accent: #9b5de5;
-
-  --border-subtle: rgba(252, 194, 235, 0.2);
-  --border-card: rgba(252, 194, 235, 0.28);
-  --border-focus: #9b5de5;
-  --border-highlight: rgba(155, 93, 229, 0.6);
-
-  --shadow-sm: 0 2px 10px rgba(6, 3, 12, 0.5);
-  --shadow-md: 0 8px 24px -4px rgba(6, 3, 12, 0.65);
-  --shadow-lg: 0 16px 40px -8px rgba(6, 3, 12, 0.8);
-  --shadow-glow: 0 0 25px rgba(155, 93, 229, 0.28);
-  --shadow-teal-glow: 0 0 25px rgba(252, 194, 235, 0.28);
-  --ambient-glow: radial-gradient(circle 850px at 50% -200px, rgba(57, 26, 119, 0.25), rgba(252, 194, 235, 0.12) 45%, transparent 75%);
 }
 
 /* Base Reset & Global Styles */
@@ -721,7 +21,7 @@
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Outfit', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-base);
   color: var(--text-primary);
   line-height: 1.55;
@@ -729,19 +29,6 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Organic Ambient Warm Glow */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 600px;
-  background: var(--ambient-glow);
-  pointer-events: none;
-  z-index: 0;
 }
 
 #root {
@@ -1342,17 +629,16 @@ select option {
 }
 
 /* ==========================================================================
-   13. 🛠️ 工作室版型 (Studio layout) — flat, rounded, floating dark sidebar
-   The layout is shared by every theme whose registry entry has layout: 'studio'
-   (ProjectContext sets <html data-layout="studio">). Each studio theme only
-   defines colors; the rules under [data-layout="studio"] read them from these
-   extra tokens:
-     --studio-sidebar-bg / -text / -muted   floating sidebar
-     --studio-highlight / --studio-highlight-ink   "next step" card, icons
-     --studio-ink                           outline buttons
+   13. Color themes + studio layout rules
+   Each theme only defines colors; the shared rules below read them from the
+   base tokens plus:
+     --studio-sidebar-bg / -text / -muted        floating sidebar
+     --studio-highlight / --studio-highlight-ink  "next step" card, icons
+     --studio-ink                                 outline buttons
    ========================================================================== */
 
-/* ---- 13a. 創客工作室 Maker Studio: violet + lime ---- */
+/* ---- 13a. 創客工作室 Maker Studio: violet + lime (also the fallback) ---- */
+:root,
 [data-theme="maker-studio"] {
   --bg-base: #f4f2ff;
   --bg-surface: #ffffff;
@@ -1487,8 +773,8 @@ select option {
   --studio-ink: #f1f0fa;
 }
 
-/* ---- Shared studio tokens (derived from the colors above) ---- */
-[data-layout="studio"] {
+/* ---- Shared tokens (derived from the theme colors above) ---- */
+:root {
   --bg-glass: var(--bg-surface);
   --bg-glass-card: var(--bg-surface);
   --bg-overlay: rgba(10, 8, 20, 0.55);
@@ -1516,7 +802,6 @@ select option {
   --shadow-lg: 0 18px 44px rgba(10, 8, 20, 0.18);
   --shadow-glow: 0 0 0 3px var(--accent-primary-glow);
   --shadow-teal-glow: 0 0 0 3px rgba(15, 123, 108, 0.16);
-  --ambient-glow: none;
 
   --radius-xs: 8px;
   --radius-sm: 14px;
@@ -1533,99 +818,95 @@ select option {
   --next-step-border: transparent;
 }
 /* Light studio themes get stronger status colors than the dark one. */
-[data-layout="studio"]:not([data-theme="midnight-studio"]) {
+:root:not([data-theme="midnight-studio"]) {
   --accent-emerald: #2b8a3e;
   --accent-amber: #b35400;
   --accent-rose: #c92a2a;
 }
 
-[data-layout="studio"] body {
-  font-family: 'Outfit', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-[data-layout="studio"] body::before { display: none; }
-[data-layout="studio"] ::-webkit-scrollbar-thumb { background: var(--border-highlight); }
+::-webkit-scrollbar-thumb { background: var(--border-highlight); }
 
 /* Floating dark sidebar + header card */
-[data-layout="studio"] .app-container { padding: 16px; gap: 16px; box-sizing: border-box; }
-[data-layout="studio"] .app-sidebar {
+.app-container { padding: 16px; gap: 16px; box-sizing: border-box; }
+.app-sidebar {
   background: var(--studio-sidebar-bg);
   border-right: 0;
   border-radius: 24px;
   color: #ffffff;
 }
-[data-layout="studio"] .sidebar-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
-[data-layout="studio"] .brand-icon-box {
+.sidebar-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
+.brand-icon-box {
   background: var(--studio-highlight);
   color: var(--studio-highlight-ink);
   box-shadow: none;
   border-radius: 12px;
 }
-[data-layout="studio"] .brand-name {
+.brand-name {
   background: none;
   -webkit-text-fill-color: #ffffff;
   color: #ffffff;
   font-family: 'Outfit', sans-serif;
 }
-[data-layout="studio"] .brand-tag { background: rgba(255, 255, 255, 0.1); color: var(--studio-highlight); border: 0; }
-[data-layout="studio"] .nav-section-title { color: var(--studio-sidebar-muted); }
-[data-layout="studio"] .nav-section-badge {
+.brand-tag { background: rgba(255, 255, 255, 0.1); color: var(--studio-highlight); border: 0; }
+.nav-section-title { color: var(--studio-sidebar-muted); }
+.nav-section-badge {
   background: rgba(255, 255, 255, 0.08) !important;
   color: var(--studio-sidebar-text) !important;
 }
-[data-layout="studio"] .nav-item-btn {
+.nav-item-btn {
   color: var(--studio-sidebar-text);
   border-radius: 14px;
   padding: 0.7rem 0.9rem;
   font-size: 0.92rem;
 }
-[data-layout="studio"] .nav-item-btn:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
-[data-layout="studio"] .nav-item-btn.active {
+.nav-item-btn:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+.nav-item-btn.active {
   background: var(--accent-primary);
   border-color: transparent;
   color: #ffffff;
   font-weight: 700;
 }
-[data-layout="studio"] .nav-item-btn.active svg { color: var(--studio-highlight); }
-[data-layout="studio"] .nav-item-badge { background: rgba(255, 255, 255, 0.1); color: var(--studio-highlight); }
-[data-layout="studio"] .sidebar-footer { background: transparent; border-top-color: rgba(255, 255, 255, 0.08); }
+.nav-item-btn.active svg { color: var(--studio-highlight); }
+.nav-item-badge { background: rgba(255, 255, 255, 0.1); color: var(--studio-highlight); }
+.sidebar-footer { background: transparent; border-top-color: rgba(255, 255, 255, 0.08); }
 
-[data-layout="studio"] .app-main { background: transparent; gap: 16px; }
-[data-layout="studio"] .app-header { border-bottom: 0; border-radius: 20px; box-shadow: var(--shadow-sm); }
-[data-layout="studio"] .app-content-body { padding: 0.5rem 0.25rem 1.5rem; }
+.app-main { background: transparent; gap: 16px; }
+.app-header { border-bottom: 0; border-radius: 20px; box-shadow: var(--shadow-sm); }
+.app-content-body { padding: 0.5rem 0.25rem 1.5rem; }
 
 /* Flat cards */
-[data-layout="studio"] .glass-card {
+.glass-card {
   background: var(--bg-surface);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-color: transparent;
   box-shadow: var(--shadow-sm);
 }
-[data-layout="studio"] .glass-card:hover { border-color: transparent; box-shadow: var(--shadow-md); }
-[data-layout="studio"] .glass-card-interactive:hover { border-color: var(--accent-primary); box-shadow: var(--shadow-md); }
+.glass-card:hover { border-color: transparent; box-shadow: var(--shadow-md); }
+.glass-card-interactive:hover { border-color: var(--accent-primary); box-shadow: var(--shadow-md); }
 
 /* Pill buttons */
-[data-layout="studio"] .btn { border-radius: 9999px; font-weight: 700; }
-[data-layout="studio"] .btn-primary { background: var(--accent-primary); color: #ffffff; box-shadow: none; }
-[data-layout="studio"] .btn-primary:hover { background: var(--accent-primary-hover); opacity: 1; transform: none; box-shadow: none; }
-[data-layout="studio"] .btn-secondary { background: var(--bg-surface); border: 2px solid var(--studio-ink); color: var(--studio-ink); }
-[data-layout="studio"] .btn-secondary:hover { background: var(--bg-surface-elevated); border-color: var(--studio-ink); }
-[data-layout="studio"] .btn-danger { background: transparent; border: 2px solid var(--accent-rose); color: var(--accent-rose); }
-[data-layout="studio"] .btn-danger:hover { background: rgba(201, 42, 42, 0.1); }
+.btn { border-radius: 9999px; font-weight: 700; }
+.btn-primary { background: var(--accent-primary); color: #ffffff; box-shadow: none; }
+.btn-primary:hover { background: var(--accent-primary-hover); opacity: 1; transform: none; box-shadow: none; }
+.btn-secondary { background: var(--bg-surface); border: 2px solid var(--studio-ink); color: var(--studio-ink); }
+.btn-secondary:hover { background: var(--bg-surface-elevated); border-color: var(--studio-ink); }
+.btn-danger { background: transparent; border: 2px solid var(--accent-rose); color: var(--accent-rose); }
+.btn-danger:hover { background: rgba(201, 42, 42, 0.1); }
 
 /* Inputs & modals */
-[data-layout="studio"] .form-input,
-[data-layout="studio"] .form-textarea,
-[data-layout="studio"] .form-select { background: var(--bg-surface); border: 2px solid var(--border-subtle); }
-[data-layout="studio"] .modal-overlay { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
-[data-layout="studio"] .modal-container { border: 0; }
-[data-layout="studio"] .modal-footer { background: var(--bg-base); }
-[data-layout="studio"] .badge-emerald { background: rgba(43, 138, 62, 0.12); color: var(--accent-emerald); border-color: transparent; }
-[data-layout="studio"] .badge-amber { background: rgba(230, 119, 0, 0.12); color: var(--accent-amber); border-color: transparent; }
+.form-input,
+.form-textarea,
+.form-select { background: var(--bg-surface); border: 2px solid var(--border-subtle); }
+.modal-overlay { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+.modal-container { border: 0; }
+.modal-footer { background: var(--bg-base); }
+.badge-emerald { background: rgba(43, 138, 62, 0.12); color: var(--accent-emerald); border-color: transparent; }
+.badge-amber { background: rgba(230, 119, 0, 0.12); color: var(--accent-amber); border-color: transparent; }
 
 /* ==========================================================================
-   Dashboard "next step" card + pipeline steps (all themes; studio layouts
-   set the --next-step-* tokens above)
+   Dashboard "next step" card + pipeline steps (themes set the
+   --next-step-* tokens above)
    ========================================================================== */
 .vf-next-step {
   background: var(--next-step-bg, var(--gradient-brand-subtle));

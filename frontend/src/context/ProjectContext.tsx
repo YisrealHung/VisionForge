@@ -60,16 +60,8 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const t = translations[language];
 
-  // data-theme selects colors; data-layout="studio" switches on the shared studio layout rules.
   const applyThemeAttributes = (id: AppTheme) => {
-    const root = document.documentElement;
-    root.setAttribute('data-theme', id);
-    const def = THEME_REGISTRY.find((t) => t.id === id);
-    if (def?.layout) {
-      root.setAttribute('data-layout', def.layout);
-    } else {
-      root.removeAttribute('data-layout');
-    }
+    document.documentElement.setAttribute('data-theme', id);
   };
 
   const setTheme = (newTheme: AppTheme) => {
