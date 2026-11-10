@@ -332,6 +332,11 @@ export interface ApiServerStatus {
 
 export type AppTheme = 
   | 'maker-studio'
+  | 'harbor-studio'
+  | 'forest-studio'
+  | 'coral-studio'
+  | 'berry-studio'
+  | 'midnight-studio'
   | 'vanilla-ice'
   | 'matcha-lilac'
   | 'sky-blossom'
@@ -359,6 +364,8 @@ export interface ThemeDefinition {
   accentSample: string;
   description: string;
   tag?: string;
+  /** 'studio' = flat rounded layout with floating sidebar (sets <html data-layout="studio">). */
+  layout?: 'studio';
 }
 
 export const THEME_REGISTRY: ThemeDefinition[] = [
@@ -369,14 +376,95 @@ export const THEME_REGISTRY: ThemeDefinition[] = [
     nameEn: 'Maker Studio',
     subtitle: '墨紫側欄 · 萊姆亮點',
     category: 'recommended',
-    categoryLabel: '推薦',
+    categoryLabel: '工作室',
     mode: 'light',
+    layout: 'studio',
     palette: ['#F4F2FF', '#5B3FD9', '#C6F432'],
     bgSample: '#f4f2ff',
     cardSample: '#ffffff',
     accentSample: '#5b3fd9',
     description: '平面圓角卡片、深墨紫浮動側欄與萊姆綠「下一步」提示，清楚引導每個操作步驟，適合教學與初學者。',
     tag: '系統預設',
+  },
+  {
+    id: 'harbor-studio',
+    name: '海港工作室',
+    nameEn: 'Harbor Studio',
+    subtitle: '深海藍側欄 · 向日葵黃',
+    category: 'recommended',
+    categoryLabel: '工作室',
+    mode: 'light',
+    layout: 'studio',
+    palette: ['#EEF5FB', '#0B6FB8', '#FFD43B'],
+    bgSample: '#eef5fb',
+    cardSample: '#ffffff',
+    accentSample: '#0b6fb8',
+    description: '沉穩海軍藍搭配明亮向日葵黃，專業清爽，適合產線與企業展示。',
+    tag: '沉穩專業',
+  },
+  {
+    id: 'forest-studio',
+    name: '森林工作室',
+    nameEn: 'Forest Studio',
+    subtitle: '松林綠側欄 · 杏桃橘',
+    category: 'recommended',
+    categoryLabel: '工作室',
+    mode: 'light',
+    layout: 'studio',
+    palette: ['#EFF5EE', '#1F7A4D', '#FFB347'],
+    bgSample: '#eff5ee',
+    cardSample: '#ffffff',
+    accentSample: '#1f7a4d',
+    description: '松林深綠與溫暖杏桃橘，自然穩定，長時間標註也不刺眼。',
+    tag: '自然舒適',
+  },
+  {
+    id: 'coral-studio',
+    name: '珊瑚工作室',
+    nameEn: 'Coral Studio',
+    subtitle: '可可棕側欄 · 湖水綠',
+    category: 'recommended',
+    categoryLabel: '工作室',
+    mode: 'light',
+    layout: 'studio',
+    palette: ['#FFF4EF', '#C2410C', '#66E3D9'],
+    bgSample: '#fff4ef',
+    cardSample: '#ffffff',
+    accentSample: '#c2410c',
+    description: '陶土珊瑚橘配湖水綠點綴，溫暖有活力，適合展示與教學活動。',
+    tag: '溫暖活力',
+  },
+  {
+    id: 'berry-studio',
+    name: '莓果工作室',
+    nameEn: 'Berry Studio',
+    subtitle: '莓果紫紅側欄 · 芥末黃',
+    category: 'recommended',
+    categoryLabel: '工作室',
+    mode: 'light',
+    layout: 'studio',
+    palette: ['#FFF0F6', '#C2255C', '#FCC419'],
+    bgSample: '#fff0f6',
+    cardSample: '#ffffff',
+    accentSample: '#c2255c',
+    description: '覆盆子莓果紅與芥末黃撞色，鮮明俏皮，讓介面更有個性。',
+    tag: '俏皮撞色',
+  },
+  {
+    id: 'midnight-studio',
+    name: '午夜工作室',
+    nameEn: 'Midnight Studio',
+    subtitle: '深夜靛藍 · 萊姆亮點',
+    category: 'recommended',
+    categoryLabel: '工作室',
+    mode: 'dark',
+    layout: 'studio',
+    palette: ['#121218', '#6E5CF0', '#C6F432'],
+    bgSample: '#121218',
+    cardSample: '#1c1c26',
+    accentSample: '#6e5cf0',
+    description: '工作室版型的深色版本，夜間或暗室操作推論工作站時更護眼。',
+    tag: '深色版',
   },
   // --- 1. [#FFFFFF, #FFF2C9, #CBD7EF] ---
   {

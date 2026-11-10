@@ -1342,57 +1342,179 @@ select option {
 }
 
 /* ==========================================================================
-   13. 🛠️ 創客工作室 (Maker Studio) — flat, rounded, high-contrast
-   Lavender ground, ink-dark floating sidebar, violet primary, lime highlight.
-   Besides color tokens this theme also restyles layout primitives (below).
+   13. 🛠️ 工作室版型 (Studio layout) — flat, rounded, floating dark sidebar
+   The layout is shared by every theme whose registry entry has layout: 'studio'
+   (ProjectContext sets <html data-layout="studio">). Each studio theme only
+   defines colors; the rules under [data-layout="studio"] read them from these
+   extra tokens:
+     --studio-sidebar-bg / -text / -muted   floating sidebar
+     --studio-highlight / --studio-highlight-ink   "next step" card, icons
+     --studio-ink                           outline buttons
    ========================================================================== */
+
+/* ---- 13a. 創客工作室 Maker Studio: violet + lime ---- */
 [data-theme="maker-studio"] {
   --bg-base: #f4f2ff;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #ece8fb;
   --bg-surface-hover: #e2dcf9;
-  --bg-glass: #ffffff;
-  --bg-glass-card: #ffffff;
-  --bg-overlay: rgba(27, 21, 48, 0.5);
-
   --accent-primary: #5b3fd9;
   --accent-primary-hover: #4a2fc4;
   --accent-primary-glow: rgba(91, 63, 217, 0.12);
-
-  --accent-peach: #e8590c;
-  --accent-peach-glow: rgba(232, 89, 12, 0.14);
-  --accent-taupe: #c6f432;
-  --accent-plum: #1b1530;
-  --accent-teal: #0f7b6c;
-  --accent-teal-glow: rgba(15, 123, 108, 0.12);
-
-  --accent-emerald: #2b8a3e;
-  --accent-amber: #c25e00;
-  --accent-rose: #c92a2a;
-  --accent-purple: #5b3fd9;
-
-  /* Flat surfaces: "gradients" are single colors so existing components stay solid. */
-  --gradient-brand: linear-gradient(#5b3fd9, #5b3fd9);
-  --gradient-brand-text: linear-gradient(#1b1530, #1b1530);
-  --gradient-brand-subtle: linear-gradient(#ece8fb, #ece8fb);
-  --gradient-brand-glow: linear-gradient(#e2dcf9, #e2dcf9);
-  --gradient-card: linear-gradient(#ffffff, #ffffff);
-  --gradient-surface: linear-gradient(transparent, transparent);
-
   --text-primary: #1b1530;
   --text-secondary: #3d3560;
   --text-muted: #625a85;
-  --text-accent: #5b3fd9;
-
   --border-subtle: #e4dff7;
-  --border-card: #e4dff7;
-  --border-focus: #5b3fd9;
   --border-highlight: rgba(91, 63, 217, 0.45);
+  --studio-sidebar-bg: #1b1530;
+  --studio-sidebar-text: #e6e1fa;
+  --studio-sidebar-muted: #b9b1dc;
+  --studio-highlight: #c6f432;
+  --studio-highlight-ink: #1b1530;
+  --studio-ink: #1b1530;
+}
 
-  --shadow-sm: 0 1px 2px rgba(27, 21, 48, 0.06);
-  --shadow-md: 0 6px 18px rgba(27, 21, 48, 0.08);
-  --shadow-lg: 0 18px 44px rgba(27, 21, 48, 0.16);
-  --shadow-glow: 0 0 0 3px rgba(91, 63, 217, 0.16);
+/* ---- 13b. 海港工作室 Harbor Studio: navy + sunflower ---- */
+[data-theme="harbor-studio"] {
+  --bg-base: #eef5fb;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #dfeaf5;
+  --bg-surface-hover: #d0e1f1;
+  --accent-primary: #0b6fb8;
+  --accent-primary-hover: #095c99;
+  --accent-primary-glow: rgba(11, 111, 184, 0.12);
+  --text-primary: #0b2236;
+  --text-secondary: #28445e;
+  --text-muted: #4f6b85;
+  --border-subtle: #d6e4f1;
+  --border-highlight: rgba(11, 111, 184, 0.45);
+  --studio-sidebar-bg: #0b2236;
+  --studio-sidebar-text: #dbe8f5;
+  --studio-sidebar-muted: #9fb6cc;
+  --studio-highlight: #ffd43b;
+  --studio-highlight-ink: #0b2236;
+  --studio-ink: #0b2236;
+}
+
+/* ---- 13c. 森林工作室 Forest Studio: pine + apricot ---- */
+[data-theme="forest-studio"] {
+  --bg-base: #eff5ee;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #e0ecdd;
+  --bg-surface-hover: #d2e4ce;
+  --accent-primary: #1f7a4d;
+  --accent-primary-hover: #186640;
+  --accent-primary-glow: rgba(31, 122, 77, 0.12);
+  --text-primary: #14261c;
+  --text-secondary: #2f4a3a;
+  --text-muted: #557063;
+  --border-subtle: #d8e6d4;
+  --border-highlight: rgba(31, 122, 77, 0.45);
+  --studio-sidebar-bg: #14261c;
+  --studio-sidebar-text: #dcebe0;
+  --studio-sidebar-muted: #9fbfaa;
+  --studio-highlight: #ffb347;
+  --studio-highlight-ink: #14261c;
+  --studio-ink: #14261c;
+}
+
+/* ---- 13d. 珊瑚工作室 Coral Studio: terracotta + aqua ---- */
+[data-theme="coral-studio"] {
+  --bg-base: #fff4ef;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #fde6dc;
+  --bg-surface-hover: #fbd8ca;
+  --accent-primary: #c2410c;
+  --accent-primary-hover: #a3360a;
+  --accent-primary-glow: rgba(194, 65, 12, 0.12);
+  --text-primary: #2a1712;
+  --text-secondary: #4d3128;
+  --text-muted: #7a5446;
+  --border-subtle: #f6ddd2;
+  --border-highlight: rgba(194, 65, 12, 0.45);
+  --studio-sidebar-bg: #2a1712;
+  --studio-sidebar-text: #f5e3dc;
+  --studio-sidebar-muted: #c9a99c;
+  --studio-highlight: #66e3d9;
+  --studio-highlight-ink: #2a1712;
+  --studio-ink: #2a1712;
+}
+
+/* ---- 13e. 莓果工作室 Berry Studio: raspberry + mustard ---- */
+[data-theme="berry-studio"] {
+  --bg-base: #fff0f6;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #fbe0ec;
+  --bg-surface-hover: #f7cfe0;
+  --accent-primary: #c2255c;
+  --accent-primary-hover: #a51d4d;
+  --accent-primary-glow: rgba(194, 37, 92, 0.12);
+  --text-primary: #2b0f1e;
+  --text-secondary: #4f2a3c;
+  --text-muted: #7c4d63;
+  --border-subtle: #f3d6e3;
+  --border-highlight: rgba(194, 37, 92, 0.45);
+  --studio-sidebar-bg: #2b0f1e;
+  --studio-sidebar-text: #f6e0ea;
+  --studio-sidebar-muted: #cfa3b7;
+  --studio-highlight: #fcc419;
+  --studio-highlight-ink: #2b0f1e;
+  --studio-ink: #2b0f1e;
+}
+
+/* ---- 13f. 午夜工作室 Midnight Studio (dark): indigo + lime ---- */
+[data-theme="midnight-studio"] {
+  --bg-base: #121218;
+  --bg-surface: #1c1c26;
+  --bg-surface-elevated: #262633;
+  --bg-surface-hover: #30303f;
+  --accent-primary: #6e5cf0;
+  --accent-primary-hover: #8170ff;
+  --accent-primary-glow: rgba(110, 92, 240, 0.22);
+  --text-primary: #f1f0fa;
+  --text-secondary: #c9c7dd;
+  --text-muted: #9a98b3;
+  --border-subtle: #2e2e3d;
+  --border-highlight: rgba(139, 124, 255, 0.55);
+  --accent-emerald: #69db7c;
+  --accent-amber: #ffa94d;
+  --accent-rose: #ff8787;
+  --studio-sidebar-bg: #0a0a10;
+  --studio-sidebar-text: #e6e1fa;
+  --studio-sidebar-muted: #9a98b3;
+  --studio-highlight: #c6f432;
+  --studio-highlight-ink: #121218;
+  --studio-ink: #f1f0fa;
+}
+
+/* ---- Shared studio tokens (derived from the colors above) ---- */
+[data-layout="studio"] {
+  --bg-glass: var(--bg-surface);
+  --bg-glass-card: var(--bg-surface);
+  --bg-overlay: rgba(10, 8, 20, 0.55);
+  --border-card: var(--border-subtle);
+  --border-focus: var(--accent-primary);
+  --text-accent: var(--accent-primary);
+  --accent-purple: var(--accent-primary);
+  --accent-taupe: var(--studio-highlight);
+  --accent-plum: var(--studio-sidebar-bg);
+  --accent-peach: #e8590c;
+  --accent-peach-glow: rgba(232, 89, 12, 0.14);
+  --accent-teal: #0f7b6c;
+  --accent-teal-glow: rgba(15, 123, 108, 0.12);
+
+  /* Flat surfaces: "gradients" are single colors so existing components stay solid. */
+  --gradient-brand: linear-gradient(var(--accent-primary), var(--accent-primary));
+  --gradient-brand-text: linear-gradient(var(--text-primary), var(--text-primary));
+  --gradient-brand-subtle: linear-gradient(var(--bg-surface-elevated), var(--bg-surface-elevated));
+  --gradient-brand-glow: linear-gradient(var(--bg-surface-hover), var(--bg-surface-hover));
+  --gradient-card: linear-gradient(var(--bg-surface), var(--bg-surface));
+  --gradient-surface: linear-gradient(transparent, transparent);
+
+  --shadow-sm: 0 1px 2px rgba(10, 8, 20, 0.07);
+  --shadow-md: 0 6px 18px rgba(10, 8, 20, 0.1);
+  --shadow-lg: 0 18px 44px rgba(10, 8, 20, 0.18);
+  --shadow-glow: 0 0 0 3px var(--accent-primary-glow);
   --shadow-teal-glow: 0 0 0 3px rgba(15, 123, 108, 0.16);
   --ambient-glow: none;
 
@@ -1403,93 +1525,107 @@ select option {
   --radius-xl: 28px;
 
   /* "Next step" card (DashboardView) */
-  --next-step-bg: #c6f432;
-  --next-step-ink: #1b1530;
-  --next-step-sub: #2e2650;
-  --next-step-pill-bg: #1b1530;
-  --next-step-pill-ink: #c6f432;
+  --next-step-bg: var(--studio-highlight);
+  --next-step-ink: var(--studio-highlight-ink);
+  --next-step-sub: var(--studio-highlight-ink);
+  --next-step-pill-bg: var(--studio-highlight-ink);
+  --next-step-pill-ink: var(--studio-highlight);
   --next-step-border: transparent;
 }
+/* Light studio themes get stronger status colors than the dark one. */
+[data-layout="studio"]:not([data-theme="midnight-studio"]) {
+  --accent-emerald: #2b8a3e;
+  --accent-amber: #b35400;
+  --accent-rose: #c92a2a;
+}
 
-[data-theme="maker-studio"] body {
+[data-layout="studio"] body {
   font-family: 'Outfit', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
-[data-theme="maker-studio"] body::before { display: none; }
-[data-theme="maker-studio"] ::-webkit-scrollbar-thumb { background: rgba(91, 63, 217, 0.25); }
+[data-layout="studio"] body::before { display: none; }
+[data-layout="studio"] ::-webkit-scrollbar-thumb { background: var(--border-highlight); }
 
 /* Floating dark sidebar + header card */
-[data-theme="maker-studio"] .app-container { padding: 16px; gap: 16px; box-sizing: border-box; }
-[data-theme="maker-studio"] .app-sidebar {
-  background: #1b1530;
+[data-layout="studio"] .app-container { padding: 16px; gap: 16px; box-sizing: border-box; }
+[data-layout="studio"] .app-sidebar {
+  background: var(--studio-sidebar-bg);
   border-right: 0;
   border-radius: 24px;
   color: #ffffff;
 }
-[data-theme="maker-studio"] .sidebar-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
-[data-theme="maker-studio"] .brand-icon-box { background: #c6f432; color: #1b1530; box-shadow: none; border-radius: 12px; }
-[data-theme="maker-studio"] .brand-name {
+[data-layout="studio"] .sidebar-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
+[data-layout="studio"] .brand-icon-box {
+  background: var(--studio-highlight);
+  color: var(--studio-highlight-ink);
+  box-shadow: none;
+  border-radius: 12px;
+}
+[data-layout="studio"] .brand-name {
   background: none;
   -webkit-text-fill-color: #ffffff;
   color: #ffffff;
   font-family: 'Outfit', sans-serif;
 }
-[data-theme="maker-studio"] .brand-tag { background: rgba(198, 244, 50, 0.16); color: #c6f432; border: 0; }
-[data-theme="maker-studio"] .nav-section-title { color: #b9b1dc; }
-[data-theme="maker-studio"] .nav-section-badge { background: rgba(255, 255, 255, 0.08) !important; color: #e6e1fa !important; }
-[data-theme="maker-studio"] .nav-item-btn {
-  color: #e6e1fa;
+[data-layout="studio"] .brand-tag { background: rgba(255, 255, 255, 0.1); color: var(--studio-highlight); border: 0; }
+[data-layout="studio"] .nav-section-title { color: var(--studio-sidebar-muted); }
+[data-layout="studio"] .nav-section-badge {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--studio-sidebar-text) !important;
+}
+[data-layout="studio"] .nav-item-btn {
+  color: var(--studio-sidebar-text);
   border-radius: 14px;
   padding: 0.7rem 0.9rem;
   font-size: 0.92rem;
 }
-[data-theme="maker-studio"] .nav-item-btn:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
-[data-theme="maker-studio"] .nav-item-btn.active {
-  background: #5b3fd9;
+[data-layout="studio"] .nav-item-btn:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+[data-layout="studio"] .nav-item-btn.active {
+  background: var(--accent-primary);
   border-color: transparent;
   color: #ffffff;
   font-weight: 700;
 }
-[data-theme="maker-studio"] .nav-item-btn.active svg { color: #c6f432; }
-[data-theme="maker-studio"] .nav-item-badge { background: rgba(198, 244, 50, 0.16); color: #c6f432; }
-[data-theme="maker-studio"] .sidebar-footer { background: transparent; border-top-color: rgba(255, 255, 255, 0.08); }
+[data-layout="studio"] .nav-item-btn.active svg { color: var(--studio-highlight); }
+[data-layout="studio"] .nav-item-badge { background: rgba(255, 255, 255, 0.1); color: var(--studio-highlight); }
+[data-layout="studio"] .sidebar-footer { background: transparent; border-top-color: rgba(255, 255, 255, 0.08); }
 
-[data-theme="maker-studio"] .app-main { background: transparent; gap: 16px; }
-[data-theme="maker-studio"] .app-header { border-bottom: 0; border-radius: 20px; box-shadow: var(--shadow-sm); }
-[data-theme="maker-studio"] .app-content-body { padding: 0.5rem 0.25rem 1.5rem; }
+[data-layout="studio"] .app-main { background: transparent; gap: 16px; }
+[data-layout="studio"] .app-header { border-bottom: 0; border-radius: 20px; box-shadow: var(--shadow-sm); }
+[data-layout="studio"] .app-content-body { padding: 0.5rem 0.25rem 1.5rem; }
 
-/* Flat white cards */
-[data-theme="maker-studio"] .glass-card {
-  background: #ffffff;
+/* Flat cards */
+[data-layout="studio"] .glass-card {
+  background: var(--bg-surface);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border-color: transparent;
   box-shadow: var(--shadow-sm);
 }
-[data-theme="maker-studio"] .glass-card:hover { border-color: transparent; box-shadow: var(--shadow-md); }
-[data-theme="maker-studio"] .glass-card-interactive:hover { border-color: #5b3fd9; box-shadow: var(--shadow-md); }
+[data-layout="studio"] .glass-card:hover { border-color: transparent; box-shadow: var(--shadow-md); }
+[data-layout="studio"] .glass-card-interactive:hover { border-color: var(--accent-primary); box-shadow: var(--shadow-md); }
 
 /* Pill buttons */
-[data-theme="maker-studio"] .btn { border-radius: 9999px; font-weight: 700; }
-[data-theme="maker-studio"] .btn-primary { background: #5b3fd9; box-shadow: none; }
-[data-theme="maker-studio"] .btn-primary:hover { background: #4a2fc4; opacity: 1; transform: none; box-shadow: none; }
-[data-theme="maker-studio"] .btn-secondary { background: #ffffff; border: 2px solid #1b1530; color: #1b1530; }
-[data-theme="maker-studio"] .btn-secondary:hover { background: #ece8fb; border-color: #1b1530; }
-[data-theme="maker-studio"] .btn-danger { background: #fff0f0; border: 2px solid #c92a2a; color: #c92a2a; }
-[data-theme="maker-studio"] .btn-danger:hover { background: #ffe0e0; }
+[data-layout="studio"] .btn { border-radius: 9999px; font-weight: 700; }
+[data-layout="studio"] .btn-primary { background: var(--accent-primary); color: #ffffff; box-shadow: none; }
+[data-layout="studio"] .btn-primary:hover { background: var(--accent-primary-hover); opacity: 1; transform: none; box-shadow: none; }
+[data-layout="studio"] .btn-secondary { background: var(--bg-surface); border: 2px solid var(--studio-ink); color: var(--studio-ink); }
+[data-layout="studio"] .btn-secondary:hover { background: var(--bg-surface-elevated); border-color: var(--studio-ink); }
+[data-layout="studio"] .btn-danger { background: transparent; border: 2px solid var(--accent-rose); color: var(--accent-rose); }
+[data-layout="studio"] .btn-danger:hover { background: rgba(201, 42, 42, 0.1); }
 
 /* Inputs & modals */
-[data-theme="maker-studio"] .form-input,
-[data-theme="maker-studio"] .form-textarea,
-[data-theme="maker-studio"] .form-select { background: #ffffff; border: 2px solid #e4dff7; }
-[data-theme="maker-studio"] .modal-overlay { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
-[data-theme="maker-studio"] .modal-container { border: 0; }
-[data-theme="maker-studio"] .modal-footer { background: #f4f2ff; }
-[data-theme="maker-studio"] .badge-emerald { background: #e6f6ea; color: #2b8a3e; border-color: transparent; }
-[data-theme="maker-studio"] .badge-amber { background: #fff1e0; color: #b35400; border-color: transparent; }
+[data-layout="studio"] .form-input,
+[data-layout="studio"] .form-textarea,
+[data-layout="studio"] .form-select { background: var(--bg-surface); border: 2px solid var(--border-subtle); }
+[data-layout="studio"] .modal-overlay { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+[data-layout="studio"] .modal-container { border: 0; }
+[data-layout="studio"] .modal-footer { background: var(--bg-base); }
+[data-layout="studio"] .badge-emerald { background: rgba(43, 138, 62, 0.12); color: var(--accent-emerald); border-color: transparent; }
+[data-layout="studio"] .badge-amber { background: rgba(230, 119, 0, 0.12); color: var(--accent-amber); border-color: transparent; }
 
 /* ==========================================================================
-   Dashboard "next step" card + pipeline steps (all themes; maker-studio
-   overrides the --next-step-* tokens above)
+   Dashboard "next step" card + pipeline steps (all themes; studio layouts
+   set the --next-step-* tokens above)
    ========================================================================== */
 .vf-next-step {
   background: var(--next-step-bg, var(--gradient-brand-subtle));

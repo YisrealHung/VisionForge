@@ -60,14 +60,26 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const t = translations[language];
 
+  // data-theme selects colors; data-layout="studio" switches on the shared studio layout rules.
+  const applyThemeAttributes = (id: AppTheme) => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', id);
+    const def = THEME_REGISTRY.find((t) => t.id === id);
+    if (def?.layout) {
+      root.setAttribute('data-layout', def.layout);
+    } else {
+      root.removeAttribute('data-layout');
+    }
+  };
+
   const setTheme = (newTheme: AppTheme) => {
     setThemeState(newTheme);
     localStorage.setItem('visionforge_theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    applyThemeAttributes(newTheme);
   };
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    applyThemeAttributes(theme);
   }, [theme]);
 
   const fetchProjects = useCallback(async () => {
