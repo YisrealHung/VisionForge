@@ -308,8 +308,13 @@ class YOLOModelEngine(BaseModelEngine):
         if num_train <= 60 and batch_to_use > 8:
             batch_to_use = 8
 
+        from backend.app.core.compute import dataloader_workers, WORKERS_ENV
+        workers = dataloader_workers()
+        job.log(f"⚙️ 資料載入 workers: {workers}（可用環境變數 {WORKERS_ENV} 調整）")
+
         train_results = yolo_model.train(
             data=str(yaml_path),
+            workers=workers,
             epochs=hp.epochs,
             batch=batch_to_use,
             imgsz=hp.image_size,

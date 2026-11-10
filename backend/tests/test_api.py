@@ -207,3 +207,17 @@ def test_training_ws_sends_init_and_logs_endpoint(client, project):
     with client.websocket_connect(f"/api/projects/{pid}/train/ws") as ws:
         msg = ws.receive_json()
         assert msg["type"] == "init" and msg["logs"] == []
+
+
+@pytest.mark.parametrize("env,platform,cpus,expected", [
+    (None, "win32", 16, 0),     # spawn + torch DLLs per worker exhausts the page file on Windows
+    (None, "linux", 16, 4),
+    (None, "linux", 2, 1),
+    ("3", "win32", 16, 3),      # explicit override wins
+    ("", "linux", 8, 4),        # empty means unset
+    ("abc", "win32", 8, 0),     # invalid falls back to the default
+])
+def test_dataloader_workers(env, platform, cpus, expected):
+    from backend.app.core.compute import dataloader_workers
+
+    assert dataloader_workers(env_value=env if env is not None else "", platform=platform, cpu_count=cpus) == expected
