@@ -1,3 +1,4 @@
+import logging
 import json
 import os
 from pathlib import Path
@@ -5,6 +6,8 @@ from typing import List, Dict, Optional, Any
 
 from backend.app.core.config import settings
 from backend.app.models.training import TrainedModelInfo
+
+logger = logging.getLogger("visionforge.trained_model_service")
 
 
 class TrainedModelService:
@@ -95,7 +98,7 @@ class TrainedModelService:
             with open(json_file, "w", encoding="utf-8") as f:
                 json.dump(models_map, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            print(f"Error saving trained_models.json: {e}")
+            logger.error(f"Error saving trained_models.json: {e}")
 
     @classmethod
     def list_trained_models(cls, project_id: str) -> List[TrainedModelInfo]:
@@ -223,7 +226,7 @@ class TrainedModelService:
                 json.dump(hdata, f, indent=2, ensure_ascii=False)
             return True
         except Exception as e:
-            print(f"Error updating training_history.json: {e}")
+            logger.error(f"Error updating training_history.json: {e}")
             return False
 
     @classmethod
@@ -256,7 +259,7 @@ class TrainedModelService:
                 with open(json_file, "w", encoding="utf-8") as f:
                     json.dump(models_map, f, indent=2, ensure_ascii=False)
             except Exception as e:
-                print(f"Error updating trained_models.json during deletion: {e}")
+                logger.error(f"Error updating trained_models.json during deletion: {e}")
                 
         # Delete checkpoint
         ckpt_path = ckpt_dir / ckpt_name
@@ -264,7 +267,7 @@ class TrainedModelService:
             try:
                 ckpt_path.unlink()
             except Exception as e:
-                print(f"Failed to delete {ckpt_path}: {e}")
+                logger.error(f"Failed to delete {ckpt_path}: {e}")
                 
         # If deleted model was the active one, fallback to another model
         active_arch = None

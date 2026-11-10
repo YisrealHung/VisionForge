@@ -1,5 +1,20 @@
+# --- Web API core ---
 fastapi>=0.110.0
 uvicorn[standard]>=0.28.0
 pydantic>=2.6.0
 pydantic-settings>=2.2.0
 python-multipart>=0.0.9
+
+# --- Image / numeric / export (platform independent) ---
+pillow>=10.0
+numpy>=1.24
+scipy>=1.10
+pyyaml>=6.0
+onnx>=1.15
+onnxruntime>=1.17
+
+# --- Installed separately on purpose (see scripts/setup_env.py and docs/) ---
+# torch / torchvision : the correct wheel depends on CUDA version (Windows cu121) or JetPack (Jetson).
+# ultralytics         : depends on torch, so it must be installed AFTER the right torch build,
+#                       otherwise pip pulls a CPU-only torch first.
+# opencv-python       : Jetson ships its own CUDA-enabled OpenCV; pip's wheel would shadow it.

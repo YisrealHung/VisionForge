@@ -1,0 +1,161 @@
+import asyncio
+import json
+import time
+
+import pytest
+
+
+# ---------------------------------------------------------------- projects
+def test_project_crud(client, project):
+    pid = project["id"]
+    assert client.get(f"/api/projects/{pid}").status_code == 200
+    assert any(p["id"] == pid for p in client.get("/api/projects").json())
+    assert client.delete(f"/api/projects/{pid}").status_code == 200
+    assert client.get(f"/api/projects/{pid}").status_code == 404
+
+
+def test_active_project_route_not_blocked_by_guard(client, project):
+    assert client.get("/api/projects/active").status_code == 200
+
+
+# ---------------------------------------------------------------- path traversal
+@pytest.mark.parametrize("bad_id", ["..", "..%5C..%5Cdata", "proj_ZZZZZZZZZZ", "proj_123"])
+def test_invalid_project_id_rejected(client, bad_id):
+    assert client.get(f"/api/projects/{bad_id}/images").status_code == 404
+
+
+@pytest.mark.parametrize("bad_name", ["..%5C..%5Cproject.json", ".hidden", "a%5Cb.png"])
+def test_image_filename_traversal_rejected(client, project, bad_name):
+    pid = project["id"]
+    assert client.get(f"/api/projects/{pid}/images/{bad_name}").status_code in (400, 404)
+    assert client.delete(f"/api/projects/{pid}/images/{bad_name}").status_code in (400, 404)
+
+
+def test_import_strips_directories_from_upload_names(client, project, tmp_settings):
+    pid = project["id"]
+    files = [("files", ("../../evil.png", b"not really a png", "image/png"))]
+    res = client.post(f"/api/projects/{pid}/dataset/import", files=files)
+    assert res.status_code == 200, res.text
+    raw = tmp_settings.PROJECTS_DIR / pid / "datasets" / "raw"
+    assert (raw / "evil.png").exists()
+    assert not (tmp_settings.PROJECTS_DIR / "evil.png").exists()
+    assert not (tmp_settings.DATA_DIR / "evil.png").exists()
+
+
+def test_spa_fallback_cannot_escape_dist(tmp_settings):
+    from backend.app.main import serve_spa
+
+    dist = tmp_settings.FRONTEND_DIST
+    dist.mkdir()
+    (dist / "index.html").write_text("<html></html>")
+    (tmp_settings.FRONTEND_DIST.parent / "secret.txt").write_text("secret")
+
+    resp = asyncio.run(serve_spa("../secret.txt"))
+    assert str(resp.path).endswith("index.html")
+    # Missing assets must 404, not return index.html with the wrong MIME type.
+    assert asyncio.run(serve_spa("assets/missing.js")).status_code == 404
+
+
+# ---------------------------------------------------------------- inference status
+def test_inference_status_ok(client):
+    res = client.get("/api/inference/status")
+    assert res.status_code == 200, res.text
+
+
+def test_all_classes_sentinel_accepted():
+    from backend.app.services.inference_service import ALL_CLASSES_NAMES
+
+    assert {"*", "全部類別", "All Classes"} <= ALL_CLASSES_NAMES
+
+
+# ---------------------------------------------------------------- training
+class FakeEngine:
+    """Stands in for a real model engine: emits two epochs of logs/metrics without torch work."""
+
+    def __init__(self, epochs_to_run=2, delay=0.0):
+        self.epochs_to_run = epochs_to_run
+        self.delay = delay
+
+    def prepare_dataset(self, project_dir):
+        raise AssertionError("training_engine must not re-run prepare_dataset after training")
+
+    def train(self, job, config, project_dir):
+        from backend.app.models.training import EpochMetric
+
+        job.class_names = ["cat", "dog"]
+        for epoch in range(1, self.epochs_to_run + 1):
+            if job.should_stop:
+                break
+            time.sleep(self.delay)
+            job.log(f"epoch {epoch}")
+            metric = EpochMetric(epoch=epoch, total_epochs=2, train_loss=1.0, train_acc=50.0, val_loss=1.0,
+                                 val_acc=60.0, epoch_duration_sec=0.0, best_val_acc=60.0, eta_sec=0.0, lr=0.001)
+            job.history.append(metric)
+            job.emit_metric(metric)
+        job.status = "stopped" if job.should_stop else "completed"
+
+
+def _wait_done(project_id, timeout=10):
+    from backend.app.services.training_engine import TrainingEngine
+
+    t = TrainingEngine._threads.get(project_id)
+    if t:
+        t.join(timeout)
+        assert not t.is_alive()
+
+
+TRAIN_BODY = {"hyperparameters": {"architecture": "resnet18", "epochs": 2}}
+
+
+def test_training_start_returns_200(client, project, monkeypatch, tmp_settings):
+    from backend.app.engines.engine_registry import ModelEngineRegistry
+
+    monkeypatch.setattr(ModelEngineRegistry, "get_engine", classmethod(lambda cls, a: FakeEngine()))
+    pid = project["id"]
+
+    res = client.post(f"/api/projects/{pid}/train/start", json=TRAIN_BODY)
+    assert res.status_code == 200, res.text  # used to fail with AttributeError: log_callbacks
+    _wait_done(pid)
+    hist = json.loads((tmp_settings.PROJECTS_DIR / pid / "models" / "training_history.json").read_text("utf-8"))
+    assert hist["status"] == "completed"
+    assert hist["classes"] == ["cat", "dog"]  # taken from the engine's training run
+
+
+def test_training_callbacks_receive_logs_and_metrics(tmp_settings, project, monkeypatch):
+    # Callbacks are what the WebSocket route uses to stream. (TestClient runs each HTTP request on its
+    # own short-lived event loop, so the cross-loop WS broadcast is checked here at the engine level.)
+    from backend.app.engines.engine_registry import ModelEngineRegistry
+    from backend.app.models.training import TrainConfigRequest
+    from backend.app.services.training_engine import TrainingEngine
+
+    monkeypatch.setattr(ModelEngineRegistry, "get_engine", classmethod(lambda cls, a: FakeEngine()))
+    pid = project["id"]
+    logs, metrics = [], []
+    TrainingEngine.start_training(pid, TrainConfigRequest(**TRAIN_BODY),
+                                  log_callbacks=[logs.append], metric_callbacks=[metrics.append])
+    _wait_done(pid)
+    assert any("epoch 1" in line for line in logs)
+    assert [m.epoch for m in metrics] == [1, 2]
+
+
+def test_cannot_start_twice_while_running(client, project, monkeypatch):
+    from backend.app.engines.engine_registry import ModelEngineRegistry
+
+    monkeypatch.setattr(ModelEngineRegistry, "get_engine", classmethod(lambda cls, a: FakeEngine(delay=0.3)))
+    pid = project["id"]
+    assert client.post(f"/api/projects/{pid}/train/start", json=TRAIN_BODY).status_code == 200
+    # Even after a stop request, the old thread is still running, so a new start must be refused.
+    client.post(f"/api/projects/{pid}/train/stop")
+    assert client.post(f"/api/projects/{pid}/train/start", json=TRAIN_BODY).status_code == 400
+    _wait_done(pid)
+
+
+def test_stopped_before_first_epoch_is_not_registered(client, project, monkeypatch, tmp_settings):
+    from backend.app.engines.engine_registry import ModelEngineRegistry
+
+    monkeypatch.setattr(ModelEngineRegistry, "get_engine", classmethod(lambda cls, a: FakeEngine(epochs_to_run=0)))
+    pid = project["id"]
+    assert client.post(f"/api/projects/{pid}/train/start", json=TRAIN_BODY).status_code == 200
+    _wait_done(pid)
+    assert not (tmp_settings.PROJECTS_DIR / pid / "models" / "training_histories.json").exists()
+    assert client.get(f"/api/projects/{pid}").json()["model_count"] == 0

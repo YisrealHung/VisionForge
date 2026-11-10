@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 import time
@@ -21,6 +22,8 @@ from backend.app.models.training import (
 )
 from backend.app.models.inference import RoiBox, InferenceResultItem
 from backend.app.engines.base_engine import BaseModelEngine
+
+logger = logging.getLogger("visionforge.regression_engine")
 
 class RegressionDataset(Dataset):
     def __init__(self, samples: List[Dict[str, Any]], transform=None):
@@ -131,6 +134,7 @@ class RegressionModelEngine(BaseModelEngine):
     def train(self, job: Any, config: TrainConfigRequest, project_dir: Path) -> None:
         hp = config.hyperparameters
         dataset_info = self.prepare_dataset(project_dir)
+        job.class_names = list(dataset_info.get("classes") or [])
         train_samples = dataset_info["train_samples"]
         val_samples = dataset_info["val_samples"]
 
@@ -226,9 +230,13 @@ class RegressionModelEngine(BaseModelEngine):
             best_badge = " 🔥 (New Best RMSE!)" if is_best else ""
             job.log(f"Epoch [{epoch:02d}/{hp.epochs:02d}] - Loss: {avg_train_loss:.4f} | Val RMSE: {rmse:.4f} ({dur:.1f}s, ETA: {eta:.0f}s){best_badge}")
 
-        job.status = "completed"
-        job.current_epoch = hp.epochs
-        job.log(f"🎉 真實影像迴歸模型訓練完成！最佳精確度指標: {job.best_val_acc:.2f}%")
+        if getattr(job, 'should_stop', False):
+            job.status = "stopped"
+            job.log(f"🛑 訓練已手動中斷！已保留迄今最佳模型 (最佳精確度指標: {job.best_val_acc:.2f}%)")
+        else:
+            job.status = "completed"
+            job.current_epoch = hp.epochs
+            job.log(f"🎉 真實影像迴歸模型訓練完成！最佳精確度指標: {job.best_val_acc:.2f}%")
 
     def load_model(self, project_dir: Path, checkpoint_path: Optional[Path] = None) -> Tuple[Any, List[str]]:
         arch_str = "resnet18_reg"
@@ -264,7 +272,7 @@ class RegressionModelEngine(BaseModelEngine):
                 state = torch.load(ckpt_file, map_location="cpu")
                 model.load_state_dict(state)
             except Exception as e:
-                print(f"Warning loading regression checkpoint: {e}")
+                logger.warning(f"Warning loading regression checkpoint: {e}")
         model.eval()
         return model, ["迴歸點座標"]
 

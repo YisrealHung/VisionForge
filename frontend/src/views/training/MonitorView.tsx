@@ -20,6 +20,10 @@ import { Card } from '../../components/common/Card';
 import { MetricsChart } from '../../components/training/MetricsChart';
 import { TerminalLogger } from '../../components/training/TerminalLogger';
 
+// Long runs produce thousands of log lines; rendering all of them makes the page progressively slower.
+const MAX_LOG_LINES = 1000;
+const tail = (lines: string[]) => (lines.length > MAX_LOG_LINES ? lines.slice(-MAX_LOG_LINES) : lines);
+
 export const MonitorView: React.FC = () => {
   const { activeProject, setCurrentView, systemHealth, language } = useProject();
   const isZh = language === 'zh-TW';
@@ -30,33 +34,43 @@ export const MonitorView: React.FC = () => {
   const [stopping, setStopping] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
+  const projectId = activeProject?.id ?? null;
+  // The project the view is currently showing; late responses for another project are dropped.
+  const currentProjectRef = useRef<string | null>(projectId);
+  currentProjectRef.current = projectId;
 
-  // Poll status fallback
+  // Poll status fallback (the server copy is the source of truth for logs/history).
   const fetchStatus = useCallback(async () => {
-    if (!activeProject) return;
+    if (!projectId) return;
     try {
-      const data = await api.getTrainingStatus(activeProject.id);
+      const data = await api.getTrainingStatus(projectId);
+      if (currentProjectRef.current !== projectId) return;
       setStatus(data);
       if (data.history && data.history.length > 0) {
         setHistory(data.history);
       }
       if (data.logs && data.logs.length > 0) {
-        setLogs((prev) => (prev.length === 0 ? data.logs! : (data.logs!.length > prev.length ? data.logs! : prev)));
+        setLogs(tail(data.logs));
       }
     } catch (err) {
       console.error('Failed to get training status:', err);
     }
-  }, [activeProject]);
+  }, [projectId]);
 
-  // Connect WebSocket
+  // Connect WebSocket (keyed by project id so re-fetching the project list does not reconnect)
   useEffect(() => {
-    if (!activeProject) return;
+    if (!projectId) return;
+
+    // Reset the previous project's data when switching projects.
+    setStatus(null);
+    setHistory([]);
+    setLogs([]);
 
     fetchStatus();
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/api/projects/${activeProject.id}/train/ws`;
+    const wsUrl = `${protocol}//${host}/api/projects/${projectId}/train/ws`;
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -74,12 +88,12 @@ export const MonitorView: React.FC = () => {
             setHistory(payload.status.history);
           }
           if (payload.logs && payload.logs.length > 0) {
-            setLogs(payload.logs);
+            setLogs(tail(payload.logs));
           } else if (payload.status?.logs && payload.status.logs.length > 0) {
-            setLogs(payload.status.logs);
+            setLogs(tail(payload.status.logs));
           }
         } else if (payload.type === 'log') {
-          setLogs((prev) => [...prev, payload.message]);
+          setLogs((prev) => tail([...prev, payload.message]));
         } else if (payload.type === 'metric') {
           const metric: EpochMetric = payload.data;
           const cappedEpoch = Math.min(metric.total_epochs, metric.epoch);
@@ -112,9 +126,12 @@ export const MonitorView: React.FC = () => {
 
     return () => {
       clearInterval(pollTimer);
-      if (ws) ws.close();
+      ws.onmessage = null;
+      ws.onclose = null;
+      ws.close();
+      setWsConnected(false);
     };
-  }, [activeProject, fetchStatus]);
+  }, [projectId, fetchStatus]);
 
   const handleStopTraining = async () => {
     if (!activeProject) return;

@@ -13,7 +13,7 @@ import {
   Video,
   RefreshCw
 } from 'lucide-react';
-import { RoiBox, TriggerRule, InferenceResponse, ImageItem } from '../../types';
+import { RoiBox, TriggerRule, InferenceResponse, ImageItem, isAllClasses } from '../../types';
 import { api } from '../../services/api';
 import { Button } from '../common/Button';
 import { useProject } from '../../context/ProjectContext';
@@ -51,6 +51,11 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const loopRef = useRef<boolean>(false);
+  // Each Start gets a new generation; frames from an older loop stop rescheduling themselves.
+  const loopGenRef = useRef<number>(0);
+  const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Incremented on every start/stop so a getUserMedia call that resolves late is discarded.
+  const cameraSeqRef = useRef<number>(0);
   const fpsCountRef = useRef<number>(0);
   const lastFpsTimeRef = useRef<number>(Date.now());
   const customImgRef = useRef<HTMLImageElement | null>(null);
@@ -96,9 +101,10 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
 
   // Start Camera Stream
   const startCamera = async (deviceId?: string) => {
+    stopCamera();
+    const seq = cameraSeqRef.current;
     try {
       setErrorMsg('');
-      stopCamera();
       const targetId = deviceId !== undefined ? deviceId : selectedDeviceId;
       const constraints: MediaStreamConstraints = {
         video: targetId
@@ -107,13 +113,19 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         audio: false,
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (seq !== cameraSeqRef.current) {
+        // Stopped / restarted / unmounted while the permission prompt was open: release it.
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.play().catch(() => { });
       }
       enumerateDevices();
     } catch (err: any) {
+      if (seq !== cameraSeqRef.current) return;
       console.warn('Webcam not accessible:', err);
       setErrorMsg(
         isZh
@@ -124,6 +136,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   };
 
   const stopCamera = () => {
+    cameraSeqRef.current += 1;
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -178,7 +191,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       return;
     }
     const randomImg = datasetImages[Math.floor(Math.random() * datasetImages.length)];
-    const imgUrl = `/api/projects/${projectId}/images/${randomImg.filename}`;
+    const imgUrl = `/api/projects/${projectId}/images/${encodeURIComponent(randomImg.filename)}`;
     setCustomImageSrc(imgUrl);
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -237,7 +250,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         const ph = bh * canvas.height;
 
         const isAlert = triggerMatched && triggerRules.some(
-          (r) => r.enabled && (r.class_name === '全部類別' || r.class_name === 'All Classes' || r.class_name === p.label) && p.confidence >= r.min_confidence
+          (r) => r.enabled && (isAllClasses(r.class_name) || r.class_name === p.label) && p.confidence >= r.min_confidence
         );
         const catColor = categoryColorMap[p.label] || '#10b981';
         const boxColor = isAlert ? '#f43f5e' : catColor;
@@ -310,8 +323,10 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   };
 
   // Continuous Inference Frame Loop
-  const processFrame = useCallback(async () => {
-    if (!loopRef.current) return;
+  // Plain function re-created every render; the loop always calls the latest one via processFrameRef,
+  // so ROI / rules / threshold / feed mode / architecture changes apply while running.
+  const processFrame = async (gen: number) => {
+    if (!loopRef.current || gen !== loopGenRef.current) return;
 
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -378,19 +393,41 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       console.error('Frame inference error:', err);
     }
 
-    if (loopRef.current) {
-      setTimeout(processFrame, 65);
+    if (loopRef.current && gen === loopGenRef.current) {
+      loopTimerRef.current = setTimeout(() => processFrameRef.current(gen), 65);
     }
-  }, [projectId, roi, triggerRules, feedMode, confThreshold, onTriggerEvent]);
+  };
+  const processFrameRef = useRef(processFrame);
+  processFrameRef.current = processFrame;
+
+  const stopLoop = () => {
+    loopRef.current = false;
+    loopGenRef.current += 1;
+    if (loopTimerRef.current) {
+      clearTimeout(loopTimerRef.current);
+      loopTimerRef.current = null;
+    }
+  };
+
+  // Stop the inference loop and release the camera on unmount.
+  useEffect(() => {
+    return () => {
+      stopLoop();
+      stopCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleRunning = () => {
     if (isRunning) {
-      loopRef.current = false;
+      stopLoop();
       setIsRunning(false);
     } else {
+      stopLoop();
       loopRef.current = true;
+      const gen = loopGenRef.current;
       setIsRunning(true);
-      processFrame();
+      processFrameRef.current(gen);
     }
   };
 

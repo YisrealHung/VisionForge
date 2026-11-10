@@ -24,6 +24,13 @@ import {
 
 const API_BASE = '/api';
 
+/**
+ * Absolute URL of the inference endpoint as seen by this browser.
+ * Uses the page origin, so it is correct for LAN / Jetson access and in the Vite dev proxy,
+ * unlike a hardcoded 127.0.0.1:8000.
+ */
+export const getPredictEndpoint = () => `${window.location.origin}${API_BASE}/inference/predict`;
+
 export const api = {
   // System
   async getSystemHealth(): Promise<SystemHealth> {
@@ -103,7 +110,7 @@ export const api = {
   },
 
   async deleteImage(projectId: string, filename: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/projects/${projectId}/images/${filename}`, {
+    const res = await fetch(`${API_BASE}/projects/${projectId}/images/${encodeURIComponent(filename)}`, {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error('Failed to delete image');
@@ -161,14 +168,22 @@ export const api = {
     if (!res.ok) throw new Error('Failed to delete category');
   },
 
+  async getAnnotationsCoco(projectId: string): Promise<{ annotations: Array<{ image_id: string | number; category_id: number }> }> {
+    const res = await fetch(`${API_BASE}/projects/${projectId}/annotations`);
+    if (!res.ok) throw new Error('Failed to load annotations');
+    return await res.json();
+  },
+
   async getImageAnnotations(projectId: string, imageId: string): Promise<ImageAnnotationData> {
-    const res = await fetch(`${API_BASE}/projects/${projectId}/annotations/images/${imageId}`);
-    if (!res.ok) return { image_id: imageId, annotations: [] };
+    const res = await fetch(`${API_BASE}/projects/${projectId}/annotations/images/${encodeURIComponent(imageId)}`);
+    // Throw instead of returning an empty list: callers must not treat a failed load as "no labels",
+    // otherwise the next save would wipe the image's real annotations.
+    if (!res.ok) throw new Error('Failed to load annotations');
     return await res.json();
   },
 
   async saveImageAnnotations(projectId: string, imageId: string, data: ImageAnnotationData): Promise<ImageAnnotationData> {
-    const res = await fetch(`${API_BASE}/projects/${projectId}/annotations/images/${imageId}`, {
+    const res = await fetch(`${API_BASE}/projects/${projectId}/annotations/images/${encodeURIComponent(imageId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -309,10 +324,11 @@ export const api = {
     return await res.json();
   },
 
-  async inferencePredictForm(file: File, modelId?: string, roi?: RoiBox | null): Promise<InferenceResponse> {
+  async inferencePredictForm(file: File, modelId?: string, roi?: RoiBox | null, architecture?: string): Promise<InferenceResponse> {
     const formData = new FormData();
     formData.append('file', file);
     if (modelId) formData.append('model_id', modelId);
+    if (architecture) formData.append('architecture', architecture);
     if (roi) formData.append('roi_json', JSON.stringify(roi));
 
     const res = await fetch(`${API_BASE}/inference/predict-form`, {

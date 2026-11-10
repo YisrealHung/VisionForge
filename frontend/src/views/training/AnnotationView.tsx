@@ -85,10 +85,14 @@ export const AnnotationView: React.FC = () => {
       const [imgs, cats, coco] = await Promise.all([
         api.listImages(activeProject.id),
         api.getCategories(activeProject.id),
-        fetch(`/api/projects/${activeProject.id}/annotations`).then(r => r.json()).catch(() => ({ annotations: [] }))
+        api.getAnnotationsCoco(activeProject.id).catch((err) => {
+          console.error('Failed to load COCO annotations:', err);
+          return { annotations: [] };
+        })
       ]);
 
       setImages(imgs);
+      setCurrentIndex(prev => Math.min(prev, Math.max(imgs.length - 1, 0)));
       setCategories(cats);
       if (cats.length > 0) {
         setSelectedCategoryId(cats[0].id);
@@ -111,44 +115,66 @@ export const AnnotationView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeProject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProject?.id]);
 
   useEffect(() => {
     loadInitialData();
   }, [loadInitialData]);
 
   const activeImage = images[currentIndex] || null;
+  const activeFilename = activeImage?.filename ?? null;
+  const activeProjectId = activeProject?.id ?? null;
+  const activeTaskType = activeProject?.task_type;
 
-  // Load annotations when active image changes
-  const loadCurrentAnnotations = useCallback(async () => {
-    if (!activeProject || !activeImage) return;
-    try {
-      const data = await api.getImageAnnotations(activeProject.id, activeImage.filename);
-      const annos = data.annotations || [];
-      setAnnotations(annos);
-      setSelectedBoxId(null);
+  // Which image the `annotations` state currently belongs to. null while loading or after a failed load,
+  // so a save can never write one image's boxes onto another image.
+  const annotationsOwnerRef = useRef<string | null>(null);
+  // Incremented per load so a slow, out-of-order response for a previous image is ignored.
+  const loadSeqRef = useRef(0);
+  // Prevents a second navigation (e.g. pressing D twice quickly) while one is saving.
+  const navBusyRef = useRef(false);
 
-      if (annos.length > 0) {
-        setSelectedCategoryId(annos[0].category_id);
-        setImageCategoryMap(prev => ({ ...prev, [activeImage.filename]: annos[0].category_id }));
-        if (activeProject.task_type === 'regression' && annos[0].bbox) {
-          setRegressionPoint({ x: annos[0].bbox[0], y: annos[0].bbox[1] });
+  // Start from the first image when switching projects.
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [activeProjectId]);
+
+  // Load annotations when the active image changes (keyed by filename, not object identity,
+  // so updating `images` after a save does not trigger a reload).
+  useEffect(() => {
+    if (!activeProjectId || !activeFilename) return;
+    const seq = ++loadSeqRef.current;
+    annotationsOwnerRef.current = null;
+    setAnnotations([]);
+    setSelectedBoxId(null);
+
+    (async () => {
+      try {
+        const data = await api.getImageAnnotations(activeProjectId, activeFilename);
+        if (seq !== loadSeqRef.current) return;
+        const annos = data.annotations || [];
+        setAnnotations(annos);
+        annotationsOwnerRef.current = activeFilename;
+
+        if (annos.length > 0) {
+          setSelectedCategoryId(annos[0].category_id);
+          setImageCategoryMap(prev => ({ ...prev, [activeFilename]: annos[0].category_id }));
+          if (activeTaskType === 'regression' && annos[0].bbox) {
+            setRegressionPoint({ x: annos[0].bbox[0], y: annos[0].bbox[1] });
+          } else {
+            setRegressionPoint(null);
+          }
         } else {
           setRegressionPoint(null);
         }
-      } else {
-        setRegressionPoint(null);
+      } catch (err) {
+        if (seq === loadSeqRef.current) {
+          console.error('Failed to load image annotations:', err);
+        }
       }
-    } catch (err) {
-      console.error('Failed to load image annotations:', err);
-    }
-  }, [activeProject, activeImage]);
-
-  useEffect(() => {
-    if (activeImage) {
-      loadCurrentAnnotations();
-    }
-  }, [activeImage, loadCurrentAnnotations]);
+    })();
+  }, [activeProjectId, activeFilename, activeTaskType]);
 
   // Direct Click or Input: Assign category to current image
   const handleAssignCategory = async (catId: number, advance = autoAdvance) => {
@@ -170,6 +196,7 @@ export const AnnotationView: React.FC = () => {
       });
 
       setAnnotations([singleAnno]);
+      annotationsOwnerRef.current = activeImage.filename;
       setSelectedCategoryId(catId);
       setImageCategoryMap(prev => ({ ...prev, [activeImage.filename]: catId }));
       setImages(prev => prev.map((img, i) => i === currentIndex ? { ...img, labeled: true, annotation_count: 1 } : img));
@@ -224,6 +251,7 @@ export const AnnotationView: React.FC = () => {
       });
 
       setAnnotations([]);
+      annotationsOwnerRef.current = activeImage.filename;
       setImageCategoryMap(prev => {
         const next = { ...prev };
         delete next[activeImage.filename];
@@ -266,6 +294,10 @@ export const AnnotationView: React.FC = () => {
   // General Save (for Detection & Feature)
   const saveCurrentAnnotations = async () => {
     if (!activeProject || !activeImage) return;
+    if (annotationsOwnerRef.current !== activeImage.filename) {
+      // Annotations for this image have not finished loading (or failed to load): nothing to save.
+      return;
+    }
     try {
       setSaving(true);
       let toSave = [...annotations];
@@ -310,40 +342,51 @@ export const AnnotationView: React.FC = () => {
     }
   };
 
-  const handleNext = async () => {
-    if (taskType === 'detection' || taskType === 'feature') {
-      await saveCurrentAnnotations();
-    }
-    // Note: Regression is auto-saved on click, classification is auto-saved on button click.
-    if (currentIndex < images.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+  const navigate = async (delta: 1 | -1) => {
+    if (navBusyRef.current) return;
+    navBusyRef.current = true;
+    try {
+      if (taskType === 'detection' || taskType === 'feature') {
+        await saveCurrentAnnotations();
+      }
+      // Note: Regression is auto-saved on click, classification is auto-saved on button click.
+      setCurrentIndex((prev) => Math.min(Math.max(prev + delta, 0), Math.max(images.length - 1, 0)));
+    } finally {
+      navBusyRef.current = false;
     }
   };
 
-  const handlePrev = async () => {
-    if (taskType === 'detection' || taskType === 'feature') {
-      await saveCurrentAnnotations();
-    }
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-    }
-  };
+  const handleNext = () => navigate(1);
+  const handlePrev = () => navigate(-1);
+
+  // Keep the latest handlers in a ref so the keydown listener is registered once and never stale.
+  const keyStateRef = useRef({ handleNext, handlePrev, selectedBoxId });
+  keyStateRef.current = { handleNext, handlePrev, selectedBoxId };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (e.defaultPrevented) return; // e.g. CanvasAnnotator used the key to nudge/delete a box
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable)
+      ) {
         return;
       }
+      const isArrow = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+      // Arrow keys nudge the selected box; never also change images.
+      if (isArrow && keyStateRef.current.selectedBoxId) return;
       const k = e.key.toLowerCase();
       if (k === 'd' || e.key === '.' || e.key === '>' || e.key === 'ArrowRight') {
-        handleNext();
+        keyStateRef.current.handleNext();
       } else if (k === 'a' || e.key === ',' || e.key === '<' || e.key === 'ArrowLeft') {
-        handlePrev();
+        keyStateRef.current.handlePrev();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, images.length, taskType, annotations]);
+  }, []);
 
   const handleAddCategory = async (name: string, color?: string) => {
     if (!activeProject) return;
@@ -361,8 +404,8 @@ export const AnnotationView: React.FC = () => {
     // Count how many images in the project are labeled with this category
     let affectedImageCount = 0;
     try {
-      const cocoRes = await fetch(`/api/projects/${activeProject.id}/annotations`).then((r) => r.json()).catch(() => ({ annotations: [] }));
-      const annos: any[] = cocoRes.annotations || [];
+      const cocoRes = await api.getAnnotationsCoco(activeProject.id);
+      const annos = cocoRes.annotations || [];
       const matchingAnnos = annos.filter((a) => a.category_id === catId);
       const matchingImgSet = new Set(matchingAnnos.map((a) => String(a.image_id)));
 
@@ -867,6 +910,7 @@ export const AnnotationView: React.FC = () => {
                         });
                         
                         setAnnotations([singleAnno]);
+                        annotationsOwnerRef.current = activeImage.filename;
                         setImages((prev) =>
                           prev.map((img, i) =>
                             i === currentIndex
@@ -1004,7 +1048,16 @@ export const AnnotationView: React.FC = () => {
                     return (
                       <div
                         key={anno.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
                         onClick={() => setSelectedBoxId(anno.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedBoxId(anno.id);
+                          }
+                        }}
                         style={{
                           padding: '0.35rem 0.6rem',
                           borderRadius: 'var(--radius-xs)',

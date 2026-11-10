@@ -9,10 +9,18 @@ if str(root_dir) not in sys.path:
 import uvicorn
 
 if __name__ == "__main__":
-    print("[VisionForge] Starting Backend Server on http://127.0.0.1:8000 ...")
+    import os
+
+    host = os.environ.get("VF_HOST", "127.0.0.1")
+    port = int(os.environ.get("VF_PORT", "8000"))
+    # Auto-reload is a development feature: it restarts the server (and kills any running
+    # training thread) whenever a .py file changes. Enable with VF_RELOAD=1.
+    reload = os.environ.get("VF_RELOAD", "0") == "1"
+    print(f"[VisionForge] Starting Backend Server on http://{host}:{port} (reload={reload}) ...")
     uvicorn.run(
         "backend.app.main:app",
-        host="127.0.0.1",
-        port=8000,
-        reload=True
+        host=host,
+        port=port,
+        reload=reload,
+        reload_dirs=[str(Path(__file__).resolve().parent / "app")] if reload else None,
     )

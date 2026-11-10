@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "VisionForge AI Studio"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
+    # Port the server is expected to listen on (used for informational URLs). Override with env PORT.
+    PORT: int = 8000
     
     # Paths
     BACKEND_DIR: Path = Path(__file__).resolve().parent.parent.parent

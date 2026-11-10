@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Play, Send, FileJson, CheckCircle2, AlertCircle, UploadCloud, Layers } from 'lucide-react';
 import { api } from '../../services/api';
 import { Button } from '../common/Button';
@@ -22,6 +22,13 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
   const isZh = language === 'zh-TW';
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Release the previous preview blob whenever it is replaced, and on unmount.
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

@@ -1,7 +1,7 @@
 import json
 import uuid
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 from fastapi import HTTPException
@@ -32,7 +32,7 @@ class ProjectService:
             "name": project_data["name"],
             "description": project_data.get("description", ""),
             "task_type": project_data["task_type"],
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "version": "1.0.0",
             "classes": []
         }
@@ -44,7 +44,7 @@ class ProjectService:
     @staticmethod
     def create_project(data: ProjectCreate) -> ProjectResponse:
         project_id = f"proj_{uuid.uuid4().hex[:10]}"
-        now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         
         # 1. Create file directory
         ProjectService._create_project_directory_structure(project_id, data.model_dump())

@@ -7,6 +7,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 from backend.app.core.config import settings
 from backend.app.models.training import TrainConfigRequest, TrainingStatus, TrainedModelInfo
 from backend.app.services.training_engine import TrainingEngine
+from backend.app.core.paths import validate_architecture
 
 router = APIRouter(prefix="/projects/{project_id}/train", tags=["Training"])
 
@@ -38,32 +39,21 @@ manager = ConnectionManager()
 @router.post("/start", response_model=TrainingStatus)
 async def start_training(project_id: str, config: TrainConfigRequest):
     """Start model training background worker."""
+    loop = asyncio.get_running_loop()
+
+    def on_log(msg: str):
+        asyncio.run_coroutine_threadsafe(
+            manager.broadcast_json(project_id, {"type": "log", "message": msg}), loop
+        )
+
+    def on_metric(metric):
+        asyncio.run_coroutine_threadsafe(
+            manager.broadcast_json(project_id, {"type": "metric", "data": metric.model_dump()}), loop
+        )
+
     try:
-        loop = asyncio.get_running_loop()
-        job = TrainingEngine.start_training(project_id, config)
-        
-        # Attach broadcast callbacks
-        def on_log(msg: str):
-            try:
-                asyncio.run_coroutine_threadsafe(
-                    manager.broadcast_json(project_id, {"type": "log", "message": msg}),
-                    loop
-                )
-            except Exception:
-                pass
-
-        def on_metric(metric):
-            try:
-                asyncio.run_coroutine_threadsafe(
-                    manager.broadcast_json(project_id, {"type": "metric", "data": metric.model_dump()}),
-                    loop
-                )
-            except Exception:
-                pass
-
-        job.log_callbacks.append(on_log)
-        job.metric_callbacks.append(on_metric)
-
+        # Callbacks are attached before the worker thread starts so no early log line is lost.
+        TrainingEngine.start_training(project_id, config, log_callbacks=[on_log], metric_callbacks=[on_metric])
         return TrainingEngine.get_status(project_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -118,7 +108,7 @@ def get_trained_models_endpoint(project_id: str):
 def select_trained_model(project_id: str, architecture: str):
     """Select a specific trained model as the active one."""
     from backend.app.services.trained_model_service import TrainedModelService
-    success = TrainedModelService.select_model(project_id, architecture)
+    success = TrainedModelService.select_model(project_id, validate_architecture(architecture))
     if not success:
         raise HTTPException(status_code=400, detail="Failed to select model")
     return {"success": True, "message": f"Model {architecture} selected as active"}
@@ -127,7 +117,7 @@ def select_trained_model(project_id: str, architecture: str):
 def delete_trained_model(project_id: str, architecture: str):
     """Delete a specific trained model."""
     from backend.app.services.trained_model_service import TrainedModelService
-    success = TrainedModelService.delete_model(project_id, architecture)
+    success = TrainedModelService.delete_model(project_id, validate_architecture(architecture))
     if not success:
         raise HTTPException(status_code=400, detail="Failed to delete model")
     return {"success": True, "message": f"Model {architecture} deleted"}

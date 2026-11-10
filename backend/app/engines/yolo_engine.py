@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 import shutil
@@ -24,6 +25,8 @@ from backend.app.models.training import (
 )
 from backend.app.models.inference import RoiBox, InferenceResultItem
 from backend.app.engines.base_engine import BaseModelEngine
+
+logger = logging.getLogger("visionforge.yolo_engine")
 
 
 class YOLOModelEngine(BaseModelEngine):
@@ -184,6 +187,7 @@ class YOLOModelEngine(BaseModelEngine):
         aug = config.augmentation
 
         dataset_info = self.prepare_dataset(project_dir)
+        job.class_names = list(dataset_info.get("classes") or [])
         yaml_path = dataset_info["yaml_path"]
         class_names = dataset_info["classes"]
         num_train = dataset_info["train_count"]
@@ -393,7 +397,7 @@ class YOLOModelEngine(BaseModelEngine):
                 model = YOLO(str(ckpt_file))
                 return model, classes
             except Exception as e:
-                print(f"Warning loading YOLO checkpoint ({e}), fallback to base model")
+                logger.warning(f"Warning loading YOLO checkpoint ({e}), fallback to base model")
 
         return YOLO("yolo26n.pt"), classes
 

@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 import time
@@ -22,6 +23,8 @@ from backend.app.models.training import (
 )
 from backend.app.models.inference import RoiBox, InferenceResultItem
 from backend.app.engines.base_engine import BaseModelEngine
+
+logger = logging.getLogger("visionforge.ssdlite_engine")
 
 
 class SSDLiteDetectionDataset(Dataset):
@@ -183,6 +186,7 @@ class SSDLiteModelEngine(BaseModelEngine):
     def train(self, job: Any, config: TrainConfigRequest, project_dir: Path) -> None:
         hp = config.hyperparameters
         dataset_info = self.prepare_dataset(project_dir)
+        job.class_names = list(dataset_info.get("classes") or [])
         classes = dataset_info["classes"]
         num_classes = max(1, len(classes))
         train_samples = dataset_info["train_samples"]
@@ -295,7 +299,7 @@ class SSDLiteModelEngine(BaseModelEngine):
                 state = torch.load(ckpt_file, map_location="cpu", weights_only=False)
                 model.load_state_dict(state)
             except Exception as e:
-                print(f"Warning loading SSDLite checkpoint: {e}")
+                logger.warning(f"Warning loading SSDLite checkpoint: {e}")
 
         model.eval()
         return model, classes

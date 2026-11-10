@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Code2, Copy, Check } from 'lucide-react';
 import { Card } from '../common/Card';
 import { useProject } from '../../context/ProjectContext';
+import { getPredictEndpoint } from '../../services/api';
 
 interface CodeSnippetGeneratorProps {
   projectId: string;
@@ -16,7 +17,7 @@ export const CodeSnippetGenerator: React.FC<CodeSnippetGeneratorProps> = ({ proj
   const isZh = language === 'zh-TW';
 
   const getSnippet = (lang: LangKey): string => {
-    const endpoint = 'http://127.0.0.1:8000/api/inference/predict';
+    const endpoint = getPredictEndpoint();
 
     switch (lang) {
       case 'python':

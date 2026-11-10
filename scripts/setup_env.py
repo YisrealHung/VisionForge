@@ -126,12 +126,10 @@ def main():
     print(" [1/3] 檢查並安裝後端核心相依套件...")
     print("=" * 65)
     
-    if not (check_python_module(target_python, "fastapi") and check_python_module(target_python, "pydantic_settings")):
-        print("[*] 正在安裝後端必要套件 (FastAPI, Pydantic, Uvicorn 等)...")
-        req_file = ROOT_DIR / "backend" / "requirements.txt"
-        run_cmd(f'"{target_python}" -m pip install -r "{req_file}"')
-    else:
-        print("[OK] 後端核心套件 (FastAPI, Pydantic-Settings 等) 已安裝完成。")
+    # Always run pip -r: it is a fast no-op when everything is satisfied, and it picks up newly added requirements.
+    print("[*] 正在檢查/安裝後端必要套件 (FastAPI, Pydantic, Uvicorn, Pillow, ONNX 等)...")
+    req_file = ROOT_DIR / "backend" / "requirements.txt"
+    run_cmd(f'"{target_python}" -m pip install -r "{req_file}"')
 
     # 3. Check GPU / PyTorch
     print("\n" + "=" * 65)
@@ -158,7 +156,9 @@ def main():
 
     # Check ONNX / CV2 / PIL
     missing_tools = []
-    for pkg, mod in [("onnx", "onnx"), ("onnxruntime", "onnxruntime"), ("pillow", "PIL"), ("opencv-python", "cv2"), ("pyyaml", "yaml")]:
+    # ultralytics depends on torch, so it is installed here (after the right torch build), not via requirements.txt.
+    for pkg, mod in [("onnx", "onnx"), ("onnxruntime", "onnxruntime"), ("pillow", "PIL"), ("opencv-python", "cv2"),
+                     ("pyyaml", "yaml"), ("numpy", "numpy"), ("scipy", "scipy"), ("ultralytics", "ultralytics")]:
         if not check_python_module(target_python, mod):
             missing_tools.append(pkg)
     

@@ -18,7 +18,8 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  // Kept in a ref (not state) so cleanups always see the current stream, never a stale closure value.
+  const streamRef = useRef<MediaStream | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [isFlipped, setIsFlipped] = useState(false);
@@ -50,22 +51,27 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
-        setStream(null);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
       if (intervalTimerRef.current) {
         clearInterval(intervalTimerRef.current);
+        intervalTimerRef.current = null;
         setIsIntervalRunning(false);
       }
       setVideoResolution(null);
       return;
     }
 
+    let cancelled = false;
     const startCamera = async () => {
       try {
         setErrorMsg('');
-        if (stream) stream.getTracks().forEach((t) => t.stop());
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+        }
         const constraints: MediaStreamConstraints = {
           video: selectedDeviceId
             ? { deviceId: { exact: selectedDeviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
@@ -73,11 +79,17 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
           audio: false,
         };
         const newStream = await navigator.mediaDevices.getUserMedia(constraints);
-        setStream(newStream);
+        if (cancelled) {
+          // Modal closed or device changed while getUserMedia was pending.
+          newStream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = newStream;
         if (videoRef.current) {
           videoRef.current.srcObject = newStream;
         }
       } catch (err: any) {
+        if (cancelled) return;
         setErrorMsg(
           isZh
             ? '無法存取攝影機，請確認瀏覽器已允許攝影機權限或裝置未被其他程式占用。'
@@ -88,8 +100,21 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     };
 
     startCamera();
-    return () => { if (stream) stream.getTracks().forEach((t) => t.stop()); };
+    return () => {
+      cancelled = true;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
   }, [isOpen, selectedDeviceId]);
+
+  // Clear the interval-capture timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (intervalTimerRef.current) clearInterval(intervalTimerRef.current);
+    };
+  }, []);
 
   const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const v = e.currentTarget;
