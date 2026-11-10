@@ -50,7 +50,12 @@ export const MonitorView: React.FC = () => {
         setHistory(data.history);
       }
       if (data.logs && data.logs.length > 0) {
-        setLogs(tail(data.logs));
+        const next = tail(data.logs);
+        // Keep the same array (no re-render of up to MAX_LOG_LINES rows) when nothing changed,
+        // e.g. while the WebSocket already delivered these lines.
+        setLogs((prev) =>
+          prev.length === next.length && prev[prev.length - 1] === next[next.length - 1] ? prev : next
+        );
       }
     } catch (err) {
       console.error('Failed to get training status:', err);

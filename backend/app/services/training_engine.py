@@ -13,6 +13,7 @@ from typing import List, Dict, Optional, Any, Callable
 from PIL import Image
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.core.database import get_db
 from backend.app.models.training import (
     TrainConfigRequest,
@@ -25,6 +26,11 @@ from backend.app.models.training import (
 from backend.app.engines.engine_registry import ModelEngineRegistry
 
 logger = logging.getLogger("visionforge.training")
+
+
+# Status responses are polled every few seconds; send only the recent tail of the log
+# (the UI shows at most this many lines). The full log stays available via /train/logs.
+STATUS_LOG_TAIL = 1000
 
 
 class TrainingJob:
@@ -55,7 +61,7 @@ class TrainingJob:
 
         # Write to log file
         try:
-            log_dir = settings.PROJECTS_DIR / self.project_id / "models"
+            log_dir = resolve_project_dir(self.project_id) / "models"
             log_dir.mkdir(parents=True, exist_ok=True)
             with open(log_dir / "training.log", "a", encoding="utf-8") as f:
                 f.write(log_entry + "\n")
@@ -97,6 +103,21 @@ class TrainingEngine:
         return cls._jobs.get(project_id)
 
     @classmethod
+    def get_logs(cls, project_id: str) -> List[str]:
+        """Full log of the current (in-memory) job, else of the last saved run."""
+        job = cls._jobs.get(project_id)
+        if job:
+            return list(job.logs)
+        history_file = resolve_project_dir(project_id) / "models" / "training_history.json"
+        if history_file.exists():
+            try:
+                with open(history_file, "r", encoding="utf-8") as f:
+                    return list(json.load(f).get("logs", []))
+            except Exception:
+                logger.warning("Could not read logs from %s", history_file)
+        return []
+
+    @classmethod
     def get_status(cls, project_id: str) -> TrainingStatus:
         job = cls._jobs.get(project_id)
         if job:
@@ -115,13 +136,13 @@ class TrainingEngine:
                 error_message=job.error_message,
                 model_architecture=getattr(job, "architecture", None),
                 history=job.history,
-                logs=job.logs,
+                logs=job.logs[-STATUS_LOG_TAIL:],
                 start_time=job.start_time,
                 end_time=job.end_time
             )
 
         # Check saved history file
-        history_file = settings.PROJECTS_DIR / project_id / "models" / "training_history.json"
+        history_file = resolve_project_dir(project_id) / "models" / "training_history.json"
         if history_file.exists():
             try:
                 with open(history_file, "r", encoding="utf-8") as f:
@@ -141,7 +162,7 @@ class TrainingEngine:
                         model_architecture=data.get("architecture"),
                         eta_seconds=0,
                         history=hist,
-                        logs=data.get("logs", []),
+                        logs=data.get("logs", [])[-STATUS_LOG_TAIL:],
                         start_time=data.get("start_time"),
                         end_time=data.get("end_time")
                     )
@@ -203,7 +224,7 @@ class TrainingEngine:
     def _run_training_worker(cls, job: TrainingJob):
         project_id = job.project_id
         hp = job.config.hyperparameters
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
 
         job.status = "training"
         job.start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

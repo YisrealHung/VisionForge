@@ -51,6 +51,9 @@ export const AnnotationView: React.FC = () => {
 
   const [importing, setImporting] = useState(false);
   const [annoReloadKey, setAnnoReloadKey] = useState(0);
+  // Load state of the active image's annotations. Editing is blocked unless 'ready', so nothing the
+  // user draws can be lost to a pending/failed load or written onto the wrong image.
+  const [annoStatus, setAnnoStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const taskType = activeProject?.task_type || 'classification';
@@ -63,6 +66,12 @@ export const AnnotationView: React.FC = () => {
   const handleImportDataset = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !activeProject) return;
+    // The reload after import replaces the current image's annotations; persist unsaved boxes first.
+    if ((taskType === 'detection' || taskType === 'feature') && !(await saveCurrentAnnotations())) {
+      alert(isZh ? '目前圖片的標註儲存失敗，已取消匯入以免遺失。' : 'Saving the current image failed; import cancelled so nothing is lost.');
+      if (importInputRef.current) importInputRef.current.value = '';
+      return;
+    }
     try {
       setImporting(true);
       const res = await api.importDataset(activeProject.id, Array.from(files));
@@ -148,6 +157,7 @@ export const AnnotationView: React.FC = () => {
     if (!activeProjectId || !activeFilename) return;
     const seq = ++loadSeqRef.current;
     annotationsOwnerRef.current = null;
+    setAnnoStatus('loading');
     setAnnotations([]);
     setSelectedBoxId(null);
 
@@ -158,6 +168,7 @@ export const AnnotationView: React.FC = () => {
         const annos = data.annotations || [];
         setAnnotations(annos);
         annotationsOwnerRef.current = activeFilename;
+        setAnnoStatus('ready');
 
         if (annos.length > 0) {
           setSelectedCategoryId(annos[0].category_id);
@@ -173,10 +184,21 @@ export const AnnotationView: React.FC = () => {
       } catch (err) {
         if (seq === loadSeqRef.current) {
           console.error('Failed to load image annotations:', err);
+          setAnnoStatus('error');
         }
       }
     })();
   }, [activeProjectId, activeFilename, activeTaskType, annoReloadKey]);
+
+  // A direct save (category click, clear, regression point) replaces the image's annotations on the
+  // server. Drop any load still in flight so its older response cannot overwrite what was just saved.
+  const invalidatePendingLoad = () => {
+    loadSeqRef.current += 1;
+  };
+  const claimAnnotations = (filename: string) => {
+    annotationsOwnerRef.current = filename;
+    setAnnoStatus('ready');
+  };
 
   // Direct Click or Input: Assign category to current image
   const handleAssignCategory = async (catId: number, advance = autoAdvance) => {
@@ -192,13 +214,14 @@ export const AnnotationView: React.FC = () => {
         is_crowd: 0
       };
 
+      invalidatePendingLoad();
       await api.saveImageAnnotations(activeProject.id, activeImage.filename, {
         image_id: activeImage.filename,
         annotations: [singleAnno]
       });
 
       setAnnotations([singleAnno]);
-      annotationsOwnerRef.current = activeImage.filename;
+      claimAnnotations(activeImage.filename);
       setSelectedCategoryId(catId);
       setImageCategoryMap(prev => ({ ...prev, [activeImage.filename]: catId }));
       setImages(prev => prev.map((img, i) => i === currentIndex ? { ...img, labeled: true, annotation_count: 1 } : img));
@@ -247,13 +270,14 @@ export const AnnotationView: React.FC = () => {
     if (!activeProject || !activeImage) return;
     try {
       setSaving(true);
+      invalidatePendingLoad();
       await api.saveImageAnnotations(activeProject.id, activeImage.filename, {
         image_id: activeImage.filename,
         annotations: []
       });
 
       setAnnotations([]);
-      annotationsOwnerRef.current = activeImage.filename;
+      claimAnnotations(activeImage.filename);
       setImageCategoryMap(prev => {
         const next = { ...prev };
         delete next[activeImage.filename];
@@ -297,11 +321,12 @@ export const AnnotationView: React.FC = () => {
   };
 
   // General Save (for Detection & Feature)
-  const saveCurrentAnnotations = async () => {
-    if (!activeProject || !activeImage) return;
+  // Returns false only when a save was attempted and failed (callers then stay on this image).
+  const saveCurrentAnnotations = async (): Promise<boolean> => {
+    if (!activeProject || !activeImage) return true;
     if (annotationsOwnerRef.current !== activeImage.filename) {
-      // Annotations for this image have not finished loading (or failed to load): nothing to save.
-      return;
+      // Not loaded yet / load failed: editing is blocked in that state, so there is nothing to save.
+      return true;
     }
     try {
       setSaving(true);
@@ -340,8 +365,11 @@ export const AnnotationView: React.FC = () => {
             : img
         )
       );
+      return true;
     } catch (err) {
       console.error('Save failed:', err);
+      alert(isZh ? '標註儲存失敗，請稍後再試（尚未切換圖片，標註仍保留在畫面上）。' : 'Saving annotations failed. Please retry (you are still on this image; your boxes are kept).');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -351,8 +379,8 @@ export const AnnotationView: React.FC = () => {
     if (navBusyRef.current) return;
     navBusyRef.current = true;
     try {
-      if (taskType === 'detection' || taskType === 'feature') {
-        await saveCurrentAnnotations();
+      if ((taskType === 'detection' || taskType === 'feature') && !(await saveCurrentAnnotations())) {
+        return; // keep the user's unsaved boxes on screen
       }
       // Note: Regression is auto-saved on click, classification is auto-saved on button click.
       setCurrentIndex((prev) => Math.min(Math.max(prev + delta, 0), Math.max(images.length - 1, 0)));
@@ -608,7 +636,13 @@ export const AnnotationView: React.FC = () => {
             <Button
               variant="primary"
               size="sm"
-              onClick={saveCurrentAnnotations}
+              onClick={() => {
+                if (annoStatus === 'error') {
+                  alert(isZh ? '此圖片的標註載入失敗，請先按「重新載入」。' : 'Annotations for this image failed to load. Click "Reload" first.');
+                  return;
+                }
+                saveCurrentAnnotations();
+              }}
               loading={saving}
               icon={saveSuccess ? <Check size={14} /> : <Save size={14} />}
             >
@@ -909,13 +943,14 @@ export const AnnotationView: React.FC = () => {
                           is_crowd: 0
                         };
                         
+                        invalidatePendingLoad();
                         await api.saveImageAnnotations(activeProject.id, activeImage.filename, {
                           image_id: activeImage.filename,
                           annotations: [singleAnno]
                         });
                         
                         setAnnotations([singleAnno]);
-                        annotationsOwnerRef.current = activeImage.filename;
+                        claimAnnotations(activeImage.filename);
                         setImages((prev) =>
                           prev.map((img, i) =>
                             i === currentIndex
@@ -968,15 +1003,43 @@ export const AnnotationView: React.FC = () => {
           {(taskType === 'detection' || taskType === 'feature') && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
               {activeImage ? (
-                <CanvasAnnotator
-                  imageUrl={activeImage.url}
-                  annotations={annotations}
-                  categories={categories}
-                  selectedCategoryId={selectedCategoryId}
-                  onAnnotationsChange={setAnnotations}
-                  selectedBoxId={selectedBoxId}
-                  onSelectBox={setSelectedBoxId}
-                />
+                <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  <div
+                    style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, pointerEvents: annoStatus === 'ready' ? 'auto' : 'none' }}
+                    aria-busy={annoStatus === 'loading'}
+                  >
+                    <CanvasAnnotator
+                      imageUrl={activeImage.url}
+                      annotations={annotations}
+                      categories={categories}
+                      selectedCategoryId={selectedCategoryId}
+                      onAnnotationsChange={setAnnotations}
+                      selectedBoxId={selectedBoxId}
+                      onSelectBox={setSelectedBoxId}
+                    />
+                  </div>
+                  {annoStatus !== 'ready' && (
+                    <div
+                      role={annoStatus === 'error' ? 'alert' : 'status'}
+                      style={{
+                        position: 'absolute', top: '0.75rem', left: '50%', transform: 'translateX(-50%)',
+                        padding: '0.4rem 0.8rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem',
+                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                        background: annoStatus === 'error' ? 'rgba(244, 63, 94, 0.15)' : 'var(--bg-surface-elevated)',
+                        border: `1px solid ${annoStatus === 'error' ? '#f43f5e' : 'var(--border-subtle)'}`,
+                      }}
+                    >
+                      {annoStatus === 'loading'
+                        ? (isZh ? '正在載入標註…' : 'Loading annotations…')
+                        : (isZh ? '標註載入失敗，暫停編輯以免覆蓋既有標註。' : 'Failed to load annotations; editing is paused so existing labels are not overwritten.')}
+                      {annoStatus === 'error' && (
+                        <Button variant="secondary" size="sm" onClick={() => setAnnoReloadKey((k) => k + 1)}>
+                          {isZh ? '重新載入' : 'Reload'}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                   {isZh ? '無圖片' : 'No image'}

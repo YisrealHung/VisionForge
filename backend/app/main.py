@@ -91,14 +91,18 @@ if frontend_assets.exists():
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    if full_path.startswith(("api", "docs", "openapi.json", "assets/")):
-        # Missing assets must 404 instead of falling back to index.html (which breaks JS MIME types).
+    if full_path.startswith(("api", "docs", "openapi.json")):
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     dist_dir = settings.FRONTEND_DIST.resolve()
     if (dist_dir / "index.html").exists():
         file_path = (dist_dir / full_path).resolve()
         if file_path.is_relative_to(dist_dir) and file_path.is_file():
+            # Also serves /assets/* when dist was built after startup (the /assets mount only exists
+            # if the folder was there at import time).
             return FileResponse(file_path)
+        if full_path.startswith("assets/"):
+            # A missing asset must 404, not fall back to index.html (wrong MIME type for JS/CSS).
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
         return FileResponse(dist_dir / "index.html")
     return {
         "message": f"Welcome to {settings.PROJECT_NAME}",

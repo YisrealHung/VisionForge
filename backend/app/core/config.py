@@ -25,7 +25,9 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000"
     ]
 
-    model_config = SettingsConfigDict(case_sensitive=True)
+    # env_ignore_empty: treat `VF_PORT=` / `PORT=` (set but empty, e.g. from docker-compose or a bash
+    # export) as unset instead of failing int parsing at import; matches run.py's fallback.
+    model_config = SettingsConfigDict(case_sensitive=True, env_ignore_empty=True)
 
 settings = Settings()
 

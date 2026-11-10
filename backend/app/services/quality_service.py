@@ -22,6 +22,7 @@ import numpy as np
 from PIL import Image
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.models.quality import (
     QualityReport,
     QualityCheckItem,
@@ -41,7 +42,7 @@ class QualityService:
     @classmethod
     def run_quality_check(cls, project_id: str) -> QualityReport:
         t0 = time.time()
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         raw_dir = project_dir / "datasets" / "raw"
         anno_file = project_dir / "annotations" / "annotations.json"
 
@@ -113,7 +114,7 @@ class QualityService:
 
     @classmethod
     def get_cached_report(cls, project_id: str) -> QualityReport | None:
-        report_file = settings.PROJECTS_DIR / project_id / "datasets" / "quality_report.json"
+        report_file = resolve_project_dir(project_id) / "datasets" / "quality_report.json"
         if not report_file.exists():
             return None
         try:

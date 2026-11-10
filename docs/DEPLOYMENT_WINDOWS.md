@@ -120,8 +120,9 @@ python -m pip install --upgrade pip
 
 ### 步驟 5.2：安裝基礎後端 API 套件
 ```cmd
-pip install -r backend/requirements.txt
+python scripts/safe_pip.py -r backend/requirements.txt
 ```
+> `safe_pip.py` 會鎖定環境中已安裝的 torch / torchvision / numpy / OpenCV / onnxruntime 版本，重複執行也不會把 CUDA 版 PyTorch 換掉。
 
 ---
 

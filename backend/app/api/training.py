@@ -5,8 +5,9 @@ from pathlib import Path
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.models.training import TrainConfigRequest, TrainingStatus, TrainedModelInfo
-from backend.app.services.training_engine import TrainingEngine
+from backend.app.services.training_engine import TrainingEngine, STATUS_LOG_TAIL
 from backend.app.core.paths import validate_architecture
 
 router = APIRouter(prefix="/projects/{project_id}/train", tags=["Training"])
@@ -77,10 +78,10 @@ def get_training_logs(project_id: str):
 @router.get("/history-list")
 def get_training_history_list(project_id: str):
     """Get all training runs for Model Arena comparison."""
-    histories_file = settings.PROJECTS_DIR / project_id / "models" / "training_histories.json"
+    histories_file = resolve_project_dir(project_id) / "models" / "training_histories.json"
     if not histories_file.exists():
         # Fallback: try single history file
-        single_file = settings.PROJECTS_DIR / project_id / "models" / "training_history.json"
+        single_file = resolve_project_dir(project_id) / "models" / "training_history.json"
         if single_file.exists():
             try:
                 with open(single_file, "r", encoding="utf-8") as f:
@@ -129,7 +130,7 @@ async def websocket_training_stream(websocket: WebSocket, project_id: str):
     try:
         # Send initial status with full history and logs
         status = TrainingEngine.get_status(project_id)
-        logs = TrainingEngine.get_logs(project_id)
+        logs = TrainingEngine.get_logs(project_id)[-STATUS_LOG_TAIL:]
         await websocket.send_json({
             "type": "init", 
             "status": status.model_dump(), 

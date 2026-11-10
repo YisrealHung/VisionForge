@@ -11,9 +11,14 @@ numpy>=1.24
 scipy>=1.10
 pyyaml>=6.0
 onnx>=1.15
-onnxruntime>=1.17
 
 # --- Installed separately on purpose (see scripts/setup_env.py and docs/) ---
+# Install this file with:  python scripts/safe_pip.py -r backend/requirements.txt
+# safe_pip pins the already-installed torch / torchvision / numpy / OpenCV / onnxruntime builds,
+# so a plain re-install can never upgrade numpy past what NVIDIA's torch wheel was built for.
+# onnxruntime         : CPU `onnxruntime` and `onnxruntime-gpu` share one module; installing the CPU
+#                       wheel next to the GPU build shadows it, so setup_env.py installs it only if
+#                       `import onnxruntime` fails.
 # torch / torchvision : the correct wheel depends on CUDA version (Windows cu121) or JetPack (Jetson).
 # ultralytics         : depends on torch, so it must be installed AFTER the right torch build,
 #                       otherwise pip pulls a CPU-only torch first.

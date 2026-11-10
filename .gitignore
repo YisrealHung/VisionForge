@@ -92,3 +92,6 @@ env_config.sh
 
 # Frontend build output (build with `npm run build`; never commit a partial dist/)
 frontend/dist/
+
+# TypeScript incremental build info
+*.tsbuildinfo

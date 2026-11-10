@@ -159,3 +159,51 @@ def test_stopped_before_first_epoch_is_not_registered(client, project, monkeypat
     _wait_done(pid)
     assert not (tmp_settings.PROJECTS_DIR / pid / "models" / "training_histories.json").exists()
     assert client.get(f"/api/projects/{pid}").json()["model_count"] == 0
+
+
+# ---------------------------------------------------------------- follow-up regressions
+def test_assets_built_after_startup_are_served(tmp_settings):
+    # The /assets StaticFiles mount only exists if dist/assets existed at import time;
+    # the SPA fallback must still serve real asset files built later, and 404 missing ones.
+    from backend.app.main import serve_spa
+
+    assets = tmp_settings.FRONTEND_DIST / "assets"
+    assets.mkdir(parents=True)
+    (tmp_settings.FRONTEND_DIST / "index.html").write_text("<html></html>")
+    (assets / "index-abc.js").write_text("console.log(1)")
+
+    resp = asyncio.run(serve_spa("assets/index-abc.js"))
+    assert str(resp.path).endswith("index-abc.js")
+    assert asyncio.run(serve_spa("assets/missing.js")).status_code == 404
+
+
+def test_project_id_with_trailing_newline_rejected():
+    from backend.app.core.paths import is_valid_project_id
+
+    assert is_valid_project_id("proj_0123456789abcdef"[:15])
+    assert not is_valid_project_id("proj_0123456789\n")
+
+
+@pytest.mark.parametrize("env,expected", [
+    ({}, 8000),
+    ({"VF_PORT": ""}, 8000),
+    ({"VF_PORT": "", "PORT": "9002"}, 9002),
+    ({"VF_PORT": "9001", "PORT": "9002"}, 9001),
+])
+def test_port_env_empty_means_unset(monkeypatch, env, expected):
+    from backend.app.core.config import Settings
+
+    for k in ("VF_PORT", "PORT"):
+        monkeypatch.delenv(k, raising=False)
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    assert Settings().PORT == expected
+
+
+def test_training_ws_sends_init_and_logs_endpoint(client, project):
+    # TrainingEngine.get_logs used to be missing: the WS closed right after accept and /logs 500'd.
+    pid = project["id"]
+    assert client.get(f"/api/projects/{pid}/train/logs").json() == {"logs": []}
+    with client.websocket_connect(f"/api/projects/{pid}/train/ws") as ws:
+        msg = ws.receive_json()
+        assert msg["type"] == "init" and msg["logs"] == []

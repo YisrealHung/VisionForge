@@ -175,6 +175,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isZh ? '📷 攝影機即時擷取' : '📷 Live Camera Capture'}
+      closeLabel={isZh ? '關閉' : 'Close'}
       maxWidth={videoResolution && videoResolution.aspect < 1.3 ? '680px' : '820px'}
       footer={
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>

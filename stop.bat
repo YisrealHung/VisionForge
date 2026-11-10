@@ -1,4 +1,5 @@
 @echo off
+if not defined VF_PORT set "VF_PORT=8000"
 title VisionForge AI Studio - Stop Services
 
 echo ==========================================================
@@ -8,9 +9,9 @@ echo.
 
 set KILLED=0
 
-:: 1. Terminate Backend on Port 8000
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000" ^| findstr "LISTENING"') do (
-    echo [*] Stopping Backend on Port 8000, PID: %%a
+:: 1. Terminate Backend on Port %VF_PORT%
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%VF_PORT%" ^| findstr "LISTENING"') do (
+    echo [*] Stopping Backend on Port %VF_PORT%, PID: %%a
     taskkill /F /T /PID %%a >nul 2>&1
     set KILLED=1
 )

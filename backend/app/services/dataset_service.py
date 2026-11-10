@@ -17,7 +17,7 @@ from fastapi import UploadFile, HTTPException
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.models.dataset import ImageItem, DatasetSplitRequest, DatasetStats
-from backend.app.core.paths import safe_filename, validate_project_id
+from backend.app.core.paths import resolve_project_dir, safe_filename
 
 logger = logging.getLogger("visionforge.dataset_service")
 
@@ -25,7 +25,7 @@ logger = logging.getLogger("visionforge.dataset_service")
 class DatasetService:
     @staticmethod
     def get_project_dir(project_id: str) -> Path:
-        p_dir = settings.PROJECTS_DIR / validate_project_id(project_id)
+        p_dir = resolve_project_dir(project_id)
         if not p_dir.exists():
             raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
         return p_dir

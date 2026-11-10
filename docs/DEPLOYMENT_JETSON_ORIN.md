@@ -204,12 +204,16 @@ cd VisionForge
 # 升級 pip
 python3 -m pip install --upgrade pip
 
-# 安裝 FastAPI 後端基礎套件
-pip3 install -r backend/requirements.txt
+# 安裝 FastAPI 後端基礎套件（透過 safe_pip：自動鎖定已安裝的 torch / torchvision / numpy / OpenCV / onnxruntime 版本）
+python3 scripts/safe_pip.py -r backend/requirements.txt
 
-# 安裝 Ultralytics YOLO、影像庫與工具套件
-pip3 install ultralytics pillow scipy pyyaml onnx
+# 安裝 Ultralytics YOLO（Jetson 上不會額外拉入 opencv-python 覆蓋 JetPack 內建 OpenCV）
+python3 scripts/safe_pip.py ultralytics
 ```
+
+> ⚠️ **請勿直接執行 `pip3 install -r backend/requirements.txt`**：pip 可能為了滿足新版 scipy / onnx 而把 numpy 升級到 2.x，
+> 導致 NVIDIA 提供的 PyTorch wheel 無法載入。`safe_pip.py` 會以 constraints 檔鎖住既有版本；若新套件與之衝突，
+> 安裝會直接失敗並保留原環境，而不是默默升級。`./setup_env.sh` 也使用同一套機制，可以安心重複執行。
 
 ### 步驟 5.3：安裝支援 GStreamer 的 OpenCV (針對相機影像串流)
 JetPack 通常已預載支援硬體解碼的 OpenCV，若需額外安裝請執行：

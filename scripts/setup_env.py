@@ -14,6 +14,11 @@ if sys.platform == "win32":
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
+# Every pip install below goes through safe_pip, which pins the already-installed torch /
+# torchvision / numpy / OpenCV / onnxruntime builds so re-running setup never breaks them.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import safe_pip  # noqa: E402
+
 def run_cmd(cmd, cwd=None, check=True):
     print(f"\n>> 執行: {cmd}")
     res = subprocess.run(cmd, shell=True, cwd=cwd or ROOT_DIR)
@@ -126,17 +131,24 @@ def main():
     print(" [1/3] 檢查並安裝後端核心相依套件...")
     print("=" * 65)
     
-    # Always run pip -r: it is a fast no-op when everything is satisfied, and it picks up newly added requirements.
+    # Always run pip -r (a fast no-op when satisfied, and it picks up new requirements), but constrained
+    # so existing torch / numpy / OpenCV / onnxruntime builds are never upgraded or replaced.
     print("[*] 正在檢查/安裝後端必要套件 (FastAPI, Pydantic, Uvicorn, Pillow, ONNX 等)...")
     req_file = ROOT_DIR / "backend" / "requirements.txt"
-    run_cmd(f'"{target_python}" -m pip install -r "{req_file}"')
+    if not safe_pip.pip_install(target_python, ["-r", str(req_file)]):
+        print("[!] 後端套件安裝失敗（若為版本衝突，代表新套件需要更動已鎖定的 torch/numpy，已中止以保護環境）。")
 
     # 3. Check GPU / PyTorch
     print("\n" + "=" * 65)
     print(" [2/3] 檢查 GPU 與深度學習環境 (PyTorch / CUDA / ONNX)...")
     print("=" * 65)
     
-    if not check_python_module(target_python, "torch"):
+    on_jetson = safe_pip.is_jetson()
+    if not check_python_module(target_python, "torch") and on_jetson:
+        # PyPI has no CUDA build for Jetson; `pip install torch` would install a CPU-only wheel.
+        print("[!] Jetson 上偵測不到 PyTorch。請依 docs/DEPLOYMENT_JETSON_ORIN.md 安裝 NVIDIA 提供的 JetPack 專用 wheel，")
+        print("    本精靈不會自動從 PyPI 安裝 torch，以免裝到不支援 GPU 的版本。")
+    elif not check_python_module(target_python, "torch"):
         has_gpu = False
         try:
             smi_out = subprocess.check_output("nvidia-smi", shell=True, text=True, errors="ignore")
@@ -147,26 +159,40 @@ def main():
 
         if has_gpu:
             print("[+] 偵測到 NVIDIA GPU！正在安裝 CUDA 12.1 PyTorch 加速支援...")
-            run_cmd(f'"{target_python}" -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121')
+            safe_pip.pip_install(target_python, ["torch", "torchvision"],
+                                 extra_pip_args=["--index-url", "https://download.pytorch.org/whl/cu121"])
         else:
             print("[*] 未偵測到 GPU，安裝標準 CPU 版 PyTorch...")
-            run_cmd(f'"{target_python}" -m pip install torch torchvision')
+            safe_pip.pip_install(target_python, ["torch", "torchvision"])
     else:
         print("[OK] PyTorch 深度學習框架已就緒。")
 
-    # Check ONNX / CV2 / PIL
+    # Check ONNX / CV2 / PIL. Checked by *module* so an existing onnxruntime-gpu or JetPack OpenCV
+    # counts as installed and is never shadowed by the CPU / pip wheel.
     missing_tools = []
-    # ultralytics depends on torch, so it is installed here (after the right torch build), not via requirements.txt.
     for pkg, mod in [("onnx", "onnx"), ("onnxruntime", "onnxruntime"), ("pillow", "PIL"), ("opencv-python", "cv2"),
-                     ("pyyaml", "yaml"), ("numpy", "numpy"), ("scipy", "scipy"), ("ultralytics", "ultralytics")]:
-        if not check_python_module(target_python, mod):
-            missing_tools.append(pkg)
-    
+                     ("pyyaml", "yaml"), ("numpy", "numpy"), ("scipy", "scipy")]:
+        if check_python_module(target_python, mod):
+            continue
+        if on_jetson and pkg == "opencv-python":
+            print("[!] Jetson 上找不到 cv2：請使用 JetPack 內建或自行編譯的 OpenCV（支援 GStreamer/CUDA），不自動安裝 pip 版。")
+            continue
+        missing_tools.append(pkg)
+
     if missing_tools:
         print(f"[*] 正在安裝其餘視覺與推論套件: {missing_tools}...")
-        run_cmd(f'"{target_python}" -m pip install {" ".join(missing_tools)}')
+        safe_pip.pip_install(target_python, missing_tools)
     else:
         print("[OK] ONNX, OpenCV, Pillow, PyYAML 視覺推論套件皆已就緒。")
+
+    # ultralytics depends on torch/opencv, so it is installed last, after the right torch build,
+    # and on Jetson without letting it pull the opencv-python wheel.
+    if not check_python_module(target_python, "ultralytics"):
+        if check_python_module(target_python, "torch"):
+            print("[*] 正在安裝 Ultralytics YOLO...")
+            safe_pip.install_ultralytics(target_python)
+        else:
+            print("[!] 尚未安裝 PyTorch，略過 Ultralytics 安裝（安裝 torch 後重新執行本精靈即可）。")
 
     # 4. Frontend node_modules check
     print("\n" + "=" * 65)
@@ -216,6 +242,7 @@ export PATH="${{CONDA_ENV_DIR}}/bin:${{PATH}}"
 
     # start.bat
     start_bat_content = """@echo off
+if not defined VF_PORT set "VF_PORT=8000"
 title VisionForge AI Studio - Launcher
 
 cd /d "%~dp0"
@@ -262,9 +289,9 @@ echo ==========================================================
 echo [*] Starting VisionForge services...
 echo ==========================================================
 
-:: 1. Launch FastAPI Backend (Port 8000)
-echo [1/2] Launching Backend Server on http://127.0.0.1:8000 ...
-start "VisionForge - Backend (Port 8000)" cmd /k "%~dp0scripts\\run_backend.bat"
+:: 1. Launch FastAPI Backend (Port %VF_PORT%)
+echo [1/2] Launching Backend Server on http://127.0.0.1:%VF_PORT% ...
+start "VisionForge - Backend (Port %VF_PORT%)" cmd /k "%~dp0scripts\\run_backend.bat"
 
 :: 2. Launch Vite Frontend (Port 5173)
 echo [2/2] Launching Frontend Server on http://localhost:5173 ...
@@ -280,8 +307,8 @@ echo.
 echo ==========================================================
 echo   VisionForge is now RUNNING!
 echo   - Frontend: http://localhost:5173
-echo   - Backend:  http://127.0.0.1:8000
-echo   - API Docs: http://127.0.0.1:8000/docs
+echo   - Backend:  http://127.0.0.1:%VF_PORT%
+echo   - API Docs: http://127.0.0.1:%VF_PORT%/docs
 echo.
 echo   To STOP all services, run: stop.bat
 echo ==========================================================
@@ -305,6 +332,7 @@ exit /b 1
 
     # stop.bat
     stop_bat_content = """@echo off
+if not defined VF_PORT set "VF_PORT=8000"
 title VisionForge AI Studio - Stop Services
 
 echo ==========================================================
@@ -314,9 +342,9 @@ echo.
 
 set KILLED=0
 
-:: 1. Terminate Backend on Port 8000
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000" ^| findstr "LISTENING"') do (
-    echo [*] Stopping Backend on Port 8000, PID: %%a
+:: 1. Terminate Backend on Port %VF_PORT%
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%VF_PORT%" ^| findstr "LISTENING"') do (
+    echo [*] Stopping Backend on Port %VF_PORT%, PID: %%a
     taskkill /F /T /PID %%a >nul 2>&1
     set KILLED=1
 )
@@ -346,15 +374,16 @@ pause
 
     # scripts/run_backend.bat
     run_backend_content = """@echo off
-title VisionForge - Backend Server (Port 8000)
+if not defined VF_PORT set "VF_PORT=8000"
+title VisionForge - Backend Server (Port %VF_PORT%)
 
 cd /d "%~dp0..\\"
 set "PYTHONPATH=%cd%"
 
 echo ==========================================================
 echo   VisionForge - Backend Server
-echo   Running on: http://127.0.0.1:8000
-echo   API Docs:   http://127.0.0.1:8000/docs
+echo   Running on: http://127.0.0.1:%VF_PORT%
+echo   API Docs:   http://127.0.0.1:%VF_PORT%/docs
 echo ==========================================================
 echo.
 
@@ -371,7 +400,7 @@ if exist "%~dp0..\\env_config.bat" (
 )
 
 echo [*] Using Python: %PY_CMD%
-"%PY_CMD%" -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload --reload-dir backend/app
+"%PY_CMD%" -m uvicorn backend.app.main:app --host 127.0.0.1 --port %VF_PORT% --reload --reload-dir backend/app
 
 if errorlevel 1 (
     echo.

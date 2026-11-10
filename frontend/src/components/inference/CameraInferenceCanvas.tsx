@@ -328,12 +328,21 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   const processFrame = async (gen: number) => {
     if (!loopRef.current || gen !== loopGenRef.current) return;
 
+    const scheduleNext = (delayMs: number) => {
+      if (loopRef.current && gen === loopGenRef.current) {
+        loopTimerRef.current = setTimeout(() => processFrameRef.current(gen), delayMs);
+      }
+    };
+
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const ctx = canvas?.getContext('2d') ?? null;
+    if (!canvas || !ctx) {
+      // Canvas briefly unavailable (e.g. re-render/layout change): retry instead of silently
+      // ending the loop while the UI still shows "running".
+      scheduleNext(250);
+      return;
+    }
 
     if (feedMode === 'webcam' && video && video.readyState === video.HAVE_ENOUGH_DATA) {
       canvas.width = video.videoWidth || 640;
@@ -395,9 +404,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       console.error('Frame inference error:', err);
     }
 
-    if (loopRef.current && gen === loopGenRef.current) {
-      loopTimerRef.current = setTimeout(() => processFrameRef.current(gen), 65);
-    }
+    scheduleNext(65);
   };
   const processFrameRef = useRef(processFrame);
   processFrameRef.current = processFrame;

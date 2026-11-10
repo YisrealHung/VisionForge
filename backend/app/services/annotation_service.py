@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import HTTPException
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.models.dataset import CategoryItem, AnnotationItem, ImageAnnotationData
 
 DEFAULT_COLORS = [
@@ -15,7 +16,7 @@ DEFAULT_COLORS = [
 class AnnotationService:
     @staticmethod
     def get_anno_file(project_id: str) -> Path:
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         if not project_dir.exists():
             raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
         anno_dir = project_dir / "annotations"

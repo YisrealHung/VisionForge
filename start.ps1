@@ -59,8 +59,10 @@ Write-Host "==========================================================" -Foregro
 Write-Host "[*] 正在啟動服務..." -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 
+$backendPort = if ($env:VF_PORT) { $env:VF_PORT } else { "8000" }
+
 # 1. Start Backend in separate window
-Write-Host " [1/2] 啟動後端 FastAPI (Port 8000)..." -ForegroundColor Green
+Write-Host " [1/2] 啟動後端 FastAPI (Port $backendPort)..." -ForegroundColor Green
 Start-Process -FilePath "cmd.exe" -ArgumentList "/k `"$rootDir\scripts\run_backend.bat`""
 
 # Wait 2 seconds for Python backend to initialize
@@ -79,8 +81,8 @@ Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "  🎉 VisionForge 已成功啟動！" -ForegroundColor Green
 Write-Host "  - 前端介面: http://localhost:5173" -ForegroundColor Cyan
-Write-Host "  - 後端 API:  http://127.0.0.1:8000" -ForegroundColor Cyan
-Write-Host "  - API 文件:  http://127.0.0.1:8000/docs" -ForegroundColor Cyan
+Write-Host "  - 後端 API:  http://127.0.0.1:$backendPort" -ForegroundColor Cyan
+Write-Host "  - API 文件:  http://127.0.0.1:$backendPort/docs" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host ""
 Read-Host "按 Enter 鍵關閉此引導視窗（背景伺服器將持續運行）..."

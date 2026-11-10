@@ -1,6 +1,5 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
-import { useProject } from '../../context/ProjectContext';
 
 interface ModalProps {
   isOpen: boolean;
@@ -9,6 +8,8 @@ interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?: string;
+  /** Accessible label for the close button; pass a localized string. */
+  closeLabel?: string;
 }
 
 const FOCUSABLE =
@@ -20,15 +21,14 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   footer,
-  maxWidth = '560px'
+  maxWidth = '560px',
+  closeLabel = 'Close',
 }) => {
   const titleId = useId();
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Keep the latest onClose without re-running the open/close effect on every parent render.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-  const { language } = useProject();
-  const closeLabel = language === 'zh-TW' ? '關閉' : 'Close';
 
   useEffect(() => {
     if (!isOpen) return;

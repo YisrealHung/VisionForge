@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Any
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.models.training import TrainedModelInfo
 
 logger = logging.getLogger("visionforge.trained_model_service")
@@ -44,7 +45,7 @@ class TrainedModelService:
         classes: List[str],
         task_type: str = "detection"
     ) -> None:
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         ckpt_dir = project_dir / "models" / "checkpoints"
         ckpt_dir.mkdir(parents=True, exist_ok=True)
         json_file = project_dir / "models" / "trained_models.json"
@@ -102,7 +103,7 @@ class TrainedModelService:
 
     @classmethod
     def list_trained_models(cls, project_id: str) -> List[TrainedModelInfo]:
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         ckpt_dir = project_dir / "models" / "checkpoints"
         json_file = project_dir / "models" / "trained_models.json"
         history_file = project_dir / "models" / "training_history.json"
@@ -190,7 +191,7 @@ class TrainedModelService:
 
     @classmethod
     def select_model(cls, project_id: str, architecture: str) -> bool:
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         json_file = project_dir / "models" / "trained_models.json"
         history_file = project_dir / "models" / "training_history.json"
         
@@ -231,7 +232,7 @@ class TrainedModelService:
 
     @classmethod
     def delete_model(cls, project_id: str, architecture: str) -> bool:
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         ckpt_dir = project_dir / "models" / "checkpoints"
         json_file = project_dir / "models" / "trained_models.json"
         history_file = project_dir / "models" / "training_history.json"

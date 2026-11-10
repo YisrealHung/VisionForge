@@ -7,13 +7,14 @@ from typing import List, Optional
 from fastapi import HTTPException
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.core.database import get_db
 from backend.app.models.project import ProjectCreate, ProjectResponse, ProjectUpdate
 
 class ProjectService:
     @staticmethod
     def _create_project_directory_structure(project_id: str, project_data: dict) -> Path:
-        project_path = settings.PROJECTS_DIR / project_id
+        project_path = resolve_project_dir(project_id)
         project_path.mkdir(parents=True, exist_ok=True)
         
         # Subdirectories according to architecture doc
@@ -154,7 +155,7 @@ class ProjectService:
             cursor.execute("DELETE FROM projects WHERE id = ?", (project_id,))
             
         # 2. Delete files on disk
-        project_path = settings.PROJECTS_DIR / project_id
+        project_path = resolve_project_dir(project_id)
         if project_path.exists():
             shutil.rmtree(project_path, ignore_errors=True)
             
