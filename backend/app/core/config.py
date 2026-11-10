@@ -1,12 +1,13 @@
 from pathlib import Path
-from pydantic_settings import BaseSettings
+from pydantic import AliasChoices, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "VisionForge AI Studio"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
-    # Port the server is expected to listen on (used for informational URLs). Override with env PORT.
-    PORT: int = 8000
+    # Port the server is expected to listen on (used for informational URLs). Override with VF_PORT or PORT.
+    PORT: int = Field(default=8000, validation_alias=AliasChoices("VF_PORT", "PORT"))
     
     # Paths
     BACKEND_DIR: Path = Path(__file__).resolve().parent.parent.parent
@@ -24,8 +25,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000"
     ]
 
-    class Config:
-        case_sensitive = True
+    model_config = SettingsConfigDict(case_sensitive=True)
 
 settings = Settings()
 

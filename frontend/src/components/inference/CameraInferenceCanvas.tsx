@@ -369,6 +369,8 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         trigger_rules: triggerRules,
       });
 
+      if (!loopRef.current || gen !== loopGenRef.current) return;
+
       setPrediction(res);
       setLatency(res.inference_time_ms);
 

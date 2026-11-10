@@ -50,6 +50,7 @@ export const AnnotationView: React.FC = () => {
   const [regressionPoint, setRegressionPoint] = useState<{x: number, y: number} | null>(null);
 
   const [importing, setImporting] = useState(false);
+  const [annoReloadKey, setAnnoReloadKey] = useState(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const taskType = activeProject?.task_type || 'classification';
@@ -67,6 +68,7 @@ export const AnnotationView: React.FC = () => {
       const res = await api.importDataset(activeProject.id, Array.from(files));
       alert(isZh ? `🎉 成功匯入 ${res.imported_images} 張圖片與 ${res.imported_annotations} 筆標註！` : `🎉 Successfully imported ${res.imported_images} images and ${res.imported_annotations} annotations!`);
       await loadInitialData();
+      setAnnoReloadKey((k) => k + 1);
     } catch (err: any) {
       alert(isZh ? `匯入失敗: ${err.message || '檔案格式不支援'}` : `Import failed: ${err.message || 'Unsupported format'}`);
     } finally {
@@ -174,7 +176,7 @@ export const AnnotationView: React.FC = () => {
         }
       }
     })();
-  }, [activeProjectId, activeFilename, activeTaskType]);
+  }, [activeProjectId, activeFilename, activeTaskType, annoReloadKey]);
 
   // Direct Click or Input: Assign category to current image
   const handleAssignCategory = async (catId: number, advance = autoAdvance) => {
@@ -280,6 +282,9 @@ export const AnnotationView: React.FC = () => {
       });
 
       setImages(prev => prev.map(img => selectedSet.has(img.filename) ? { ...img, labeled: true, annotation_count: 1 } : img));
+      if (activeFilename && selectedSet.has(activeFilename)) {
+        setAnnoReloadKey((k) => k + 1);
+      }
       setSelectedImageIds([]);
       setIsBatchMode(false);
       setSaveSuccess(true);

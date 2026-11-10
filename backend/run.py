@@ -12,7 +12,7 @@ if __name__ == "__main__":
     import os
 
     host = os.environ.get("VF_HOST", "127.0.0.1")
-    port = int(os.environ.get("VF_PORT", "8000"))
+    port = int(os.environ.get("VF_PORT") or os.environ.get("PORT") or "8000")
     # Auto-reload is a development feature: it restarts the server (and kills any running
     # training thread) whenever a .py file changes. Enable with VF_RELOAD=1.
     reload = os.environ.get("VF_RELOAD", "0") == "1"
