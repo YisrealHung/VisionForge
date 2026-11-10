@@ -38,7 +38,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [theme, setThemeState] = useState<AppTheme>(() => {
     const saved = localStorage.getItem('visionforge_theme') as AppTheme;
     const isValid = THEME_REGISTRY.some((t) => t.id === saved);
-    return isValid ? saved : 'sky-blossom';
+    return isValid ? saved : 'maker-studio';
   });
   const [language, setLanguageState] = useState<Language>(() => {
     const savedLang = localStorage.getItem('visionforge_lang') as Language;
@@ -60,14 +60,18 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const t = translations[language];
 
+  const applyThemeAttributes = (id: AppTheme) => {
+    document.documentElement.setAttribute('data-theme', id);
+  };
+
   const setTheme = (newTheme: AppTheme) => {
     setThemeState(newTheme);
     localStorage.setItem('visionforge_theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    applyThemeAttributes(newTheme);
   };
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    applyThemeAttributes(theme);
   }, [theme]);
 
   const fetchProjects = useCallback(async () => {

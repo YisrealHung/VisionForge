@@ -61,10 +61,10 @@ export const Header: React.FC = () => {
             title={t.switchProject}
           >
             <FolderGit2 size={16} color="var(--accent-primary)" />
-            <span style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span className="header-project-name">
               {activeProject ? activeProject.name : t.selectOrCreateProject}
             </span>
-            {activeProject && <TaskBadge taskType={activeProject.task_type} />}
+            {activeProject && <span className="header-task-badge"><TaskBadge taskType={activeProject.task_type} /></span>}
             <ChevronDown size={14} color="var(--text-muted)" />
           </button>
 
@@ -158,6 +158,7 @@ export const Header: React.FC = () => {
           <button
             onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
             title={`${t.themeSelector}：${language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}`}
+            aria-label={`${t.themeSelector}：${language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}`}
             style={{
               background: 'var(--bg-surface-elevated)',
               border: '1px solid var(--border-card)',
@@ -189,7 +190,7 @@ export const Header: React.FC = () => {
             ) : (
               <Sun size={13} color="var(--accent-primary)" />
             )}
-            <span style={{ fontSize: '0.78rem' }}>{language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}</span>
+            <span className="header-label" style={{ fontSize: '0.78rem' }}>{language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}</span>
             <ChevronDown size={13} style={{ opacity: 0.6, transform: themeDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
           </button>
 
@@ -296,11 +297,11 @@ export const Header: React.FC = () => {
         <div className="system-status-indicator" title={isOnline ? `Python: ${systemHealth?.python_version} | ${systemHealth?.platform}` : t.offline}>
           <div className={`project-status-dot ${!isOnline ? 'offline' : ''}`} />
           <Server size={13} />
-          <span>{isOnline ? t.online : t.offline}</span>
+          <span className="header-label">{isOnline ? t.online : t.offline}</span>
           {isOnline && systemHealth?.gpu.available && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', marginLeft: '6px', color: '#67a390' }}>
+            <span className="header-gpu" style={{ display: 'flex', alignItems: 'center', gap: '3px', marginLeft: '6px', color: 'var(--accent-emerald)' }}>
               <Cpu size={13} />
-              <span>{systemHealth.gpu.device.replace('NVIDIA GeForce ', '')}</span>
+              <span className="header-label">{systemHealth.gpu.device.replace('NVIDIA GeForce ', '')}</span>
             </span>
           )}
         </div>
@@ -311,8 +312,10 @@ export const Header: React.FC = () => {
           size="sm"
           icon={<Plus size={15} />}
           onClick={() => setIsCreateModalOpen(true)}
+          aria-label={t.createNewProject}
+          title={t.createNewProject}
         >
-          {t.createNewProject}
+          <span className="header-label">{t.createNewProject}</span>
         </Button>
       </div>
     </header>

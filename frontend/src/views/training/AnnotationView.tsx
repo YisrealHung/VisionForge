@@ -518,25 +518,18 @@ export const AnnotationView: React.FC = () => {
   const currentAssignedCat = categories.find(c => c.id === currentCatId);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', gap: '0.75rem' }}>
-      {/* Top Controls Bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'var(--bg-surface)',
-          padding: '0.6rem 1rem',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--border-subtle)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Tag size={16} color="#818cf8" />
+    <div className="vf-page vf-page-fill">
+      {/* Page header: title + current image, label progress highlight, actions */}
+      <div className="vf-page-header">
+        <div className="vf-page-heading">
+          <div className="vf-page-eyebrow">
+            <Tag size={14} aria-hidden="true" /> {isZh ? '影像標註' : 'Annotation'}
+            <TaskBadge taskType={taskType} />
+          </div>
+          <div className="vf-page-title-row">
+          <h1 className="vf-page-title" title={activeImage?.filename}>
             {activeImage ? activeImage.filename : (isZh ? '載入中...' : 'Loading...')}
-          </span>
-          <TaskBadge taskType={taskType} />
+          </h1>
           {currentAssignedCat ? (
             <div
               style={{
@@ -555,6 +548,7 @@ export const AnnotationView: React.FC = () => {
               <Check size={13} /> {isZh ? '當前標籤:' : 'Current Tag:'} {currentAssignedCat.name}
               <button
                 onClick={handleClearCurrentLabel}
+                aria-label={isZh ? '清除此圖片的標籤' : 'Clear tag for this image'}
                 title={isZh ? '清除此圖片的標籤' : 'Clear tag for this image'}
                 style={{
                   background: 'none',
@@ -570,21 +564,23 @@ export const AnnotationView: React.FC = () => {
               </button>
             </div>
           ) : (
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-surface-elevated)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+            <span className="vf-chip">
               {isZh ? '尚未標註' : 'Unlabeled'}
             </span>
           )}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          {/* Progress Indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              {isZh ? '標註:' : 'Labeled:'} <strong style={{ color: '#818cf8' }}>{labeledCount}</strong>/{images.length}
+        <div className="vf-page-actions">
+          {/* Progress highlight */}
+          <div className="vf-progress-pill" role="status" aria-label={isZh ? `已標註 ${labeledCount} / ${images.length} 張` : `${labeledCount} of ${images.length} labeled`}>
+            <span className="vf-progress-pill-value">{progressPercent}%</span>
+            <span className="vf-progress-pill-text">
+              {isZh ? '已標註' : 'Labeled'} {labeledCount} / {images.length}
             </span>
-            <div style={{ width: '80px', height: '6px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-              <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--gradient-brand)', transition: 'width 0.3s' }} />
-            </div>
+            <span className="vf-progress-pill-track" aria-hidden="true">
+              <span className="vf-progress-pill-bar" style={{ width: `${progressPercent}%` }} />
+            </span>
           </div>
 
           {/* Hidden Import Input */}
@@ -656,10 +652,12 @@ export const AnnotationView: React.FC = () => {
       {isBatchMode && (
         <div
           style={{
-            background: 'rgba(99, 102, 241, 0.12)',
-            border: '1px solid var(--accent-primary)',
-            padding: '0.5rem 1rem',
-            borderRadius: 'var(--radius-sm)',
+            background: 'var(--accent-primary-glow)',
+            border: '2px solid var(--accent-primary)',
+            padding: '0.6rem 1rem',
+            borderRadius: 'var(--radius-md)',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -667,7 +665,7 @@ export const AnnotationView: React.FC = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.85rem' }}>
-            <span style={{ fontWeight: 700, color: '#818cf8' }}>
+            <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>
               {isZh ? `已選取 ${selectedImageIds.length} 張圖片` : `${selectedImageIds.length} images selected`}
             </span>
             <button
@@ -704,8 +702,8 @@ export const AnnotationView: React.FC = () => {
                   background: c.color,
                   color: 'white',
                   border: 'none',
-                  borderRadius: 'var(--radius-xs)',
-                  padding: '4px 10px',
+                  borderRadius: 'var(--radius-full)',
+                  padding: '6px 12px',
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   cursor: selectedImageIds.length > 0 ? 'pointer' : 'not-allowed',
@@ -723,9 +721,9 @@ export const AnnotationView: React.FC = () => {
       )}
 
       {/* Main 2-Column Layout: Center Work Area & Right Panel */}
-      <div style={{ display: 'flex', flex: 1, gap: '0.75rem', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, gap: '1rem', overflow: 'hidden', minHeight: 0 }}>
         {/* Center: Specialized Workspace */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
+        <div className="vf-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           
           {/* A. CLASSIFICATION WORKSPACE (Direct Click & Type UI) */}
           {taskType === 'classification' && (
@@ -1051,13 +1049,11 @@ export const AnnotationView: React.FC = () => {
 
         {/* Right Sidebar: Category Management & Settings */}
         <div
+          className="vf-panel"
           style={{
-            width: '260px',
+            width: '280px',
             flexShrink: 0,
-            background: 'var(--bg-surface)',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border-subtle)',
-            padding: '1rem',
+            padding: '1.1rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '1.25rem',
@@ -1093,7 +1089,7 @@ export const AnnotationView: React.FC = () => {
                 {selectedBoxId && (
                   <button
                     className="btn btn-ghost btn-sm"
-                    style={{ color: '#fda4af', padding: '2px 6px', fontSize: '0.7rem' }}
+                    style={{ color: 'var(--accent-rose)', padding: '2px 8px', fontSize: '0.72rem' }}
                     onClick={() => {
                       setAnnotations((prev) => prev.filter((a) => a.id !== selectedBoxId));
                       setSelectedBoxId(null);
@@ -1127,10 +1123,10 @@ export const AnnotationView: React.FC = () => {
                           }
                         }}
                         style={{
-                          padding: '0.35rem 0.6rem',
-                          borderRadius: 'var(--radius-xs)',
-                          background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'var(--bg-surface-elevated)',
-                          border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
+                          padding: '0.45rem 0.7rem',
+                          borderRadius: 'var(--radius-sm)',
+                          background: isSelected ? 'var(--accent-primary-glow)' : 'var(--bg-surface-elevated)',
+                          border: `2px solid ${isSelected ? 'var(--accent-primary)' : 'transparent'}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
@@ -1139,7 +1135,7 @@ export const AnnotationView: React.FC = () => {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: cat?.color || '#6366f1' }} />
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: cat?.color || 'var(--accent-primary)' }} />
                           <span style={{ fontWeight: 600 }}>{cat?.name || (isZh ? '未命名標籤' : 'Unnamed tag')}</span>
                         </div>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
@@ -1156,17 +1152,7 @@ export const AnnotationView: React.FC = () => {
       </div>
 
       {/* Bottom Paging Bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'var(--bg-surface)',
-          padding: '0.4rem 1rem',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--border-subtle)',
-        }}
-      >
+      <div className="vf-panel vf-pager">
         <Button
           variant="secondary"
           size="sm"
@@ -1179,11 +1165,11 @@ export const AnnotationView: React.FC = () => {
         </Button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-            {isZh ? '第' : 'Image'} <strong style={{ color: '#818cf8' }}>{currentIndex + 1}</strong> / {images.length} {isZh ? '張' : ''}
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+            {isZh ? '第' : 'Image'} <strong style={{ color: 'var(--accent-primary)', fontSize: '1.05rem' }}>{currentIndex + 1}</strong> / {images.length} {isZh ? '張' : ''}
           </span>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', background: 'var(--bg-surface-elevated)', padding: '2px 6px', borderRadius: '3px' }}>
-            快捷鍵: <kbd style={{ fontFamily: 'monospace', color: '#818cf8', fontWeight: 700 }}>A</kbd> 上一張 · <kbd style={{ fontFamily: 'monospace', color: '#818cf8', fontWeight: 700 }}>D</kbd> 下一張
+          <span className="vf-chip vf-pager-hint">
+            {isZh ? '快捷鍵' : 'Keys'} <kbd className="vf-kbd">A</kbd> {isZh ? '上一張' : 'prev'} · <kbd className="vf-kbd">D</kbd> {isZh ? '下一張' : 'next'}
           </span>
         </div>
 
