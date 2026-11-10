@@ -328,7 +328,16 @@ pause
 exit /b 1
 """
     write_crlf(ROOT_DIR / "start.bat", start_bat_content)
-    write_crlf(ROOT_DIR / "scripts" / "start.bat", start_bat_content)
+    # scripts\start.bat lives one level down: same launcher, paths adjusted (it used to be an exact
+    # copy of the root one, which pointed at scripts\scripts\run_backend.bat and the wrong cwd).
+    scripts_start_content = (
+        start_bat_content
+        .replace(r'cd /d "%~dp0"', r'cd /d "%~dp0..\"')
+        .replace(r'"%~dp0env_config.bat"', r'"%~dp0..\env_config.bat"')
+        .replace(r'%~dp0scripts\run_backend.bat', r'%~dp0run_backend.bat')
+        .replace(r'%~dp0scripts\run_frontend.bat', r'%~dp0run_frontend.bat')
+    )
+    write_crlf(ROOT_DIR / "scripts" / "start.bat", scripts_start_content)
 
     # stop.bat
     stop_bat_content = """@echo off
