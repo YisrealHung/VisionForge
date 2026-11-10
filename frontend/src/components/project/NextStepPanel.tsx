@@ -17,13 +17,16 @@ type StepState = 'done' | 'current' | 'todo';
  * Maker Studio gives it the lime highlight.
  */
 export const NextStepPanel: React.FC<{ project: Project }> = ({ project }) => {
-  const { setCurrentView, language } = useProject();
+  const { setCurrentView, language, systemHealth } = useProject();
+  const backendOnline = systemHealth?.status === 'online';
   const isZh = language === 'zh-TW';
   const [progress, setProgress] = useState<LabelProgress | null>(null);
+  const [progressError, setProgressError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setProgress(null);
+    setProgressError(false);
     api
       .listImages(project.id)
       .then((imgs) => {
@@ -32,12 +35,13 @@ export const NextStepPanel: React.FC<{ project: Project }> = ({ project }) => {
         }
       })
       .catch(() => {
-        if (!cancelled) setProgress({ total: project.dataset_count, labeled: 0 });
+        // Don't pretend nothing is labeled when we simply couldn't ask (e.g. backend restarting).
+        if (!cancelled) setProgressError(true);
       });
     return () => {
       cancelled = true;
     };
-  }, [project.id, project.dataset_count]);
+  }, [project.id, project.dataset_count, backendOnline]);
 
   const total = progress?.total ?? project.dataset_count;
   const labeled = progress?.labeled ?? 0;
@@ -49,7 +53,17 @@ export const NextStepPanel: React.FC<{ project: Project }> = ({ project }) => {
   let subtitle: string;
   let cta: string;
   let target: NavView;
-  if (total === 0) {
+  if (progressError) {
+    title = isZh ? '暫時無法取得標註進度' : "Couldn't load labeling progress";
+    subtitle = isZh ? '後端連線恢復後會自動更新。' : 'This refreshes once the backend is reachable again.';
+    cta = isZh ? '前往資料集' : 'Open dataset';
+    target = 'dataset';
+  } else if (progress === null && total > 0) {
+    title = isZh ? '正在讀取標註進度…' : 'Loading labeling progress…';
+    subtitle = isZh ? `專案共 ${total.toLocaleString()} 張影像。` : `${total.toLocaleString()} images in this project.`;
+    cta = isZh ? '前往標註' : 'Open annotation';
+    target = 'annotator';
+  } else if (total === 0) {
     title = isZh ? '先上傳第一批影像吧！' : 'Start by uploading your first images!';
     subtitle = isZh ? '支援拖放、資料夾與攝影機擷取。' : 'Drag & drop, folders and camera capture are supported.';
     cta = isZh ? '上傳影像' : 'Upload images';

@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { AnnotationItem, CategoryItem } from '../../types';
+import { useProject } from '../../context/ProjectContext';
 
 interface CanvasAnnotatorProps {
   imageUrl: string;
@@ -12,7 +14,21 @@ interface CanvasAnnotatorProps {
 }
 
 type HandleType = 'tl' | 'tr' | 'bl' | 'br' | 'center';
-type ActionMode = 'idle' | 'drawing' | 'moving' | 'resizing';
+type ActionMode = 'idle' | 'drawing' | 'moving' | 'resizing' | 'panning';
+
+/**
+ * View transform: a point (ix, iy) in image pixels is drawn at screen CSS pixel
+ * (ix * scale + offsetX, iy * scale + offsetY) inside the canvas element.
+ */
+interface ViewState {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+const MAX_SCALE = 20;
+const FIT_PADDING = 16; // css px around the fitted image
+const WHEEL_ZOOM_SPEED = 0.0015;
 
 export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
   imageUrl,
@@ -23,11 +39,24 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
   selectedBoxId,
   onSelectBox,
 }) => {
+  const { language } = useProject();
+  const isZh = language === 'zh-TW';
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [viewport, setViewport] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [view, setView] = useState<ViewState>({ scale: 1, offsetX: 0, offsetY: 0 });
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  // Once the user zooms or pans, container resizes keep their view instead of re-fitting.
+  const userAdjustedRef = useRef(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  const panStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
+  // Space-to-pan only applies while the pointer is over the canvas.
+  const pointerInsideRef = useRef(false);
+
   const [actionMode, setActionMode] = useState<ActionMode>('idle');
   const [activeHandle, setActiveHandle] = useState<HandleType | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
@@ -37,34 +66,134 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
   const [hoveredBoxId, setHoveredBoxId] = useState<string | null>(null);
   const [hoveredHandle, setHoveredHandle] = useState<HandleType | null>(null);
 
-  // Load Image
+  // ---------- View helpers ----------
+  const fitView = useCallback((vw: number, vh: number): ViewState | null => {
+    const img = imageRef.current;
+    if (!img || vw <= 0 || vh <= 0) return null;
+    const scale = Math.min((vw - FIT_PADDING * 2) / img.naturalWidth, (vh - FIT_PADDING * 2) / img.naturalHeight);
+    const s = Math.max(0.01, scale);
+    return { scale: s, offsetX: (vw - img.naturalWidth * s) / 2, offsetY: (vh - img.naturalHeight * s) / 2 };
+  }, []);
+
+  const minScale = useCallback(() => {
+    const fit = fitView(viewport.w, viewport.h);
+    return fit ? Math.min(fit.scale, 1) * 0.5 : 0.05;
+  }, [fitView, viewport.h, viewport.w]);
+
+  /** Zoom to `nextScale`, keeping the screen point (sx, sy) fixed over the same image point. */
+  const zoomAt = useCallback(
+    (sx: number, sy: number, nextScale: number) => {
+      const v = viewRef.current;
+      const s = Math.max(minScale(), Math.min(MAX_SCALE, nextScale));
+      const ix = (sx - v.offsetX) / v.scale;
+      const iy = (sy - v.offsetY) / v.scale;
+      userAdjustedRef.current = true;
+      setView({ scale: s, offsetX: sx - ix * s, offsetY: sy - iy * s });
+    },
+    [minScale]
+  );
+
+  const resetToFit = useCallback(() => {
+    const fit = fitView(viewport.w, viewport.h);
+    if (fit) {
+      userAdjustedRef.current = false;
+      setView(fit);
+    }
+  }, [fitView, viewport.h, viewport.w]);
+
+  // Load Image; every new image starts fitted to the viewport.
   useEffect(() => {
     setImageLoaded(false);
+    let cancelled = false;
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = imageUrl;
     img.onload = () => {
+      if (cancelled) return;
       imageRef.current = img;
+      userAdjustedRef.current = false;
+      // Fit in the same update that shows the image, so it never flashes at 100%.
+      const el = containerRef.current;
+      const fit = el ? fitView(el.clientWidth, el.clientHeight) : null;
+      if (fit) setView(fit);
       setImageLoaded(true);
     };
-  }, [imageUrl]);
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl, fitView]);
 
-  // Convert client mouse event coordinates to Image Space coordinates
+  // Track the container size (the canvas always fills it).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const r = entries[0].contentRect;
+      setViewport({ w: Math.round(r.width), h: Math.round(r.height) });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Fit on image load and on resize (unless the user has zoomed / panned this image).
+  useEffect(() => {
+    if (!imageLoaded || userAdjustedRef.current) return;
+    const fit = fitView(viewport.w, viewport.h);
+    if (fit) setView(fit);
+  }, [imageLoaded, viewport, fitView]);
+
+  // Wheel zoom: native listener because React's onWheel is passive (cannot preventDefault page scroll).
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      // Trackpad pinch arrives as ctrl+wheel with small deltas; normalize line/page deltas.
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? rect.height : 1;
+      const factor = Math.exp(-e.deltaY * unit * WHEEL_ZOOM_SPEED * (e.ctrlKey ? 4 : 1));
+      zoomAt(e.clientX - rect.left, e.clientY - rect.top, viewRef.current.scale * factor);
+    };
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', onWheel);
+  }, [imageLoaded, zoomAt]);
+
+  // Hold Space to pan with the left button (like most image editors).
+  useEffect(() => {
+    const isTyping = (t: EventTarget | null) =>
+      t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable);
+    const down = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && pointerInsideRef.current && !isTyping(e.target)) {
+        e.preventDefault(); // no page scroll / button activation while panning
+        setSpaceHeld(true);
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === 'Space') setSpaceHeld(false);
+    };
+    const blur = () => setSpaceHeld(false);
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', blur);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', blur);
+    };
+  }, []);
+
+  // Convert client mouse event coordinates to Image Space coordinates.
+  // `scale` = image pixels per screen pixel (used to keep hit areas a constant on-screen size).
   const getCanvasCoords = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>): { x: number; y: number; scale: number } | null => {
       const canvas = canvasRef.current;
       const img = imageRef.current;
       if (!canvas || !img) return null;
-
       const rect = canvas.getBoundingClientRect();
-      const scaleX = img.naturalWidth / rect.width;
-      const scaleY = img.naturalHeight / rect.height;
-      const scale = (scaleX + scaleY) / 2;
-
-      const x = Math.max(0, Math.min(img.naturalWidth, (e.clientX - rect.left) * scaleX));
-      const y = Math.max(0, Math.min(img.naturalHeight, (e.clientY - rect.top) * scaleY));
-
-      return { x, y, scale };
+      const v = viewRef.current;
+      const x = Math.max(0, Math.min(img.naturalWidth, (e.clientX - rect.left - v.offsetX) / v.scale));
+      const y = Math.max(0, Math.min(img.naturalHeight, (e.clientY - rect.top - v.offsetY) / v.scale));
+      return { x, y, scale: 1 / v.scale };
     },
     []
   );
@@ -73,28 +202,22 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
   const hitTestBox = useCallback(
     (coords: { x: number; y: number; scale: number }, bbox: [number, number, number, number]): HandleType | null => {
       const [bx, by, bw, bh] = bbox;
-      const handleRadius = Math.max(12, 14 * coords.scale); // screen size adapted
+      const handleRadius = 12 * coords.scale; // 12 screen px at any zoom
 
-      // 1. Check 4 corner handles
       const corners: { type: HandleType; x: number; y: number }[] = [
         { type: 'tl', x: bx, y: by },
         { type: 'tr', x: bx + bw, y: by },
         { type: 'bl', x: bx, y: by + bh },
         { type: 'br', x: bx + bw, y: by + bh },
       ];
-
       for (const corner of corners) {
-        const dist = Math.hypot(coords.x - corner.x, coords.y - corner.y);
-        if (dist <= handleRadius) {
+        if (Math.hypot(coords.x - corner.x, coords.y - corner.y) <= handleRadius) {
           return corner.type;
         }
       }
-
-      // 2. Check inside bbox body (center / move area)
       if (coords.x >= bx && coords.x <= bx + bw && coords.y >= by && coords.y <= by + bh) {
         return 'center';
       }
-
       return null;
     },
     []
@@ -105,7 +228,6 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!selectedBoxId) return;
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        // Prevent backspace from navigating back
         e.preventDefault();
         onAnnotationsChange(annotations.filter((a) => a.id !== selectedBoxId));
         onSelectBox(null);
@@ -114,7 +236,6 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
         const delta = e.shiftKey ? 10 : 1;
         const img = imageRef.current;
         if (!img) return;
-
         const updated = annotations.map((anno) => {
           if (anno.id !== selectedBoxId) return anno;
           let [x, y, w, h] = anno.bbox;
@@ -127,27 +248,38 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
         onAnnotationsChange(updated);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [annotations, onAnnotationsChange, onSelectBox, selectedBoxId]);
 
-  // Main Canvas Rendering Routine
+  // ---------- Rendering ----------
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     const img = imageRef.current;
-    if (!canvas || !img || !imageLoaded) return;
-
+    if (!canvas || !img || !imageLoaded || viewport.w === 0 || viewport.h === 0) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas dimensions to match natural image
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    // Backing store matches the on-screen size (sharp at any zoom and on HiDPI screens).
+    const dpr = window.devicePixelRatio || 1;
+    const bw0 = Math.round(viewport.w * dpr);
+    const bh0 = Math.round(viewport.h * dpr);
+    if (canvas.width !== bw0 || canvas.height !== bh0) {
+      canvas.width = bw0;
+      canvas.height = bh0;
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#070a10';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Draw Image Background
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const { scale, offsetX, offsetY } = view;
+    // From here on everything is drawn in image pixels.
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * offsetX, dpr * offsetY);
+    ctx.imageSmoothingEnabled = scale < 2; // show crisp pixels when zoomed in for precise boxes
     ctx.drawImage(img, 0, 0);
+
+    /** Convert a size in screen CSS pixels to image pixels. */
+    const px = (n: number) => n / scale;
 
     const catColorMap: Record<number, string> = {};
     const catNameMap: Record<number, string> = {};
@@ -155,12 +287,8 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
       catColorMap[c.id] = c.color;
       catNameMap[c.id] = c.name;
     });
+    const handleSize = px(10);
 
-    const scaleFactor = Math.max(1, canvas.width / 900);
-    const handleSize = Math.max(9, Math.round(9 * scaleFactor));
-    const handleHalf = handleSize / 2;
-
-    // 2. Draw Existing Annotations
     annotations.forEach((anno) => {
       const [bx, by, bw, bh] = anno.bbox;
       const isSelected = selectedBoxId === anno.id;
@@ -168,37 +296,26 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
       const color = catColorMap[anno.category_id] || '#6366f1';
       const label = catNameMap[anno.category_id] || 'Target';
 
-      // Semi-transparent fill
-      ctx.fillStyle = isSelected ? `${color}45` : (isHovered ? `${color}25` : `${color}15`);
+      ctx.fillStyle = isSelected ? `${color}45` : isHovered ? `${color}25` : `${color}15`;
       ctx.fillRect(bx, by, bw, bh);
 
-      // Border outline
-      ctx.lineWidth = isSelected ? Math.max(3, 3 * scaleFactor) : (isHovered ? 2.5 : 2);
+      ctx.lineWidth = px(isSelected ? 3 : isHovered ? 2.5 : 2);
       ctx.strokeStyle = color;
-      if (isHovered && !isSelected) {
-        ctx.setLineDash([6, 6]);
-      } else {
-        ctx.setLineDash([]);
-      }
+      ctx.setLineDash(isHovered ? [px(6), px(6)] : []);
       ctx.strokeRect(bx, by, bw, bh);
       ctx.setLineDash([]);
 
-      // Label background pill & text
-      const fontSize = Math.max(12, Math.min(22, Math.round(14 * scaleFactor)));
+      // Label pill (constant on-screen size)
+      const fontSize = px(13);
       ctx.font = `bold ${fontSize}px sans-serif`;
-      const textMetrics = ctx.measureText(label);
-      const textWidth = textMetrics.width;
-      const badgeH = fontSize + 8;
-      const badgeW = textWidth + 14;
+      const badgeH = fontSize + px(8);
+      const badgeW = ctx.measureText(label).width + px(14);
       const badgeY = Math.max(0, by - badgeH);
-
       ctx.fillStyle = color;
       ctx.fillRect(bx, badgeY, badgeW, badgeH);
-
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(label, bx + 7, badgeY + fontSize + 1);
+      ctx.fillText(label, bx + px(7), badgeY + fontSize + px(1));
 
-      // 3. Draw Selected BBox Handles & Center Indicator
       if (isSelected) {
         const corners = [
           { type: 'tl', x: bx, y: by },
@@ -206,107 +323,84 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
           { type: 'bl', x: bx, y: by + bh },
           { type: 'br', x: bx + bw, y: by + bh },
         ];
-
-        // Draw 4 Corner Handles
         corners.forEach((c) => {
-          const isTargetHandle = (activeHandle === c.type) || (hoveredHandle === c.type);
+          const isTargetHandle = activeHandle === c.type || hoveredHandle === c.type;
           const curSize = isTargetHandle ? handleSize * 1.3 : handleSize;
           const curHalf = curSize / 2;
-
-          // Outer shadow glow
           ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
           ctx.shadowBlur = 6;
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(c.x - curHalf, c.y - curHalf, curSize, curSize);
           ctx.shadowBlur = 0;
-
-          // Colored border
-          ctx.lineWidth = 2.5;
+          ctx.lineWidth = px(2.5);
           ctx.strokeStyle = isTargetHandle ? '#ffffff' : color;
           ctx.strokeRect(c.x - curHalf, c.y - curHalf, curSize, curSize);
-
-          // Center accent dot
           ctx.fillStyle = color;
-          ctx.fillRect(c.x - curHalf + 2, c.y - curHalf + 2, curSize - 4, curSize - 4);
+          ctx.fillRect(c.x - curHalf + px(2), c.y - curHalf + px(2), curSize - px(4), curSize - px(4));
         });
 
-        // Center Move Anchor Icon
+        // Center move anchor
         const centerX = bx + bw / 2;
         const centerY = by + bh / 2;
-        const centerRadius = Math.max(10, 11 * scaleFactor);
-
+        const centerRadius = px(11);
         ctx.beginPath();
         ctx.arc(centerX, centerY, centerRadius, 0, 2 * Math.PI);
         ctx.fillStyle = activeHandle === 'center' || hoveredHandle === 'center' ? color : 'rgba(15, 23, 42, 0.8)';
         ctx.fill();
-        ctx.lineWidth = 2;
+        ctx.lineWidth = px(2);
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
-
-        // Crosshair arrows inside center move anchor
         const arrLen = centerRadius * 0.6;
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
         ctx.beginPath();
-        // Horizontal
-        ctx.moveTo(centerX - arrLen, centerY); ctx.lineTo(centerX + arrLen, centerY);
-        // Vertical
-        ctx.moveTo(centerX, centerY - arrLen); ctx.lineTo(centerX, centerY + arrLen);
+        ctx.moveTo(centerX - arrLen, centerY);
+        ctx.lineTo(centerX + arrLen, centerY);
+        ctx.moveTo(centerX, centerY - arrLen);
+        ctx.lineTo(centerX, centerY + arrLen);
         ctx.stroke();
 
-        // Dimension Badge [W × H]
+        // Dimension badge [W × H] (in image pixels)
         const dimText = `${Math.round(bw)} × ${Math.round(bh)}`;
-        const dimFontSize = Math.max(11, Math.round(12 * scaleFactor));
+        const dimFontSize = px(12);
         ctx.font = `bold ${dimFontSize}px sans-serif`;
-        const dimW = ctx.measureText(dimText).width + 12;
-        const dimH = dimFontSize + 6;
-        const dimY = Math.min(canvas.height - dimH, by + bh + 4);
-
+        const dimW = ctx.measureText(dimText).width + px(12);
+        const dimH = dimFontSize + px(6);
+        const dimY = Math.min(img.naturalHeight - dimH, by + bh + px(4));
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
         ctx.fillRect(bx + bw - dimW, dimY, dimW, dimH);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(bx + bw - dimW, dimY, dimW, dimH);
-
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText(dimText, bx + bw - dimW + 6, dimY + dimFontSize);
+        ctx.fillText(dimText, bx + bw - dimW + px(6), dimY + dimFontSize);
       }
     });
 
-    // 4. Draw Active Drawing Box (when creating new bbox)
+    // Box being drawn
     if (actionMode === 'drawing' && currentDrawBox) {
       const activeColor = catColorMap[selectedCategoryId] || '#6366f1';
       const { x, y, w, h } = currentDrawBox;
-
       ctx.fillStyle = `${activeColor}30`;
       ctx.fillRect(x, y, w, h);
-
-      ctx.lineWidth = Math.max(2, 2 * scaleFactor);
-      ctx.setLineDash([6, 6]);
+      ctx.lineWidth = px(2);
+      ctx.setLineDash([px(6), px(6)]);
       ctx.strokeStyle = activeColor;
       ctx.strokeRect(x, y, w, h);
       ctx.setLineDash([]);
-
-      // Realtime Dimension tooltip
       const dimText = `${Math.round(w)} × ${Math.round(h)}`;
-      ctx.font = `bold 12px sans-serif`;
+      ctx.font = `bold ${px(12)}px sans-serif`;
       ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-      ctx.fillRect(x + w + 6, y + h + 6, ctx.measureText(dimText).width + 10, 20);
+      ctx.fillRect(x + w + px(6), y + h + px(6), ctx.measureText(dimText).width + px(10), px(20));
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(dimText, x + w + 11, y + h + 20);
+      ctx.fillText(dimText, x + w + px(11), y + h + px(20));
     }
 
-    // 5. Crosshair Cursor Guides
-    if (mousePos && actionMode !== 'moving' && actionMode !== 'resizing') {
-      ctx.lineWidth = 1;
+    // Crosshair guides across the image
+    if (mousePos && actionMode !== 'moving' && actionMode !== 'resizing' && actionMode !== 'panning') {
+      ctx.lineWidth = px(1);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.setLineDash([3, 4]);
-
+      ctx.setLineDash([px(3), px(4)]);
       ctx.beginPath();
       ctx.moveTo(mousePos.x, 0);
-      ctx.lineTo(mousePos.x, canvas.height);
+      ctx.lineTo(mousePos.x, img.naturalHeight);
       ctx.moveTo(0, mousePos.y);
-      ctx.lineTo(canvas.width, mousePos.y);
+      ctx.lineTo(img.naturalWidth, mousePos.y);
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -322,14 +416,17 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
     mousePos,
     selectedBoxId,
     selectedCategoryId,
+    view,
+    viewport,
   ]);
 
   useEffect(() => {
     draw();
   }, [draw]);
 
-  // Compute CSS Cursor based on hover and active state
   const getCursor = (): string => {
+    if (actionMode === 'panning') return 'grabbing';
+    if (spaceHeld) return 'grab';
     if (actionMode === 'moving') return 'grabbing';
     if (actionMode === 'resizing') {
       if (activeHandle === 'tl' || activeHandle === 'br') return 'nwse-resize';
@@ -342,27 +439,27 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
     return 'crosshair';
   };
 
-  // Mouse Down Event Handler
+  // ---------- Mouse ----------
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Middle button, or Space + left button: pan the view.
+    if (e.button === 1 || (e.button === 0 && spaceHeld)) {
+      e.preventDefault();
+      const v = viewRef.current;
+      panStartRef.current = { x: e.clientX, y: e.clientY, offsetX: v.offsetX, offsetY: v.offsetY };
+      setActionMode('panning');
+      return;
+    }
+    if (e.button !== 0) return;
+
     const coords = getCanvasCoords(e);
     if (!coords) return;
 
-    // 1. If we have a selected box, check if clicked on one of its 4 corner handles or center
     if (selectedBoxId) {
       const selectedAnno = annotations.find((a) => a.id === selectedBoxId);
       if (selectedAnno) {
         const hit = hitTestBox(coords, selectedAnno.bbox);
-        if (hit === 'center') {
-          // Start Moving selected box
-          setActionMode('moving');
-          setActiveHandle('center');
-          setDragStart({ x: coords.x, y: coords.y });
-          const [bx, by, bw, bh] = selectedAnno.bbox;
-          setInitialBox({ x: bx, y: by, w: bw, h: bh });
-          return;
-        } else if (hit) {
-          // Start Resizing selected box
-          setActionMode('resizing');
+        if (hit) {
+          setActionMode(hit === 'center' ? 'moving' : 'resizing');
           setActiveHandle(hit);
           setDragStart({ x: coords.x, y: coords.y });
           const [bx, by, bw, bh] = selectedAnno.bbox;
@@ -372,7 +469,6 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
       }
     }
 
-    // 2. Check if clicked inside any other box
     let clickedBoxId: string | null = null;
     for (let i = annotations.length - 1; i >= 0; i--) {
       const [bx, by, bw, bh] = annotations[i].bbox;
@@ -386,7 +482,6 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
       onSelectBox(clickedBoxId);
       const anno = annotations.find((a) => a.id === clickedBoxId);
       if (anno) {
-        // Immediately allow moving on first click
         setActionMode('moving');
         setActiveHandle('center');
         setDragStart({ x: coords.x, y: coords.y });
@@ -396,15 +491,20 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
       return;
     }
 
-    // 3. Clicked on empty canvas -> Clear selection & start drawing new box
     onSelectBox(null);
     setActionMode('drawing');
     setDragStart({ x: coords.x, y: coords.y });
     setCurrentDrawBox({ x: coords.x, y: coords.y, w: 0, h: 0 });
   };
 
-  // Mouse Move Event Handler
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (actionMode === 'panning' && panStartRef.current) {
+      const p = panStartRef.current;
+      userAdjustedRef.current = true;
+      setView((v) => ({ ...v, offsetX: p.offsetX + (e.clientX - p.x), offsetY: p.offsetY + (e.clientY - p.y) }));
+      return;
+    }
+
     const coords = getCanvasCoords(e);
     if (!coords) return;
     setMousePos({ x: coords.x, y: coords.y });
@@ -412,104 +512,86 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
     const img = imageRef.current;
     if (!img) return;
 
-    // A. Handling BBox Drag/Move
     if (actionMode === 'moving' && dragStart && initialBox && selectedBoxId) {
       const dx = coords.x - dragStart.x;
       const dy = coords.y - dragStart.y;
-
       const newX = Math.max(0, Math.min(img.naturalWidth - initialBox.w, initialBox.x + dx));
       const newY = Math.max(0, Math.min(img.naturalHeight - initialBox.h, initialBox.y + dy));
-
-      const updated = annotations.map((anno) => {
-        if (anno.id !== selectedBoxId) return anno;
-        return {
-          ...anno,
-          bbox: [Math.round(newX), Math.round(newY), Math.round(initialBox.w), Math.round(initialBox.h)] as [
-            number,
-            number,
-            number,
-            number
-          ],
-        };
-      });
-      onAnnotationsChange(updated);
+      onAnnotationsChange(
+        annotations.map((anno) =>
+          anno.id !== selectedBoxId
+            ? anno
+            : {
+                ...anno,
+                bbox: [Math.round(newX), Math.round(newY), Math.round(initialBox.w), Math.round(initialBox.h)] as [
+                  number,
+                  number,
+                  number,
+                  number
+                ],
+              }
+        )
+      );
       return;
     }
 
-    // B. Handling BBox 4-Corner Resizing
     if (actionMode === 'resizing' && activeHandle && initialBox && selectedBoxId) {
       let { x, y, w, h } = initialBox;
       const minSize = 6;
-
       if (activeHandle === 'br') {
-        // Dragging Bottom-Right corner
-        const newW = Math.max(minSize, Math.min(img.naturalWidth - x, coords.x - x));
-        const newH = Math.max(minSize, Math.min(img.naturalHeight - y, coords.y - y));
-        w = newW;
-        h = newH;
+        w = Math.max(minSize, Math.min(img.naturalWidth - x, coords.x - x));
+        h = Math.max(minSize, Math.min(img.naturalHeight - y, coords.y - y));
       } else if (activeHandle === 'tl') {
-        // Dragging Top-Left corner (Anchor is Bottom-Right)
         const anchorX = initialBox.x + initialBox.w;
         const anchorY = initialBox.y + initialBox.h;
-        const newX = Math.max(0, Math.min(anchorX - minSize, coords.x));
-        const newY = Math.max(0, Math.min(anchorY - minSize, coords.y));
-        x = newX;
-        y = newY;
-        w = anchorX - newX;
-        h = anchorY - newY;
+        x = Math.max(0, Math.min(anchorX - minSize, coords.x));
+        y = Math.max(0, Math.min(anchorY - minSize, coords.y));
+        w = anchorX - x;
+        h = anchorY - y;
       } else if (activeHandle === 'tr') {
-        // Dragging Top-Right corner (Anchor is Bottom-Left)
         const anchorX = initialBox.x;
         const anchorY = initialBox.y + initialBox.h;
-        const newY = Math.max(0, Math.min(anchorY - minSize, coords.y));
-        const newW = Math.max(minSize, Math.min(img.naturalWidth - anchorX, coords.x - anchorX));
-        y = newY;
-        w = newW;
-        h = anchorY - newY;
+        y = Math.max(0, Math.min(anchorY - minSize, coords.y));
+        w = Math.max(minSize, Math.min(img.naturalWidth - anchorX, coords.x - anchorX));
+        h = anchorY - y;
       } else if (activeHandle === 'bl') {
-        // Dragging Bottom-Left corner (Anchor is Top-Right)
         const anchorX = initialBox.x + initialBox.w;
         const anchorY = initialBox.y;
-        const newX = Math.max(0, Math.min(anchorX - minSize, coords.x));
-        const newH = Math.max(minSize, Math.min(img.naturalHeight - anchorY, coords.y - anchorY));
-        x = newX;
-        w = anchorX - newX;
-        h = newH;
+        x = Math.max(0, Math.min(anchorX - minSize, coords.x));
+        w = anchorX - x;
+        h = Math.max(minSize, Math.min(img.naturalHeight - anchorY, coords.y - anchorY));
       }
-
-      const updated = annotations.map((anno) => {
-        if (anno.id !== selectedBoxId) return anno;
-        return {
-          ...anno,
-          bbox: [Math.round(x), Math.round(y), Math.round(w), Math.round(h)] as [number, number, number, number],
-          area: Math.round(w * h),
-        };
-      });
-      onAnnotationsChange(updated);
+      onAnnotationsChange(
+        annotations.map((anno) =>
+          anno.id !== selectedBoxId
+            ? anno
+            : {
+                ...anno,
+                bbox: [Math.round(x), Math.round(y), Math.round(w), Math.round(h)] as [number, number, number, number],
+                area: Math.round(w * h),
+              }
+        )
+      );
       return;
     }
 
-    // C. Handling New BBox Drawing
     if (actionMode === 'drawing' && dragStart) {
-      const x = Math.min(dragStart.x, coords.x);
-      const y = Math.min(dragStart.y, coords.y);
-      const w = Math.abs(coords.x - dragStart.x);
-      const h = Math.abs(coords.y - dragStart.y);
-      setCurrentDrawBox({ x, y, w, h });
+      setCurrentDrawBox({
+        x: Math.min(dragStart.x, coords.x),
+        y: Math.min(dragStart.y, coords.y),
+        w: Math.abs(coords.x - dragStart.x),
+        h: Math.abs(coords.y - dragStart.y),
+      });
       return;
     }
 
-    // D. Hover State Inspection (when idle)
+    // Hover inspection (idle)
     let foundHandle: HandleType | null = null;
     let foundBoxId: string | null = null;
-
     if (selectedBoxId) {
       const selectedAnno = annotations.find((a) => a.id === selectedBoxId);
-      if (selectedAnno) {
-        foundHandle = hitTestBox(coords, selectedAnno.bbox);
-      }
+      if (selectedAnno) foundHandle = hitTestBox(coords, selectedAnno.bbox);
     }
-
     if (!foundHandle) {
       for (let i = annotations.length - 1; i >= 0; i--) {
         const [bx, by, bw, bh] = annotations[i].bbox;
@@ -519,15 +601,15 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
         }
       }
     }
-
     setHoveredHandle(foundHandle);
     setHoveredBoxId(foundBoxId);
   };
 
-  // Mouse Up Event Handler
   const handleMouseUp = () => {
     if (actionMode === 'drawing' && currentDrawBox) {
-      if (currentDrawBox.w >= 8 && currentDrawBox.h >= 8) {
+      // Minimum box: 8 screen pixels, so tiny boxes are possible when zoomed in.
+      const minImagePx = 8 / viewRef.current.scale;
+      if (currentDrawBox.w >= minImagePx && currentDrawBox.h >= minImagePx) {
         const newAnno: AnnotationItem = {
           id: `anno_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
           image_id: '',
@@ -535,8 +617,8 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
           bbox: [
             Math.round(currentDrawBox.x),
             Math.round(currentDrawBox.y),
-            Math.round(currentDrawBox.w),
-            Math.round(currentDrawBox.h),
+            Math.max(1, Math.round(currentDrawBox.w)),
+            Math.max(1, Math.round(currentDrawBox.h)),
           ],
           area: Math.round(currentDrawBox.w * currentDrawBox.h),
         };
@@ -544,12 +626,27 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
         onSelectBox(newAnno.id);
       }
     }
-
+    panStartRef.current = null;
     setActionMode('idle');
     setActiveHandle(null);
     setDragStart(null);
     setInitialBox(null);
     setCurrentDrawBox(null);
+  };
+
+  const zoomByButton = (factor: number) => zoomAt(viewport.w / 2, viewport.h / 2, view.scale * factor);
+  const zoomPercent = Math.round(view.scale * 100);
+  const toolBtn: React.CSSProperties = {
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 0,
+    borderRadius: '9999px',
+    color: '#e2e8f0',
+    cursor: 'pointer',
   };
 
   return (
@@ -559,42 +656,94 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
         position: 'relative',
         width: '100%',
         height: '100%',
-        minHeight: '520px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        minHeight: '320px',
+        flex: 1,
         background: '#070a10',
         borderRadius: 'var(--radius-md)',
         overflow: 'hidden',
-        border: '1px solid var(--border-card)',
         userSelect: 'none',
       }}
     >
-      {!imageLoaded ? (
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>正在載入影像畫布...</div>
-      ) : (
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={() => {
-            setMousePos(null);
-            setHoveredHandle(null);
-            setHoveredBoxId(null);
-            if (actionMode !== 'idle') handleMouseUp();
-          }}
+      {!imageLoaded && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          {isZh ? '正在載入影像畫布...' : 'Loading image…'}
+        </div>
+      )}
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onAuxClick={(e) => e.preventDefault()}
+        onMouseEnter={() => {
+          pointerInsideRef.current = true;
+        }}
+        onDoubleClick={(e) => {
+          // Double-click empty space with no selection: fit the image back to the window.
+          if (!hoveredBoxId && !selectedBoxId && e.button === 0) resetToFit();
+        }}
+        onMouseLeave={() => {
+          pointerInsideRef.current = false;
+          setSpaceHeld(false);
+          setMousePos(null);
+          setHoveredHandle(null);
+          setHoveredBoxId(null);
+          if (actionMode !== 'idle') handleMouseUp();
+        }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          cursor: getCursor(),
+          display: imageLoaded ? 'block' : 'none',
+          touchAction: 'none',
+        }}
+      />
+
+      {/* Zoom controls */}
+      {imageLoaded && (
+        <div
+          role="toolbar"
+          aria-label={isZh ? '縮放' : 'Zoom'}
           style={{
-            maxWidth: '100%',
-            maxHeight: '100%',
-            objectFit: 'contain',
-            cursor: getCursor(),
-            display: 'block',
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2px',
+            padding: '4px',
+            background: 'rgba(15, 23, 42, 0.8)',
+            borderRadius: '9999px',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
           }}
-        />
+        >
+          <button type="button" style={toolBtn} onClick={() => zoomByButton(1 / 1.25)} aria-label={isZh ? '縮小' : 'Zoom out'} title={isZh ? '縮小' : 'Zoom out'}>
+            <ZoomOut size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const img = imageRef.current;
+              if (img) zoomAt(viewport.w / 2, viewport.h / 2, 1);
+            }}
+            title={isZh ? '原始大小 (100%)' : 'Actual size (100%)'}
+            aria-label={isZh ? `目前 ${zoomPercent}%，按此切換為原始大小` : `Zoom ${zoomPercent}%, click for actual size`}
+            style={{ ...toolBtn, width: 'auto', minWidth: '52px', padding: '0 6px', fontSize: '0.75rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+          >
+            {zoomPercent}%
+          </button>
+          <button type="button" style={toolBtn} onClick={() => zoomByButton(1.25)} aria-label={isZh ? '放大' : 'Zoom in'} title={isZh ? '放大' : 'Zoom in'}>
+            <ZoomIn size={16} aria-hidden="true" />
+          </button>
+          <button type="button" style={toolBtn} onClick={resetToFit} aria-label={isZh ? '符合視窗' : 'Fit to window'} title={isZh ? '符合視窗' : 'Fit to window'}>
+            <Maximize size={15} aria-hidden="true" />
+          </button>
+        </div>
       )}
 
-      {/* Floating Bottom Interaction Tips */}
+      {/* Interaction tips */}
       {imageLoaded && (
         <div
           style={{
@@ -602,24 +751,27 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
             bottom: '12px',
             left: '50%',
             transform: 'translateX(-50%)',
+            maxWidth: 'calc(100% - 24px)',
             background: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(6px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#94a3b8',
-            padding: '4px 14px',
-            borderRadius: 'var(--radius-full)',
+            color: '#cbd5e1',
+            padding: '4px 12px',
+            borderRadius: '12px',
             fontSize: '0.72rem',
             pointerEvents: 'none',
             display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            letterSpacing: '0.02em',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            columnGap: '12px',
+            rowGap: '2px',
           }}
         >
-          <span>🖱️ 拖曳空白處繪製框</span>
-          <span>📐 拖曳四角把手縮放</span>
-          <span>✋ 拖曳中心移動位置</span>
-          <span>⌨️ Delete 刪除</span>
+          {(isZh
+            ? ['拖曳空白處繪製框', '拖曳四角縮放框', '拖曳中心移動', '滾輪縮放', '中鍵或空白鍵+拖曳平移', 'Delete 刪除']
+            : ['Drag empty area to draw', 'Drag corners to resize', 'Drag center to move', 'Wheel to zoom', 'Middle-drag or Space+drag to pan', 'Delete to remove']
+          ).map((tip) => (
+            <span key={tip} style={{ whiteSpace: 'nowrap' }}>{tip}</span>
+          ))}
         </div>
       )}
     </div>
