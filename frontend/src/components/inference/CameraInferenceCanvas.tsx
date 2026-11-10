@@ -19,6 +19,9 @@ import { describeCameraError, openCameraStream, stopStream, videoConstraints } f
 import { Button } from '../common/Button';
 import { useProject } from '../../context/ProjectContext';
 
+/** The element has decoded at least one frame we can draw. */
+const hasVideoFrame = (v: HTMLVideoElement) => v.readyState >= v.HAVE_CURRENT_DATA && v.videoWidth > 0;
+
 interface CameraInferenceCanvasProps {
   projectId: string;
   architecture?: string;
@@ -115,9 +118,38 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         return;
       }
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(() => { });
+      const v = videoRef.current;
+      if (v) {
+        v.muted = true; // React does not always reflect the `muted` attribute; autoplay needs it
+        v.srcObject = stream;
+        // Not awaited: with a camera that never sends a frame, play() stays pending forever and
+        // the watchdog below would never start.
+        v.play().catch((playErr) => {
+          if (seq !== cameraSeqRef.current) return;
+          console.warn('Video play() rejected:', playErr);
+          setErrorMsg(
+            isZh
+              ? '攝影機已連線，但瀏覽器沒有開始播放影像。請按「重試」。'
+              : 'The camera is connected but the browser did not start playback. Click Retry.'
+          );
+        });
+        // Watchdog: some webcams open fine but never deliver a frame (e.g. still held by another
+        // tab / app, or a driver hiccup). Say so instead of showing a silent black canvas.
+        const startedAt = Date.now();
+        const waitForFrame = () => {
+          if (seq !== cameraSeqRef.current) return;
+          if (hasVideoFrame(v)) return;
+          if (Date.now() - startedAt > 4000) {
+            setErrorMsg(
+              isZh
+                ? `攝影機已連線但沒有收到影像（狀態 ${v.readyState}）。請關閉其他使用攝影機的分頁或程式（包含資料蒐集的拍照視窗）後按「重試」，或切換其他裝置。`
+                : `The camera is connected but no frames arrived (state ${v.readyState}). Close other tabs/apps using it (including the capture dialog), then Retry or pick another device.`
+            );
+            return;
+          }
+          setTimeout(waitForFrame, 150);
+        };
+        waitForFrame();
       }
       enumerateDevices();
     } catch (err: any) {
@@ -144,7 +176,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       const canvas = canvasRef.current;
       const video = videoRef.current;
       const ctx = canvas?.getContext('2d');
-      if (canvas && ctx && video && video.readyState >= video.HAVE_CURRENT_DATA && video.videoWidth > 0) {
+      if (canvas && ctx && video && hasVideoFrame(video)) {
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
@@ -358,7 +390,8 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       return;
     }
 
-    if (feedMode === 'webcam' && video && video.readyState === video.HAVE_ENOUGH_DATA) {
+    const webcamReady = feedMode === 'webcam' && !!video && hasVideoFrame(video);
+    if (webcamReady && video) {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -376,8 +409,20 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       ctx.fillStyle = '#64748b';
       ctx.font = '14px Inter, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(isZh ? '攝影機尚未開啟 · 請點擊「攝影機」或「載入專案樣本」' : 'Camera not started · Click “Camera” or “Load Sample”', 320, 240);
+      const waiting = feedMode === 'webcam' && !!streamRef.current;
+      ctx.fillText(
+        waiting
+          ? (isZh ? '等待攝影機畫面…' : 'Waiting for camera frames…')
+          : (isZh ? '攝影機尚未開啟 · 請點擊「攝影機」或「載入專案樣本」' : 'Camera not started · Click “Camera” or “Load Sample”'),
+        320,
+        240
+      );
       ctx.textAlign = 'left';
+      // Nothing real to look at: don't send the placeholder to the model (it produced bogus
+      // predictions like "向上 55%" on a blank frame). Keep polling for the feed instead.
+      setPrediction(null);
+      scheduleNext(300);
+      return;
     }
 
     // Capture Base64 & send inference
@@ -527,7 +572,16 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         }}
       >
         {/* Hidden video element for webcam decoding */}
-        <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
+        {/* Webcam decoder. Kept in the render tree (1px, transparent) rather than display:none:
+            browsers may not decode frames for hidden, muted, video-only elements. */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          aria-hidden="true"
+          style={{ position: 'absolute', left: 0, top: 0, width: '2px', height: '2px', opacity: 0.01, pointerEvents: 'none' }}
+        />
 
         {/* Hidden File Input for Image Upload */}
         <input
