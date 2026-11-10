@@ -1340,3 +1340,218 @@ select option {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
+
+/* ==========================================================================
+   13. 🛠️ 創客工作室 (Maker Studio) — flat, rounded, high-contrast
+   Lavender ground, ink-dark floating sidebar, violet primary, lime highlight.
+   Besides color tokens this theme also restyles layout primitives (below).
+   ========================================================================== */
+[data-theme="maker-studio"] {
+  --bg-base: #f4f2ff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ece8fb;
+  --bg-surface-hover: #e2dcf9;
+  --bg-glass: #ffffff;
+  --bg-glass-card: #ffffff;
+  --bg-overlay: rgba(27, 21, 48, 0.5);
+
+  --accent-primary: #5b3fd9;
+  --accent-primary-hover: #4a2fc4;
+  --accent-primary-glow: rgba(91, 63, 217, 0.12);
+
+  --accent-peach: #e8590c;
+  --accent-peach-glow: rgba(232, 89, 12, 0.14);
+  --accent-taupe: #c6f432;
+  --accent-plum: #1b1530;
+  --accent-teal: #0f7b6c;
+  --accent-teal-glow: rgba(15, 123, 108, 0.12);
+
+  --accent-emerald: #2b8a3e;
+  --accent-amber: #c25e00;
+  --accent-rose: #c92a2a;
+  --accent-purple: #5b3fd9;
+
+  /* Flat surfaces: "gradients" are single colors so existing components stay solid. */
+  --gradient-brand: linear-gradient(#5b3fd9, #5b3fd9);
+  --gradient-brand-text: linear-gradient(#1b1530, #1b1530);
+  --gradient-brand-subtle: linear-gradient(#ece8fb, #ece8fb);
+  --gradient-brand-glow: linear-gradient(#e2dcf9, #e2dcf9);
+  --gradient-card: linear-gradient(#ffffff, #ffffff);
+  --gradient-surface: linear-gradient(transparent, transparent);
+
+  --text-primary: #1b1530;
+  --text-secondary: #3d3560;
+  --text-muted: #625a85;
+  --text-accent: #5b3fd9;
+
+  --border-subtle: #e4dff7;
+  --border-card: #e4dff7;
+  --border-focus: #5b3fd9;
+  --border-highlight: rgba(91, 63, 217, 0.45);
+
+  --shadow-sm: 0 1px 2px rgba(27, 21, 48, 0.06);
+  --shadow-md: 0 6px 18px rgba(27, 21, 48, 0.08);
+  --shadow-lg: 0 18px 44px rgba(27, 21, 48, 0.16);
+  --shadow-glow: 0 0 0 3px rgba(91, 63, 217, 0.16);
+  --shadow-teal-glow: 0 0 0 3px rgba(15, 123, 108, 0.16);
+  --ambient-glow: none;
+
+  --radius-xs: 8px;
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+
+  /* "Next step" card (DashboardView) */
+  --next-step-bg: #c6f432;
+  --next-step-ink: #1b1530;
+  --next-step-sub: #2e2650;
+  --next-step-pill-bg: #1b1530;
+  --next-step-pill-ink: #c6f432;
+  --next-step-border: transparent;
+}
+
+[data-theme="maker-studio"] body {
+  font-family: 'Outfit', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+[data-theme="maker-studio"] body::before { display: none; }
+[data-theme="maker-studio"] ::-webkit-scrollbar-thumb { background: rgba(91, 63, 217, 0.25); }
+
+/* Floating dark sidebar + header card */
+[data-theme="maker-studio"] .app-container { padding: 16px; gap: 16px; box-sizing: border-box; }
+[data-theme="maker-studio"] .app-sidebar {
+  background: #1b1530;
+  border-right: 0;
+  border-radius: 24px;
+  color: #ffffff;
+}
+[data-theme="maker-studio"] .sidebar-header { border-bottom-color: rgba(255, 255, 255, 0.08); }
+[data-theme="maker-studio"] .brand-icon-box { background: #c6f432; color: #1b1530; box-shadow: none; border-radius: 12px; }
+[data-theme="maker-studio"] .brand-name {
+  background: none;
+  -webkit-text-fill-color: #ffffff;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+}
+[data-theme="maker-studio"] .brand-tag { background: rgba(198, 244, 50, 0.16); color: #c6f432; border: 0; }
+[data-theme="maker-studio"] .nav-section-title { color: #b9b1dc; }
+[data-theme="maker-studio"] .nav-section-badge { background: rgba(255, 255, 255, 0.08) !important; color: #e6e1fa !important; }
+[data-theme="maker-studio"] .nav-item-btn {
+  color: #e6e1fa;
+  border-radius: 14px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.92rem;
+}
+[data-theme="maker-studio"] .nav-item-btn:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+[data-theme="maker-studio"] .nav-item-btn.active {
+  background: #5b3fd9;
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 700;
+}
+[data-theme="maker-studio"] .nav-item-btn.active svg { color: #c6f432; }
+[data-theme="maker-studio"] .nav-item-badge { background: rgba(198, 244, 50, 0.16); color: #c6f432; }
+[data-theme="maker-studio"] .sidebar-footer { background: transparent; border-top-color: rgba(255, 255, 255, 0.08); }
+
+[data-theme="maker-studio"] .app-main { background: transparent; gap: 16px; }
+[data-theme="maker-studio"] .app-header { border-bottom: 0; border-radius: 20px; box-shadow: var(--shadow-sm); }
+[data-theme="maker-studio"] .app-content-body { padding: 0.5rem 0.25rem 1.5rem; }
+
+/* Flat white cards */
+[data-theme="maker-studio"] .glass-card {
+  background: #ffffff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="maker-studio"] .glass-card:hover { border-color: transparent; box-shadow: var(--shadow-md); }
+[data-theme="maker-studio"] .glass-card-interactive:hover { border-color: #5b3fd9; box-shadow: var(--shadow-md); }
+
+/* Pill buttons */
+[data-theme="maker-studio"] .btn { border-radius: 9999px; font-weight: 700; }
+[data-theme="maker-studio"] .btn-primary { background: #5b3fd9; box-shadow: none; }
+[data-theme="maker-studio"] .btn-primary:hover { background: #4a2fc4; opacity: 1; transform: none; box-shadow: none; }
+[data-theme="maker-studio"] .btn-secondary { background: #ffffff; border: 2px solid #1b1530; color: #1b1530; }
+[data-theme="maker-studio"] .btn-secondary:hover { background: #ece8fb; border-color: #1b1530; }
+[data-theme="maker-studio"] .btn-danger { background: #fff0f0; border: 2px solid #c92a2a; color: #c92a2a; }
+[data-theme="maker-studio"] .btn-danger:hover { background: #ffe0e0; }
+
+/* Inputs & modals */
+[data-theme="maker-studio"] .form-input,
+[data-theme="maker-studio"] .form-textarea,
+[data-theme="maker-studio"] .form-select { background: #ffffff; border: 2px solid #e4dff7; }
+[data-theme="maker-studio"] .modal-overlay { backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+[data-theme="maker-studio"] .modal-container { border: 0; }
+[data-theme="maker-studio"] .modal-footer { background: #f4f2ff; }
+[data-theme="maker-studio"] .badge-emerald { background: #e6f6ea; color: #2b8a3e; border-color: transparent; }
+[data-theme="maker-studio"] .badge-amber { background: #fff1e0; color: #b35400; border-color: transparent; }
+
+/* ==========================================================================
+   Dashboard "next step" card + pipeline steps (all themes; maker-studio
+   overrides the --next-step-* tokens above)
+   ========================================================================== */
+.vf-next-step {
+  background: var(--next-step-bg, var(--gradient-brand-subtle));
+  color: var(--next-step-ink, var(--text-primary));
+  border: 1px solid var(--next-step-border, var(--border-highlight));
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+}
+.vf-next-step-body { flex: 1 1 320px; min-width: 0; }
+.vf-next-step-pill {
+  display: inline-block;
+  background: var(--next-step-pill-bg, var(--accent-primary));
+  color: var(--next-step-pill-ink, #ffffff);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.vf-next-step-title { margin: 0.85rem 0 0.35rem; font-size: 1.75rem; font-weight: 900; line-height: 1.25; color: inherit; }
+.vf-next-step-sub { margin: 0; font-size: 0.95rem; color: var(--next-step-sub, var(--text-secondary)); }
+.vf-next-step-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--next-step-pill-bg, var(--accent-primary));
+  color: var(--next-step-pill-ink, #ffffff);
+  border: 0;
+  border-radius: var(--radius-full);
+  padding: 0.95rem 1.6rem;
+  min-height: 48px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vf-next-step-cta:hover { filter: brightness(1.12); }
+.vf-next-step-cta:focus-visible { outline: 3px solid var(--accent-primary); outline-offset: 3px; }
+
+.vf-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.75rem; }
+.vf-step { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; text-align: center; }
+.vf-step-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+  background: var(--bg-surface-elevated);
+  color: var(--text-muted);
+}
+.vf-step-dot.done { background: var(--accent-primary); color: #ffffff; }
+.vf-step-dot.current { background: transparent; border: 3px solid var(--accent-primary); color: var(--accent-primary); }
+.vf-step-label { font-weight: 700; font-size: 0.875rem; color: var(--text-primary); }
+.vf-step-sub { font-size: 0.75rem; color: var(--text-muted); }
+@media (max-width: 640px) {
+  .vf-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .vf-next-step-title { font-size: 1.35rem; }
+}

@@ -331,6 +331,7 @@ export interface ApiServerStatus {
 }
 
 export type AppTheme = 
+  | 'maker-studio'
   | 'vanilla-ice'
   | 'matcha-lilac'
   | 'sky-blossom'
@@ -361,6 +362,22 @@ export interface ThemeDefinition {
 }
 
 export const THEME_REGISTRY: ThemeDefinition[] = [
+  // --- 0. Maker Studio: flat, rounded, dark floating sidebar (restyles layout, not just colors) ---
+  {
+    id: 'maker-studio',
+    name: '創客工作室',
+    nameEn: 'Maker Studio',
+    subtitle: '墨紫側欄 · 萊姆亮點',
+    category: 'recommended',
+    categoryLabel: '推薦',
+    mode: 'light',
+    palette: ['#F4F2FF', '#5B3FD9', '#C6F432'],
+    bgSample: '#f4f2ff',
+    cardSample: '#ffffff',
+    accentSample: '#5b3fd9',
+    description: '平面圓角卡片、深墨紫浮動側欄與萊姆綠「下一步」提示，清楚引導每個操作步驟，適合教學與初學者。',
+    tag: '系統預設',
+  },
   // --- 1. [#FFFFFF, #FFF2C9, #CBD7EF] ---
   {
     id: 'vanilla-ice',
@@ -407,7 +424,7 @@ export const THEME_REGISTRY: ThemeDefinition[] = [
     cardSample: '#ffffff',
     accentSample: '#3b7ad6',
     description: '蔚藍晴空映襯嬌嫩粉櫻，經典雙色柔和調，充滿通透空氣感。',
-    tag: '系統預設',
+    tag: '經典',
   },
   // --- 4. [#FFFFFF, #C9FFF2, #FECBCC] ---
   {

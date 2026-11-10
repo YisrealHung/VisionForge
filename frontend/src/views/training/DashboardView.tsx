@@ -5,7 +5,6 @@ import {
   Sparkles,
   Layers,
   Cpu,
-  ArrowRight,
   TrendingUp,
   Boxes
 } from 'lucide-react';
@@ -13,6 +12,7 @@ import { useProject } from '../../context/ProjectContext';
 import { ProjectCard } from '../../components/project/ProjectCard';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
+import { NextStepPanel } from '../../components/project/NextStepPanel';
 
 export const DashboardView: React.FC = () => {
   const {
@@ -29,7 +29,27 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Top Welcome / Hero Banner */}
+      {/* With an active project: greeting + "next step" guidance; otherwise the welcome hero */}
+      {activeProject && (
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ flex: 1, minWidth: '240px' }}>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                {language === 'zh-TW' ? '歡迎回來' : 'Welcome back'}
+              </div>
+              <h1 style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.2, margin: '0.15rem 0 0' }}>
+                {language === 'zh-TW' ? '今天要訓練什麼？' : 'What will you train today?'}
+              </h1>
+            </div>
+            <Button variant="primary" icon={<FolderPlus size={16} />} onClick={() => setIsCreateModalOpen(true)}>
+              {t.dashboardBtnNewProject}
+            </Button>
+          </div>
+          <NextStepPanel project={activeProject} />
+        </>
+      )}
+
+      {!activeProject && (
       <div
         className="glass-card"
         style={{
@@ -51,17 +71,11 @@ export const DashboardView: React.FC = () => {
           </div>
 
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.6rem', lineHeight: '1.2' }}>
-            {activeProject ? (
-              <>{t.dashboardHeroCurrentProject}<span style={{ color: 'var(--accent-primary)' }}>{activeProject.name}</span></>
-            ) : (
-              <>{language === 'zh-TW' ? '鍛造屬於你的專屬 ' : 'Forge Your Custom '}<span style={{ color: 'var(--accent-primary)' }}>{language === 'zh-TW' ? 'AI 視覺模型' : 'AI Vision Models'}</span></>
-            )}
+            {language === 'zh-TW' ? '鍛造屬於你的專屬 ' : 'Forge Your Custom '}<span style={{ color: 'var(--accent-primary)' }}>{language === 'zh-TW' ? 'AI 視覺模型' : 'AI Vision Models'}</span>
           </h1>
 
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-            {activeProject
-              ? activeProject.description || t.dashboardHeroCurrentDesc
-              : t.dashboardHeroSubtitleDefault}
+            {t.dashboardHeroSubtitleDefault}
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -72,18 +86,10 @@ export const DashboardView: React.FC = () => {
             >
               {t.dashboardBtnNewProject}
             </Button>
-            {activeProject && (
-              <Button
-                variant="secondary"
-                icon={<ArrowRight size={16} />}
-                onClick={() => setCurrentView('dataset')}
-              >
-                {t.dashboardBtnGoDataset}
-              </Button>
-            )}
           </div>
         </div>
       </div>
+      )}
 
       {/* System & Workspace Overview Statistics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>

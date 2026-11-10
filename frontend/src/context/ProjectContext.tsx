@@ -38,7 +38,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [theme, setThemeState] = useState<AppTheme>(() => {
     const saved = localStorage.getItem('visionforge_theme') as AppTheme;
     const isValid = THEME_REGISTRY.some((t) => t.id === saved);
-    return isValid ? saved : 'sky-blossom';
+    return isValid ? saved : 'maker-studio';
   });
   const [language, setLanguageState] = useState<Language>(() => {
     const savedLang = localStorage.getItem('visionforge_lang') as Language;
