@@ -26,7 +26,8 @@ def predict_base64_endpoint(request: InferenceRequestBase64):
 async def predict_form_endpoint(
     file: UploadFile = File(...),
     model_id: Optional[str] = Form(None),
-    roi_json: Optional[str] = Form(None)
+    roi_json: Optional[str] = Form(None),
+    architecture: Optional[str] = Form(None),
 ):
     """Run prediction via Multipart Form upload with optional ROI."""
     try:
@@ -38,7 +39,7 @@ async def predict_form_endpoint(
                 roi = RoiBox(**roi_dict)
             except Exception:
                 pass
-        return InferenceService.predict_form(image_bytes, model_id=model_id, roi=roi)
+        return InferenceService.predict_form(image_bytes, model_id=model_id, roi=roi, architecture=architecture)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -53,7 +54,7 @@ def predict_batch_endpoint(request: InferenceBatchRequest):
 @router.get("/status", response_model=ApiServerStatus)
 def get_inference_api_status():
     """Get real-time status of the local inference API server."""
-    return InferenceService.get_status()
+    return InferenceService.get_server_status()
 
 @router.post("/toggle", response_model=ApiServerStatus)
 def toggle_inference_api(enable: Optional[bool] = None):

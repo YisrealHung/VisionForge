@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Project, ProjectCreateInput, SystemHealth, NavView, ActiveWorkspace, AppTheme, THEME_REGISTRY } from '../types';
 import { api } from '../services/api';
 import { Language, TranslationDictionary, translations } from '../i18n/translations';
@@ -84,14 +84,18 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
+  // Last known backend status, kept in a ref so the "came back online" check runs outside the
+  // state updater (updaters must be pure; StrictMode calls them twice).
+  const lastHealthStatusRef = useRef<string | null>(null);
+
   const checkHealth = useCallback(async () => {
     const health = await api.getSystemHealth();
-    setSystemHealth((prev) => {
-      if (prev?.status !== 'online' && health.status === 'online') {
-        fetchProjects();
-      }
-      return health;
-    });
+    const cameOnline = lastHealthStatusRef.current !== 'online' && health.status === 'online';
+    lastHealthStatusRef.current = health.status;
+    setSystemHealth(health);
+    if (cameOnline) {
+      fetchProjects();
+    }
   }, [fetchProjects]);
 
   useEffect(() => {

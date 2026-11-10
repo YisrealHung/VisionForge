@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BellRing, Plus, Trash2, Clock } from 'lucide-react';
-import { TriggerRule, TriggerEvent } from '../../types';
+import { TriggerRule, TriggerEvent, ALL_CLASSES, isAllClasses } from '../../types';
 import { Button } from '../common/Button';
 import { useProject } from '../../context/ProjectContext';
 
@@ -27,14 +27,15 @@ export const TriggerRulePanel: React.FC<TriggerRulePanelProps> = ({
   const isZh = language === 'zh-TW';
 
   const ALL_LABEL = isZh ? '全部類別' : 'All Classes';
+  const displayClass = (name: string) => (isAllClasses(name) ? ALL_LABEL : name);
   const [isAdding, setIsAdding] = useState(false);
-  const [selectedClass, setSelectedClass] = useState(availableCategories[0] || ALL_LABEL);
+  const [selectedClass, setSelectedClass] = useState(availableCategories[0] || ALL_CLASSES);
   const [threshold, setThreshold] = useState(40);
   const [conditionType, setConditionType] = useState<'present' | 'count_gte' | 'absent'>('present');
   const [minCount, setMinCount] = useState(1);
   const [actionType] = useState('alert');
 
-  const categoryOptions = [ALL_LABEL, ...availableCategories.filter((c) => c !== ALL_LABEL && c !== '全部類別')];
+  const categoryOptions = [ALL_CLASSES, ...availableCategories.filter((c) => !isAllClasses(c))];
 
   const handleCreateRule = () => {
     const newRule: TriggerRule = {
@@ -76,7 +77,7 @@ export const TriggerRulePanel: React.FC<TriggerRulePanelProps> = ({
             <div className="form-group">
               <label className="form-label">{isZh ? '監聽類別 (Target Class)' : 'Target Class'}</label>
               <select className="form-select" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
-                {categoryOptions.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                {categoryOptions.map((c, i) => <option key={i} value={c}>{displayClass(c)}</option>)}
               </select>
             </div>
 
@@ -128,7 +129,7 @@ export const TriggerRulePanel: React.FC<TriggerRulePanelProps> = ({
                 <input type="checkbox" checked={r.enabled} onChange={() => onToggleRule(r.id)} style={{ cursor: 'pointer' }} />
                 <div>
                   <span style={{ fontWeight: 600, color: r.enabled ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                    {isZh ? `類別「${r.class_name}」· ${getConditionLabel(r)}` : `Class "${r.class_name}" · ${getConditionLabel(r)}`}
+                    {isZh ? `類別「${displayClass(r.class_name)}」· ${getConditionLabel(r)}` : `Class "${displayClass(r.class_name)}" · ${getConditionLabel(r)}`}
                   </span>
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginLeft: '6px' }}>
                     ({isZh ? '信心度' : 'Conf'} ≥ {r.min_confidence}%)

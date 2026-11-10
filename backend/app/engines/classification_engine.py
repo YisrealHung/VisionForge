@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 import time
@@ -21,6 +22,8 @@ from backend.app.models.training import (
 )
 from backend.app.models.inference import RoiBox, InferenceResultItem
 from backend.app.engines.base_engine import BaseModelEngine
+
+logger = logging.getLogger("visionforge.classification_engine")
 
 
 class ClassificationDataset(Dataset):
@@ -158,6 +161,7 @@ class ClassificationModelEngine(BaseModelEngine):
         hp = config.hyperparameters
         aug = config.augmentation
         dataset_info = self.prepare_dataset(project_dir)
+        job.class_names = list(dataset_info.get("classes") or [])
         train_samples = dataset_info["train_samples"]
         val_samples = dataset_info["val_samples"]
         class_names = dataset_info["classes"]
@@ -331,7 +335,7 @@ class ClassificationModelEngine(BaseModelEngine):
                 state = torch.load(ckpt_file, map_location="cpu")
                 model.load_state_dict(state)
             except Exception as e:
-                print(f"Warning loading classification checkpoint: {e}")
+                logger.warning(f"Warning loading classification checkpoint: {e}")
         model.eval()
         return model, classes
 

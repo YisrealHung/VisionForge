@@ -1,19 +1,20 @@
 import json
 import uuid
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 from fastapi import HTTPException
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.core.database import get_db
 from backend.app.models.project import ProjectCreate, ProjectResponse, ProjectUpdate
 
 class ProjectService:
     @staticmethod
     def _create_project_directory_structure(project_id: str, project_data: dict) -> Path:
-        project_path = settings.PROJECTS_DIR / project_id
+        project_path = resolve_project_dir(project_id)
         project_path.mkdir(parents=True, exist_ok=True)
         
         # Subdirectories according to architecture doc
@@ -32,7 +33,7 @@ class ProjectService:
             "name": project_data["name"],
             "description": project_data.get("description", ""),
             "task_type": project_data["task_type"],
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "version": "1.0.0",
             "classes": []
         }
@@ -44,7 +45,7 @@ class ProjectService:
     @staticmethod
     def create_project(data: ProjectCreate) -> ProjectResponse:
         project_id = f"proj_{uuid.uuid4().hex[:10]}"
-        now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         
         # 1. Create file directory
         ProjectService._create_project_directory_structure(project_id, data.model_dump())
@@ -154,7 +155,7 @@ class ProjectService:
             cursor.execute("DELETE FROM projects WHERE id = ?", (project_id,))
             
         # 2. Delete files on disk
-        project_path = settings.PROJECTS_DIR / project_id
+        project_path = resolve_project_dir(project_id)
         if project_path.exists():
             shutil.rmtree(project_path, ignore_errors=True)
             

@@ -308,6 +308,7 @@ export interface InferenceResponse {
 
 export interface InferenceBatchRequest {
   model_id?: string;
+  architecture?: string;
   images_base64: string[];
 }
 
@@ -556,3 +557,8 @@ export const THEME_REGISTRY: ThemeDefinition[] = [
 
 
 
+
+/** Language-neutral trigger-rule class name meaning "any class". */
+export const ALL_CLASSES = '*';
+const LEGACY_ALL_CLASSES = new Set([ALL_CLASSES, 'any', '全部類別', 'All Classes']);
+export const isAllClasses = (name: string) => LEGACY_ALL_CLASSES.has(name);

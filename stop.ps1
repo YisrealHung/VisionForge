@@ -6,7 +6,8 @@ Write-Host "  Stopping VisionForge Services..." -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
 
-$ports = @(8000, 5173)
+$backendPort = if ($env:VF_PORT) { [int]$env:VF_PORT } else { 8000 }
+$ports = @($backendPort, 5173)
 $killedAny = $false
 
 foreach ($port in $ports) {

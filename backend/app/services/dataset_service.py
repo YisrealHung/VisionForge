@@ -1,3 +1,4 @@
+import logging
 import os
 import io
 import json
@@ -5,8 +6,9 @@ import uuid
 import random
 import shutil
 import zipfile
+from urllib.parse import quote
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from PIL import Image
@@ -15,12 +17,15 @@ from fastapi import UploadFile, HTTPException
 from backend.app.core.config import settings
 from backend.app.core.database import get_db
 from backend.app.models.dataset import ImageItem, DatasetSplitRequest, DatasetStats
+from backend.app.core.paths import resolve_project_dir, safe_filename
+
+logger = logging.getLogger("visionforge.dataset_service")
 
 
 class DatasetService:
     @staticmethod
     def get_project_dir(project_id: str) -> Path:
-        p_dir = settings.PROJECTS_DIR / project_id
+        p_dir = resolve_project_dir(project_id)
         if not p_dir.exists():
             raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
         return p_dir
@@ -96,14 +101,14 @@ class DatasetService:
             except Exception:
                 pass
                 
-            now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             item = ImageItem(
                 id=unique_id,
                 filename=clean_name,
                 width=width,
                 height=height,
                 size_bytes=len(content),
-                url=f"/api/projects/{project_id}/images/{clean_name}",
+                url=f"/api/projects/{project_id}/images/{quote(clean_name)}",
                 split=splits_map.get(clean_name, "unassigned"),
                 labeled=False,
                 annotation_count=0,
@@ -154,7 +159,7 @@ class DatasetService:
                     width=width,
                     height=height,
                     size_bytes=p.stat().st_size,
-                    url=f"/api/projects/{project_id}/images/{filename}",
+                    url=f"/api/projects/{project_id}/images/{quote(filename)}",
                     split=splits_map.get(filename, "unassigned"),
                     labeled=anno_count > 0,
                     annotation_count=anno_count,
@@ -168,7 +173,7 @@ class DatasetService:
     def delete_image(project_id: str, filename: str) -> bool:
         project_dir = DatasetService.get_project_dir(project_id)
         raw_dir = project_dir / "datasets" / "raw"
-        file_path = raw_dir / filename
+        file_path = raw_dir / safe_filename(filename)
         if file_path.exists():
             file_path.unlink()
             
@@ -346,7 +351,10 @@ Formats Included:
 
                         # Extract Image
                         if suffix in valid_exts:
-                            target_fname = mpath.name
+                            # Only keep the base name: zip entries may contain ../ or absolute paths.
+                            target_fname = Path(member.filename.replace("\\", "/")).name
+                            if not target_fname or target_fname.startswith("."):
+                                continue
                             target_path = raw_dir / target_fname
                             with zf.open(member) as src, open(target_path, "wb") as dst:
                                 dst.write(src.read())
@@ -375,11 +383,15 @@ Formats Included:
                                     annotations.append(a)
                                     imported_annos_count += 1
                             except Exception as e:
-                                print(f"Warning parsing imported JSON: {e}")
+                                logger.warning(f"Warning parsing imported JSON: {e}")
 
             # Case B: Loose Image File
             elif Path(fname).suffix.lower() in valid_exts:
-                target_path = raw_dir / fname
+                # Upload filenames are client-controlled; strip any directory part.
+                base_name = Path(fname.replace("\\", "/")).name
+                if not base_name or base_name.startswith("."):
+                    continue
+                target_path = raw_dir / base_name
                 with open(target_path, "wb") as f:
                     f.write(content)
                 imported_images_count += 1
@@ -405,7 +417,7 @@ Formats Included:
                         annotations.append(a)
                         imported_annos_count += 1
                 except Exception as e:
-                    print(f"Warning parsing loose JSON: {e}")
+                    logger.warning(f"Warning parsing loose JSON: {e}")
 
         # Save updated annotations
         updated_coco = {

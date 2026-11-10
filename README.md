@@ -128,10 +128,8 @@ VisionForge 完整覆蓋現代電腦視覺四大主力任務：
 git clone https://github.com/您的帳號/VisionForge.git
 cd VisionForge
 
-# 2. 安裝後端 Python 依賴
-cd backend
-pip install -r requirements.txt
-cd ..
+# 2. 安裝後端 Python 依賴（safe_pip 會鎖定已安裝的 torch / numpy 等版本，避免被升級破壞）
+python scripts/safe_pip.py -r backend/requirements.txt
 
 # 3. 安裝前端 Node.js 依賴
 cd frontend

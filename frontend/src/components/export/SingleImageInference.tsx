@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Zap, Image as ImageIcon, CheckCircle, AlertCircle } from 'lucide-react';
 import { PredictionResponse } from '../../types';
 import { api } from '../../services/api';
@@ -30,6 +30,15 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
     }
   }, [projectId]);
 
+  const requestSeqRef = useRef(0);
+
+  // Release the previous preview blob whenever it is replaced, and on unmount.
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -45,6 +54,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
   };
 
   const processFile = async (file: File) => {
+    const seq = ++requestSeqRef.current;
     setSelectedFile(file);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
@@ -55,11 +65,14 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
     try {
       setLoading(true);
       const res = await api.predictImage(projectId, file);
+      // A newer image was picked while this one was predicting: drop the stale result.
+      if (seq !== requestSeqRef.current) return;
       setResult(res);
     } catch (err: any) {
+      if (seq !== requestSeqRef.current) return;
       setErrorMsg(err.message || (isZh ? '推論失敗' : 'Inference failed'));
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) setLoading(false);
     }
   };
 

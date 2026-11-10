@@ -3,6 +3,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.models.export import (
     ModelInfoResponse,
     ConfusionMatrixData,
@@ -83,7 +84,7 @@ def download_pth_model(project_id: str):
     if not info.checkpoint_exists:
         raise HTTPException(status_code=404, detail="PyTorch 權重檔尚未生成，請先完成模型訓練")
 
-    project_dir = settings.PROJECTS_DIR / project_id
+    project_dir = resolve_project_dir(project_id)
     ckpt_dir = project_dir / "models" / "checkpoints"
     
     # Priority: {architecture}_best.pt -> best.pt -> last.pt

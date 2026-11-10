@@ -8,6 +8,7 @@ from typing import List, Dict, Tuple, Optional, Any
 from PIL import Image
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.core.database import get_db
 from backend.app.models.training import ModelArchitecture
 from backend.app.models.export import (
@@ -25,7 +26,7 @@ from backend.app.engines.engine_registry import ModelEngineRegistry
 class ExportService:
     @classmethod
     def get_model_info(cls, project_id: str) -> ModelInfoResponse:
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         models_dir = project_dir / "models"
         history_file = models_dir / "training_history.json"
         onnx_file = models_dir / "exported" / "model.onnx"
@@ -103,7 +104,7 @@ class ExportService:
 
     @classmethod
     def _load_model(cls, project_id: str) -> Tuple[Any, List[str], str]:
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         ckpt_file = project_dir / "models" / "checkpoints" / "best.pt"
         if not ckpt_file.exists():
             ckpt_file = project_dir / "models" / "checkpoints" / "last.pt"
@@ -164,7 +165,7 @@ class ExportService:
 
     @classmethod
     def export_to_onnx(cls, project_id: str, request: OnnxExportRequest) -> OnnxExportResponse:
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
         models_dir = project_dir / "models"
         exported_dir = models_dir / "exported"
         exported_dir.mkdir(parents=True, exist_ok=True)

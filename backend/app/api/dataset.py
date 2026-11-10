@@ -4,8 +4,10 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.models.dataset import ImageItem, DatasetSplitRequest
 from backend.app.services.dataset_service import DatasetService
+from backend.app.core.paths import safe_filename
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["Dataset"])
 
@@ -22,7 +24,7 @@ async def upload_images(project_id: str, files: List[UploadFile] = File(...)):
 @router.get("/images/{filename}")
 def get_image_file(project_id: str, filename: str):
     """Serve the raw image file."""
-    file_path = settings.PROJECTS_DIR / project_id / "datasets" / "raw" / filename
+    file_path = resolve_project_dir(project_id) / "datasets" / "raw" / safe_filename(filename)
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(file_path)
@@ -30,7 +32,7 @@ def get_image_file(project_id: str, filename: str):
 @router.delete("/images/{filename}")
 def delete_image(project_id: str, filename: str):
     """Delete an image file from the dataset."""
-    DatasetService.delete_image(project_id, filename)
+    DatasetService.delete_image(project_id, safe_filename(filename))
     return {"success": True, "message": f"Image {filename} deleted"}
 
 @router.post("/dataset/split")
@@ -50,6 +52,8 @@ def export_dataset(project_id: str):
             filename=f"{project_id}_dataset.zip",
             media_type="application/zip"
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -58,5 +62,7 @@ async def import_dataset(project_id: str, files: List[UploadFile] = File(...)):
     """Import dataset from ZIP package or loose image and annotation JSON files."""
     try:
         return await DatasetService.import_dataset(project_id, files)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

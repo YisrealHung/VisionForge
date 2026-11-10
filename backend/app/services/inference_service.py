@@ -24,6 +24,10 @@ from backend.app.engines.base_engine import BaseModelEngine
 from backend.app.engines.engine_registry import ModelEngineRegistry
 
 
+# "*" is the sentinel the UI sends; the localized names are accepted for rules saved by older versions.
+ALL_CLASSES_NAMES = {"*", "any", "全部類別", "All Classes"}
+
+
 class InferenceService:
     _model_cache: Dict[str, Tuple[Any, List[str], str, BaseModelEngine, float]] = {}
     _server_running: bool = True
@@ -57,6 +61,12 @@ class InferenceService:
 
     @classmethod
     def _get_or_load_model(cls, model_id: Optional[str], architecture: Optional[str] = None) -> Tuple[Any, List[str], str, BaseModelEngine]:
+        if model_id:
+            from backend.app.core.paths import validate_project_id
+            validate_project_id(model_id)
+        if architecture:
+            from backend.app.core.paths import validate_architecture
+            validate_architecture(architecture)
         pid = model_id or cls._get_active_or_default_project_id()
         project_dir = settings.PROJECTS_DIR / pid
         ckpt_dir = project_dir / "models" / "checkpoints"
@@ -182,7 +192,7 @@ class InferenceService:
                 if is_detection:
                     matching_items = [
                         p for p in predictions
-                        if p.bbox is not None and p.confidence >= rule.min_confidence and (rule.class_name in ["全部類別", "any"] or p.label == rule.class_name)
+                        if p.bbox is not None and p.confidence >= rule.min_confidence and (rule.class_name in ALL_CLASSES_NAMES or p.label == rule.class_name)
                     ]
                     matched_count = len(matching_items)
                     rule_hit = False
@@ -217,7 +227,7 @@ class InferenceService:
                         )
 
                 else:
-                    if top.label == rule.class_name and top.confidence >= rule.min_confidence:
+                    if (rule.class_name in ALL_CLASSES_NAMES or top.label == rule.class_name) and top.confidence >= rule.min_confidence:
                         trigger_matched = True
                         triggered_events.append(
                             TriggerEvent(
@@ -245,9 +255,10 @@ class InferenceService:
         )
 
     @classmethod
-    def predict_form(cls, image_bytes: bytes, model_id: Optional[str] = None, roi: Optional[RoiBox] = None) -> InferenceResponse:
+    def predict_form(cls, image_bytes: bytes, model_id: Optional[str] = None, roi: Optional[RoiBox] = None,
+                     architecture: Optional[str] = None) -> InferenceResponse:
         b64 = base64.b64encode(image_bytes).decode("utf-8")
-        req = InferenceRequestBase64(model_id=model_id, image_base64=b64, roi=roi)
+        req = InferenceRequestBase64(model_id=model_id, architecture=architecture, image_base64=b64, roi=roi)
         return cls.predict_base64(req)
 
     @classmethod
@@ -256,7 +267,7 @@ class InferenceService:
         results: List[InferenceResponse] = []
 
         for b64 in request.images_base64:
-            req = InferenceRequestBase64(model_id=request.model_id, image_base64=b64)
+            req = InferenceRequestBase64(model_id=request.model_id, architecture=request.architecture, image_base64=b64)
             resp = cls.predict_base64(req)
             results.append(resp)
 
@@ -288,8 +299,9 @@ class InferenceService:
         )
 
     @classmethod
-    def toggle_server(cls, enable: bool) -> ApiServerStatus:
-        cls._server_running = enable
+    def toggle_server(cls, enable: Optional[bool] = None) -> ApiServerStatus:
+        # No explicit value means "flip the current state" (the route's `enable` param is optional).
+        cls._server_running = (not cls._server_running) if enable is None else bool(enable)
         return cls.get_server_status()
 
     @classmethod

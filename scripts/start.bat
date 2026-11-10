@@ -1,4 +1,5 @@
 @echo off
+if not defined VF_PORT set "VF_PORT=8000"
 title VisionForge AI Studio - Launcher
 
 cd /d "%~dp0..\"
@@ -45,9 +46,9 @@ echo ==========================================================
 echo [*] Starting VisionForge services...
 echo ==========================================================
 
-:: 1. Launch FastAPI Backend (Port 8000)
-echo [1/2] Launching Backend Server on http://127.0.0.1:8000 ...
-start "VisionForge - Backend (Port 8000)" cmd /k "%~dp0run_backend.bat"
+:: 1. Launch FastAPI Backend (Port %VF_PORT%)
+echo [1/2] Launching Backend Server on http://127.0.0.1:%VF_PORT% ...
+start "VisionForge - Backend (Port %VF_PORT%)" cmd /k "%~dp0run_backend.bat"
 
 :: 2. Launch Vite Frontend (Port 5173)
 echo [2/2] Launching Frontend Server on http://localhost:5173 ...
@@ -63,8 +64,8 @@ echo.
 echo ==========================================================
 echo   VisionForge is now RUNNING!
 echo   - Frontend: http://localhost:5173
-echo   - Backend:  http://127.0.0.1:8000
-echo   - API Docs: http://127.0.0.1:8000/docs
+echo   - Backend:  http://127.0.0.1:%VF_PORT%
+echo   - API Docs: http://127.0.0.1:%VF_PORT%/docs
 echo.
 echo   To STOP all services, run: stop.bat
 echo ==========================================================

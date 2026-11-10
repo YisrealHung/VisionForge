@@ -1,4 +1,5 @@
 import os
+import logging
 import sys
 import time
 import json
@@ -12,6 +13,7 @@ from typing import List, Dict, Optional, Any, Callable
 from PIL import Image
 
 from backend.app.core.config import settings
+from backend.app.core.paths import resolve_project_dir
 from backend.app.core.database import get_db
 from backend.app.models.training import (
     TrainConfigRequest,
@@ -22,6 +24,13 @@ from backend.app.models.training import (
     TrainingStatus
 )
 from backend.app.engines.engine_registry import ModelEngineRegistry
+
+logger = logging.getLogger("visionforge.training")
+
+
+# Status responses are polled every few seconds; send only the recent tail of the log
+# (the UI shows at most this many lines). The full log stays available via /train/logs.
+STATUS_LOG_TAIL = 1000
 
 
 class TrainingJob:
@@ -39,17 +48,20 @@ class TrainingJob:
         self.history: List[EpochMetric] = []
         self.logs: List[str] = []
         self.subscribers: List[asyncio.Queue] = []
+        self.log_callbacks: List[Callable[[str], None]] = []
+        self.metric_callbacks: List[Callable[[EpochMetric], None]] = []
+        self.class_names: Optional[List[str]] = None
         self.should_stop = False
 
     def log(self, message: str):
         now_str = datetime.now().strftime("%H:%M:%S")
         log_entry = f"[{now_str}] {message}"
         self.logs.append(log_entry)
-        print(log_entry)
+        logger.info(log_entry)
 
         # Write to log file
         try:
-            log_dir = settings.PROJECTS_DIR / self.project_id / "models"
+            log_dir = resolve_project_dir(self.project_id) / "models"
             log_dir.mkdir(parents=True, exist_ok=True)
             with open(log_dir / "training.log", "a", encoding="utf-8") as f:
                 f.write(log_entry + "\n")
@@ -62,6 +74,11 @@ class TrainingJob:
                 q.put_nowait({"type": "log", "message": log_entry})
             except Exception:
                 pass
+        for cb in list(self.log_callbacks):
+            try:
+                cb(log_entry)
+            except Exception:
+                logger.exception("log callback failed")
 
     def emit_metric(self, metric: EpochMetric):
         for q in self.subscribers:
@@ -69,15 +86,36 @@ class TrainingJob:
                 q.put_nowait({"type": "metric", "data": metric.model_dump()})
             except Exception:
                 pass
+        for cb in list(self.metric_callbacks):
+            try:
+                cb(metric)
+            except Exception:
+                logger.exception("metric callback failed")
 
 
 class TrainingEngine:
     _jobs: Dict[str, TrainingJob] = {}
     _threads: Dict[str, threading.Thread] = {}
+    _lock = threading.Lock()
 
     @classmethod
     def get_job(cls, project_id: str) -> Optional[TrainingJob]:
         return cls._jobs.get(project_id)
+
+    @classmethod
+    def get_logs(cls, project_id: str) -> List[str]:
+        """Full log of the current (in-memory) job, else of the last saved run."""
+        job = cls._jobs.get(project_id)
+        if job:
+            return list(job.logs)
+        history_file = resolve_project_dir(project_id) / "models" / "training_history.json"
+        if history_file.exists():
+            try:
+                with open(history_file, "r", encoding="utf-8") as f:
+                    return list(json.load(f).get("logs", []))
+            except Exception:
+                logger.warning("Could not read logs from %s", history_file)
+        return []
 
     @classmethod
     def get_status(cls, project_id: str) -> TrainingStatus:
@@ -98,13 +136,13 @@ class TrainingEngine:
                 error_message=job.error_message,
                 model_architecture=getattr(job, "architecture", None),
                 history=job.history,
-                logs=job.logs,
+                logs=job.logs[-STATUS_LOG_TAIL:],
                 start_time=job.start_time,
                 end_time=job.end_time
             )
 
         # Check saved history file
-        history_file = settings.PROJECTS_DIR / project_id / "models" / "training_history.json"
+        history_file = resolve_project_dir(project_id) / "models" / "training_history.json"
         if history_file.exists():
             try:
                 with open(history_file, "r", encoding="utf-8") as f:
@@ -124,7 +162,7 @@ class TrainingEngine:
                         model_architecture=data.get("architecture"),
                         eta_seconds=0,
                         history=hist,
-                        logs=data.get("logs", []),
+                        logs=data.get("logs", [])[-STATUS_LOG_TAIL:],
                         start_time=data.get("start_time"),
                         end_time=data.get("end_time")
                     )
@@ -140,13 +178,26 @@ class TrainingEngine:
         )
 
     @classmethod
-    def start_training(cls, project_id: str, config: TrainConfigRequest) -> TrainingJob:
-        existing = cls._jobs.get(project_id)
-        if existing and existing.status == "training":
-            raise ValueError(f"專案 {project_id} 已有正在執行的訓練作業")
+    def start_training(
+        cls,
+        project_id: str,
+        config: TrainConfigRequest,
+        log_callbacks: Optional[List[Callable[[str], None]]] = None,
+        metric_callbacks: Optional[List[Callable[[EpochMetric], None]]] = None,
+    ) -> TrainingJob:
+        with cls._lock:
+            # A stopped job keeps running until its loop notices should_stop, so check the thread too.
+            existing_thread = cls._threads.get(project_id)
+            existing = cls._jobs.get(project_id)
+            if (existing_thread and existing_thread.is_alive()) or (existing and existing.status in ("pending", "training")):
+                raise ValueError(f"專案 {project_id} 已有正在執行的訓練作業")
 
-        job = TrainingJob(project_id, config)
-        cls._jobs[project_id] = job
+            job = TrainingJob(project_id, config)
+            job.log_callbacks.extend(log_callbacks or [])
+            job.metric_callbacks.extend(metric_callbacks or [])
+            cls._jobs[project_id] = job
+            thread = threading.Thread(target=cls._run_training_worker, args=(job,), daemon=True)
+            cls._threads[project_id] = thread
 
         # Clear previous inference cache immediately
         try:
@@ -155,8 +206,6 @@ class TrainingEngine:
         except Exception:
             pass
 
-        thread = threading.Thread(target=cls._run_training_worker, args=(job,), daemon=True)
-        cls._threads[project_id] = thread
         thread.start()
 
         return job
@@ -175,7 +224,7 @@ class TrainingEngine:
     def _run_training_worker(cls, job: TrainingJob):
         project_id = job.project_id
         hp = job.config.hyperparameters
-        project_dir = settings.PROJECTS_DIR / project_id
+        project_dir = resolve_project_dir(project_id)
 
         job.status = "training"
         job.start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -185,9 +234,16 @@ class TrainingEngine:
             engine = ModelEngineRegistry.get_engine(hp.architecture)
             engine.train(job, job.config, project_dir)
 
-            # 2. Extract class names from dataset
-            dataset_info = engine.prepare_dataset(project_dir)
-            class_names = dataset_info.get("classes", ["目標物"])
+            # 2. Use the class names the engine actually trained with
+            #    (re-reading the dataset here could pick up edits made during training).
+            class_names = job.class_names or ["目標物"]
+
+            if not job.history:
+                # Stopped before a single epoch finished: there is no usable model to register.
+                job.status = "stopped" if job.should_stop else job.status
+                job.end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                job.log("⚠️ 尚未完成任何 epoch，本次訓練不登錄模型")
+                return
 
             # 3. Save Final Training History & Metadata
             job.end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -258,7 +314,7 @@ class TrainingEngine:
                     task_type="detection" if is_det else "classification"
                 )
             except Exception as e:
-                print(f"Error registering trained model: {e}")
+                logger.error(f"Error registering trained model: {e}")
 
             # Invalidate inference cache
             try:
@@ -272,4 +328,4 @@ class TrainingEngine:
             job.error_message = str(e)
             job.log(f"❌ 訓練過程發生錯誤: {e}")
             import traceback
-            traceback.print_exc()
+            logger.error(traceback.format_exc())

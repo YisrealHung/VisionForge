@@ -81,6 +81,7 @@ export const CreateProjectModal: React.FC = () => {
       isOpen={isCreateModalOpen}
       onClose={() => setIsCreateModalOpen(false)}
       title={`🚀 ${t.createProjectModalTitle}`}
+      closeLabel={language === 'zh-TW' ? '關閉' : 'Close'}
       maxWidth="620px"
     >
       <form onSubmit={handleSubmit}>

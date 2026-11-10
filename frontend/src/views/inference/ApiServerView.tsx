@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { ApiServerStatus } from '../../types';
-import { api } from '../../services/api';
+import { api, getPredictEndpoint } from '../../services/api';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { ApiPlayground } from '../../components/api_server/ApiPlayground';
@@ -54,9 +54,12 @@ export const ApiServerView: React.FC = () => {
     }
   };
 
+  // The backend only knows its own bind address; the browser's origin is what other clients should use.
+  const endpointUrl = getPredictEndpoint();
+
   const copyEndpoint = () => {
-    if (status?.endpoint_url) {
-      navigator.clipboard.writeText(status.endpoint_url);
+    if (endpointUrl) {
+      navigator.clipboard.writeText(endpointUrl);
       setCopiedUrl(true);
       setTimeout(() => setCopiedUrl(false), 2000);
     }
@@ -186,7 +189,7 @@ export const ApiServerView: React.FC = () => {
             POST
           </span>
           <code style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 600 }}>
-            {status?.endpoint_url || 'http://127.0.0.1:8000/api/inference/predict'}
+            {endpointUrl}
           </code>
         </div>
 

@@ -14,7 +14,7 @@ import {
   Boxes
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
-import { TriggerRule, TriggerEvent, CategoryItem, TrainedModelInfo } from '../../types';
+import { TriggerRule, TriggerEvent, CategoryItem, TrainedModelInfo, ALL_CLASSES } from '../../types';
 import { api } from '../../services/api';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
@@ -29,7 +29,7 @@ export const InferenceStationView: React.FC = () => {
   const [trainedModels, setTrainedModels] = useState<TrainedModelInfo[]>([]);
   const [selectedArchitecture, setSelectedArchitecture] = useState<string>('');
   const [rules, setRules] = useState<TriggerRule[]>([
-    { id: 'rule_1', class_name: isZh ? '全部類別' : 'All Classes', min_confidence: 40, enabled: true, action_type: 'alert' },
+    { id: 'rule_1', class_name: ALL_CLASSES, min_confidence: 40, enabled: true, action_type: 'alert' },
   ]);
   const [events, setEvents] = useState<TriggerEvent[]>([]);
 
@@ -41,7 +41,7 @@ export const InferenceStationView: React.FC = () => {
           const names = cats.map((c) => c.name);
           setCategories(names);
           setRules([
-            { id: 'rule_1', class_name: names[0] || (isZh ? '全部類別' : 'All Classes'), min_confidence: 40, enabled: true, action_type: 'alert' },
+            { id: 'rule_1', class_name: names[0] || ALL_CLASSES, min_confidence: 40, enabled: true, action_type: 'alert' },
           ]);
         }
       }).catch(() => { });

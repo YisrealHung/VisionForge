@@ -9,11 +9,12 @@ echo "=========================================================="
 
 KILLED=0
 
-# Terminate processes on port 8000
-PIDS_8000=$(lsof -ti:8000 2>/dev/null || fuser 8000/tcp 2>/dev/null || true)
-if [ -n "${PIDS_8000}" ]; then
-    echo "[*] 正在停止 Port 8000 進程: ${PIDS_8000}..."
-    kill -9 ${PIDS_8000} 2>/dev/null || true
+# Terminate processes on the backend port (VF_PORT, default 8000)
+BACKEND_PORT="${VF_PORT:-8000}"
+PIDS_BACKEND=$(lsof -ti:${BACKEND_PORT} 2>/dev/null || fuser ${BACKEND_PORT}/tcp 2>/dev/null || true)
+if [ -n "${PIDS_BACKEND}" ]; then
+    echo "[*] 正在停止 Port ${BACKEND_PORT} 進程: ${PIDS_BACKEND}..."
+    kill -9 ${PIDS_BACKEND} 2>/dev/null || true
     KILLED=1
 fi
 

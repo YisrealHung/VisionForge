@@ -55,14 +55,17 @@ if [ ! -d "${ROOT_DIR}/frontend/dist" ]; then
     cd "${ROOT_DIR}"
 fi
 
+# Port can be overridden with VF_PORT (empty means default).
+export VF_PORT="${VF_PORT:-8000}"
+
 echo ""
 echo -e "\033[1;32m==========================================================\033[0m"
 echo -e "\033[1;32m  🎉 正在啟動 VisionForge 服務...\033[0m"
-echo -e "\033[1;36m  - 服務監聽位址: http://0.0.0.0:8000\033[0m"
-echo -e "\033[1;36m  - 本機瀏覽器:   http://localhost:8000\033[0m"
-echo -e "\033[1;36m  - API 文件:     http://localhost:8000/docs\033[0m"
+echo -e "\033[1;36m  - 服務監聽位址: http://0.0.0.0:${VF_PORT}\033[0m"
+echo -e "\033[1;36m  - 本機瀏覽器:   http://localhost:${VF_PORT}\033[0m"
+echo -e "\033[1;36m  - API 文件:     http://localhost:${VF_PORT}/docs\033[0m"
 echo -e "\033[1;32m==========================================================\033[0m"
 echo ""
 
 # Start FastAPI backend server binding 0.0.0.0 for LAN access
-exec "${PY_CMD}" -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+exec "${PY_CMD}" -m uvicorn backend.app.main:app --host 0.0.0.0 --port "${VF_PORT}"
