@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { ImageItem } from '../../types';
-import { api } from '../../services/api';
+import { api, DATASET_IMPORT_ACCEPT, formatImportSummary } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { ImageUploader } from '../../components/dataset/ImageUploader';
@@ -114,7 +114,7 @@ export const DatasetView: React.FC = () => {
       setImporting(true);
       setImportSuccessMsg('');
       const res = await api.importDataset(activeProject.id, Array.from(files));
-      setImportSuccessMsg(isZh ? `🎉 成功匯入 ${res.imported_images} 張圖片與 ${res.imported_annotations} 筆標註資料（總計 ${res.total_images} 張）！` : `🎉 Successfully imported ${res.imported_images} images and ${res.imported_annotations} annotations (Total ${res.total_images})!`);
+      setImportSuccessMsg(formatImportSummary(res, isZh));
       await loadImages();
     } catch (err: any) {
       alert(isZh ? `匯入失敗: ${err.message || '檔案格式不支援'}` : `Import failed: ${err.message || 'Unsupported format'}`);
@@ -152,7 +152,7 @@ export const DatasetView: React.FC = () => {
         ref={importDatasetInputRef}
         type="file"
         multiple
-        accept=".zip,.json,.jpg,.jpeg,.png,.webp,.bmp"
+        accept={DATASET_IMPORT_ACCEPT}
         style={{ display: 'none' }}
         onChange={handleImportDataset}
       />
@@ -175,8 +175,9 @@ export const DatasetView: React.FC = () => {
             icon={<UploadCloud size={15} />}
             loading={importing}
             onClick={() => importDatasetInputRef.current?.click()}
+            title={isZh ? '支援 ZIP 或多選檔案：影像 + COCO JSON，或影像 + YOLO 標籤 (labels/*.txt + data.yaml)' : 'ZIP or multiple files: images + COCO JSON, or images + YOLO labels (labels/*.txt + data.yaml)'}
           >
-            {isZh ? '匯入資料集 (ZIP / 標註)' : 'Import Dataset (ZIP / Annotations)'}
+            {isZh ? '匯入資料集 (COCO / YOLO)' : 'Import Dataset (COCO / YOLO)'}
           </Button>
 
           {/* Export Button */}
@@ -235,7 +236,7 @@ export const DatasetView: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <CheckCircle2 size={16} />
-            <span>{importSuccessMsg}</span>
+            <span style={{ whiteSpace: 'pre-line' }}>{importSuccessMsg}</span>
           </div>
           <button
             onClick={() => setImportSuccessMsg('')}

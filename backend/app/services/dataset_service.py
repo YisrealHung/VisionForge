@@ -319,122 +319,35 @@ Formats Included:
     # =========================================================================
     @staticmethod
     async def import_dataset(project_id: str, files: List[UploadFile]) -> Dict[str, Any]:
+        """Import images plus COCO and/or YOLO annotations (ZIP or loose files); see dataset_import.py."""
+        from backend.app.services.dataset_import import expand_sources, import_into_project
+
         project_dir = DatasetService.get_project_dir(project_id)
         raw_dir = project_dir / "datasets" / "raw"
         raw_dir.mkdir(parents=True, exist_ok=True)
 
-        existing_coco = DatasetService._get_annotations_data(project_dir)
-        categories = existing_coco.get("categories", [])
-        annotations = existing_coco.get("annotations", [])
-        images_info = existing_coco.get("images", [])
+        uploads = [(f.filename or "", await f.read()) for f in files]
+        try:
+            sources = expand_sources(uploads)
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="ZIP 檔案損毀或格式不正確")
 
-        cat_name_to_id = {c["name"].lower(): c["id"] for c in categories}
-        next_cat_id = max([c["id"] for c in categories], default=0) + 1
+        existing = DatasetService._get_annotations_data(project_dir)
+        updated, result = import_into_project(raw_dir, existing, sources)
+        DatasetService._save_annotations_data(project_dir, updated)
 
-        imported_images_count = 0
-        imported_annos_count = 0
         valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
-
-        for file in files:
-            fname = file.filename or ""
-            content = await file.read()
-
-            # Case A: ZIP Package
-            if fname.lower().endswith(".zip"):
-                with zipfile.ZipFile(io.BytesIO(content)) as zf:
-                    for member in zf.infolist():
-                        if member.is_dir():
-                            continue
-                        
-                        mpath = Path(member.filename)
-                        suffix = mpath.suffix.lower()
-
-                        # Extract Image
-                        if suffix in valid_exts:
-                            # Only keep the base name: zip entries may contain ../ or absolute paths.
-                            target_fname = Path(member.filename.replace("\\", "/")).name
-                            if not target_fname or target_fname.startswith("."):
-                                continue
-                            target_path = raw_dir / target_fname
-                            with zf.open(member) as src, open(target_path, "wb") as dst:
-                                dst.write(src.read())
-                            imported_images_count += 1
-
-                        # Extract & Merge COCO JSON
-                        elif suffix == ".json" and ("coco" in mpath.name.lower() or "anno" in mpath.name.lower()):
-                            try:
-                                json_data = json.loads(zf.read(member).decode("utf-8"))
-                                # Merge categories
-                                for c in json_data.get("categories", []):
-                                    cname = c.get("name", "object")
-                                    if cname.lower() not in cat_name_to_id:
-                                        new_cat = {
-                                            "id": next_cat_id,
-                                            "name": cname,
-                                            "color": c.get("color", "#6366f1"),
-                                            "supercategory": "object"
-                                        }
-                                        categories.append(new_cat)
-                                        cat_name_to_id[cname.lower()] = next_cat_id
-                                        next_cat_id += 1
-
-                                # Merge annotations
-                                for a in json_data.get("annotations", []):
-                                    annotations.append(a)
-                                    imported_annos_count += 1
-                            except Exception as e:
-                                logger.warning(f"Warning parsing imported JSON: {e}")
-
-            # Case B: Loose Image File
-            elif Path(fname).suffix.lower() in valid_exts:
-                # Upload filenames are client-controlled; strip any directory part.
-                base_name = Path(fname.replace("\\", "/")).name
-                if not base_name or base_name.startswith("."):
-                    continue
-                target_path = raw_dir / base_name
-                with open(target_path, "wb") as f:
-                    f.write(content)
-                imported_images_count += 1
-
-            # Case C: Loose JSON Annotation File
-            elif fname.lower().endswith(".json"):
-                try:
-                    json_data = json.loads(content.decode("utf-8"))
-                    for c in json_data.get("categories", []):
-                        cname = c.get("name", "object")
-                        if cname.lower() not in cat_name_to_id:
-                            new_cat = {
-                                "id": next_cat_id,
-                                "name": cname,
-                                "color": c.get("color", "#6366f1"),
-                                "supercategory": "object"
-                            }
-                            categories.append(new_cat)
-                            cat_name_to_id[cname.lower()] = next_cat_id
-                            next_cat_id += 1
-
-                    for a in json_data.get("annotations", []):
-                        annotations.append(a)
-                        imported_annos_count += 1
-                except Exception as e:
-                    logger.warning(f"Warning parsing loose JSON: {e}")
-
-        # Save updated annotations
-        updated_coco = {
-            "info": {"description": f"VisionForge Annotations for {project_id}", "version": "1.0"},
-            "categories": categories,
-            "images": images_info,
-            "annotations": annotations
-        }
-        DatasetService._save_annotations_data(project_dir, updated_coco)
-
-        total_files = list(raw_dir.glob("*.*"))
-        DatasetService._update_project_db_count(project_id, len(total_files))
+        total_images = sum(1 for p in raw_dir.iterdir() if p.is_file() and p.suffix.lower() in valid_exts)
+        DatasetService._update_project_db_count(project_id, total_images)
 
         return {
             "success": True,
-            "imported_images": imported_images_count,
-            "imported_annotations": imported_annos_count,
-            "total_images": len(total_files),
-            "categories": categories
+            "imported_images": result.imported_images,
+            "imported_annotations": result.imported_annotations,
+            "labeled_images": result.labeled_images,
+            "formats": result.formats,
+            "skipped_annotations": result.skipped_annotations,
+            "warnings": result.warnings,
+            "total_images": total_images,
+            "categories": updated["categories"],
         }

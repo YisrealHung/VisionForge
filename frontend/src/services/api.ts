@@ -24,6 +24,29 @@ import {
 
 const API_BASE = '/api';
 
+/** Accepted by the dataset import endpoint: images, ZIPs, COCO JSON, YOLO txt labels + data.yaml / classes.txt. */
+export const DATASET_IMPORT_ACCEPT = '.zip,.json,.txt,.yaml,.yml,.names,.jpg,.jpeg,.png,.webp,.bmp';
+
+export interface DatasetImportResult {
+  success: boolean;
+  imported_images: number;
+  imported_annotations: number;
+  labeled_images: number;
+  formats: string[];
+  skipped_annotations: number;
+  warnings: string[];
+  total_images: number;
+}
+
+/** One human-readable line (plus warnings) describing an import result. */
+export const formatImportSummary = (res: DatasetImportResult, isZh: boolean): string => {
+  const fmt = res.formats.length > 0 ? res.formats.join(' + ') : null;
+  const main = isZh
+    ? `🎉 匯入 ${res.imported_images} 張圖片、${res.imported_annotations} 筆標註（${res.labeled_images} 張已標註${fmt ? `，格式：${fmt}` : '，未偵測到 COCO / YOLO 標註'}），專案共 ${res.total_images} 張。`
+    : `🎉 Imported ${res.imported_images} images and ${res.imported_annotations} annotations (${res.labeled_images} labeled${fmt ? `, format: ${fmt}` : ', no COCO / YOLO labels found'}). Project total: ${res.total_images}.`;
+  return res.warnings.length > 0 ? [main, ...res.warnings.map((w) => `⚠️ ${w}`)].join('\n') : main;
+};
+
 /**
  * Absolute URL of the inference endpoint as seen by this browser.
  * Uses the page origin, so it is correct for LAN / Jetson access and in the Vite dev proxy,
@@ -126,7 +149,7 @@ export const api = {
     return await res.json();
   },
 
-  async importDataset(projectId: string, files: File[]): Promise<{ success: boolean; imported_images: number; imported_annotations: number; total_images: number }> {
+  async importDataset(projectId: string, files: File[]): Promise<DatasetImportResult> {
     const formData = new FormData();
     files.forEach((f) => formData.append('files', f));
     const res = await fetch(`${API_BASE}/projects/${projectId}/dataset/import`, {

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { ImageItem, CategoryItem, AnnotationItem } from '../../types';
-import { api } from '../../services/api';
+import { api, DATASET_IMPORT_ACCEPT, formatImportSummary } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { TaskBadge } from '../../components/common/Badge';
 import { CanvasAnnotator } from '../../components/annotation/CanvasAnnotator';
@@ -75,7 +75,7 @@ export const AnnotationView: React.FC = () => {
     try {
       setImporting(true);
       const res = await api.importDataset(activeProject.id, Array.from(files));
-      alert(isZh ? `🎉 成功匯入 ${res.imported_images} 張圖片與 ${res.imported_annotations} 筆標註！` : `🎉 Successfully imported ${res.imported_images} images and ${res.imported_annotations} annotations!`);
+      alert(formatImportSummary(res, isZh));
       await loadInitialData();
       setAnnoReloadKey((k) => k + 1);
     } catch (err: any) {
@@ -592,7 +592,7 @@ export const AnnotationView: React.FC = () => {
             ref={importInputRef}
             type="file"
             multiple
-            accept=".zip,.json,.jpg,.jpeg,.png,.webp,.bmp"
+            accept={DATASET_IMPORT_ACCEPT}
             style={{ display: 'none' }}
             onChange={handleImportDataset}
           />
