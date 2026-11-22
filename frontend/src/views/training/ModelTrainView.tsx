@@ -1,41 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import {
-  BrainCircuit,
-  Play,
-  Sliders,
-  Sparkles,
-  Check,
-  Layers,
-  Cpu,
-  Info,
-  ArrowRight,
-  ShieldCheck,
-  Scan,
-  Maximize2
-} from 'lucide-react';
+import { BrainCircuit, Play, Sliders, Layers, Gauge } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import {
   PresetType,
   ModelArchitecture,
   OptimizerType,
-  Hyperparameters,
-  AugmentationConfig,
   TrainConfigRequest,
-  TaskType
+  TaskType,
 } from '../../types';
 import { api } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
+import { TaskBadge } from '../../components/common/Badge';
 import { PresetSelector, PRESET_CONFIGS } from '../../components/training/PresetSelector';
 import { ModelSelector, ALL_MODELS } from '../../components/training/ModelSelector';
 
 export const ModelTrainView: React.FC = () => {
-  const { activeProject, setCurrentView, systemHealth, language } = useProject();
+  const { activeProject, setCurrentView, language } = useProject();
   const isZh = language === 'zh-TW';
 
   const taskType: TaskType = activeProject?.task_type || 'classification';
 
-  // Default architecture based on task
   const getDefaultArchitecture = (task: TaskType): ModelArchitecture => {
     switch (task) {
       case 'detection':
@@ -64,7 +49,6 @@ export const ModelTrainView: React.FC = () => {
   const [pretrained, setPretrained] = useState<boolean>(true);
   const [earlyStoppingPatience, setEarlyStoppingPatience] = useState<number>(0);
 
-  // Data Augmentations
   const [randomFlip, setRandomFlip] = useState<boolean>(true);
   const [randomRotation, setRandomRotation] = useState<boolean>(true);
   const [colorJitter, setColorJitter] = useState<boolean>(false);
@@ -74,7 +58,6 @@ export const ModelTrainView: React.FC = () => {
   const [starting, setStarting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Sync architecture and default image size when project taskType changes
   useEffect(() => {
     if (!activeProject) return;
     const currentModelObj = ALL_MODELS.find((m) => m.id === architecture);
@@ -84,7 +67,6 @@ export const ModelTrainView: React.FC = () => {
     }
   }, [activeProject?.id, activeProject?.task_type]);
 
-  // Handle Preset Change
   const handleSelectPreset = (p: PresetType) => {
     setPreset(p);
     if (p !== 'custom') {
@@ -125,13 +107,11 @@ export const ModelTrainView: React.FC = () => {
         },
       };
 
-      // 1. Navigate immediately to monitor view
       setCurrentView('monitor');
-
-      // 2. Dispatch start training request
       await api.startTraining(activeProject.id, config);
     } catch (err: any) {
       console.error('Failed to start training:', err);
+      setErrorMsg(err?.message || (isZh ? '無法啟動訓練' : 'Failed to start training'));
     } finally {
       setStarting(false);
     }
@@ -139,8 +119,12 @@ export const ModelTrainView: React.FC = () => {
 
   if (!activeProject) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <p style={{ color: 'var(--text-muted)' }}>{isZh ? '請先在頂部選單選擇或建立一個專案' : 'Please select or create a project from the top menu first'}</p>
+      <div className="vf-container">
+        <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <p style={{ color: 'var(--text-muted)' }}>
+            {isZh ? '請先在頂部選單選擇或建立專案' : 'Select or create a project from the header first'}
+          </p>
+        </Card>
       </div>
     );
   }
@@ -148,92 +132,141 @@ export const ModelTrainView: React.FC = () => {
   const getTaskTitle = (task: TaskType) => {
     switch (task) {
       case 'detection':
-        return isZh ? '物件偵測模型架構 (Object Detection)' : 'Object Detection Architecture';
+        return isZh ? '物件偵測架構' : 'Object detection architecture';
       case 'regression':
-        return isZh ? '圖像迴歸模型架構 (Image Regression)' : 'Image Regression Architecture';
+        return isZh ? '圖像迴歸架構' : 'Image regression architecture';
       case 'feature':
-        return isZh ? '特徵提取模型架構 (Feature Extraction)' : 'Feature Extraction Architecture';
+        return isZh ? '特徵提取架構' : 'Feature extraction architecture';
       case 'classification':
       default:
-        return isZh ? '視覺分類模型架構 (Image Classification)' : 'Image Classification Architecture';
+        return isZh ? '影像分類架構' : 'Image classification architecture';
     }
   };
 
   const getPretrainedLabel = (task: TaskType) => {
     switch (task) {
       case 'detection':
-        return isZh ? '載入 COCO 預訓練權重 (COCO Pretrained Transfer Learning)' : 'Load COCO Pretrained Weights';
+        return isZh ? '載入 COCO 預訓練權重 (遷移學習)' : 'Load COCO pretrained weights';
       case 'regression':
-        return isZh ? '載入特徵提取預訓練權重 (Transfer Learning)' : 'Load Pretrained Feature Weights';
+        return isZh ? '載入特徵預訓練權重 (遷移學習)' : 'Load pretrained feature weights';
       case 'feature':
-        return isZh ? '載入多尺度特徵預訓練權重 (Pretrained Feature Backbone)' : 'Load Pretrained Backbone Weights';
+        return isZh ? '載入骨幹預訓練權重 (遷移學習)' : 'Load pretrained backbone weights';
       case 'classification':
       default:
-        return isZh ? '載入 ImageNet 預訓練權重 (ImageNet Transfer Learning)' : 'Load ImageNet Pretrained Weights';
+        return isZh ? '載入 ImageNet 預訓練權重 (遷移學習)' : 'Load ImageNet pretrained weights';
     }
   };
 
+  const renderAugCard = (
+    checked: boolean,
+    onChange: (next: boolean) => void,
+    title: string,
+    desc: string
+  ) => (
+    <label
+      style={{
+        padding: '12px 16px',
+        borderRadius: 'var(--radius-sm)',
+        background: checked ? 'var(--accent-primary-soft)' : 'var(--bg-surface-elevated)',
+        border: `1px solid ${checked ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '12px',
+        cursor: 'pointer',
+        transition: 'background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out)',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{title}</div>
+        <div className="vf-num" style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{desc}</div>
+      </div>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        style={{ accentColor: 'var(--accent-primary)', cursor: 'pointer', flexShrink: 0 }}
+      />
+    </label>
+  );
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: '1080px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-            🧠 {isZh ? '模型配置與訓練中心' : 'Model Configuration & Training Center'}
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            {isZh ? '專案：' : 'Project: '}<span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{activeProject.name}</span> · {isZh ? '任務類型：' : 'Task: '}<span style={{ color: 'var(--accent-teal)', fontWeight: 600 }}>{activeProject.task_type.toUpperCase()}</span> · {isZh ? '選擇深度學習架構與超參數調整' : 'Select deep learning architecture and tune hyperparameters'}
-          </p>
+    <div className="vf-container">
+      <div className="vf-page-header">
+        <div className="vf-page-heading">
+          <div className="vf-page-eyebrow">
+            <BrainCircuit size={14} strokeWidth={1.5} aria-hidden="true" />
+            <span>{isZh ? '模型訓練' : 'Model training'}</span>
+            <TaskBadge taskType={activeProject.task_type} />
+          </div>
+          <div className="vf-page-title-row">
+            <h1 className="vf-page-title">{activeProject.name}</h1>
+          </div>
         </div>
 
-        <Button
-          variant="primary"
-          size="lg"
-          icon={<Play size={16} />}
-          loading={starting}
-          onClick={handleStartTraining}
-        >
-          🚀 {isZh ? '立即啟動模型訓練' : 'Start Training'}
-        </Button>
+        <div className="vf-page-actions">
+          <Button
+            variant="primary"
+            size="lg"
+            icon={<Play size={16} strokeWidth={1.5} />}
+            loading={starting}
+            onClick={handleStartTraining}
+          >
+            {isZh ? '啟動訓練' : 'Start training'}
+          </Button>
+        </div>
       </div>
 
       {errorMsg && (
-        <div style={{ padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(235, 87, 87, 0.16)', border: '1px solid rgba(235, 87, 87, 0.35)', color: '#fca5a8', fontSize: '0.85rem' }}>
+        <div
+          style={{
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--accent-rose-soft)',
+            border: '1px solid rgba(200, 30, 30, 0.28)',
+            color: 'var(--accent-rose)',
+            fontSize: '13px',
+          }}
+        >
           {errorMsg}
         </div>
       )}
 
       {/* Step 1: Preset Templates */}
-      <div>
-        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sparkles size={17} color="var(--accent-teal)" /> {isZh ? '步驟一：選擇訓練預設模板' : 'Step 1: Select Training Preset'}
-        </h3>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Gauge size={16} strokeWidth={1.5} color="var(--text-secondary)" aria-hidden="true" />
+          <span>{isZh ? '1. 選擇訓練預設' : '1. Training preset'}</span>
+        </h2>
         <PresetSelector currentPreset={preset} onSelectPreset={handleSelectPreset} />
-      </div>
+      </section>
 
       {/* Step 2: Model Architecture */}
-      <div>
-        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <BrainCircuit size={17} color="var(--accent-primary)" /> {isZh ? `步驟二：選擇${getTaskTitle(taskType)}` : `Step 2: Select ${getTaskTitle(taskType)}`}
-        </h3>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <BrainCircuit size={16} strokeWidth={1.5} color="var(--text-secondary)" aria-hidden="true" />
+          <span>{isZh ? `2. 選擇${getTaskTitle(taskType)}` : `2. Select ${getTaskTitle(taskType)}`}</span>
+        </h2>
         <ModelSelector
           taskType={taskType}
           selectedModel={architecture}
           onSelectModel={setArchitecture}
         />
-      </div>
+      </section>
 
-      {/* Step 3: Hyperparameter Fine-tuning */}
+      {/* Step 3: Hyperparameters */}
       <Card>
-        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sliders size={17} color="var(--accent-peach)" /> {isZh ? '步驟三：超參數設定 (Hyperparameters)' : 'Step 3: Hyperparameter Settings'}
-        </h3>
+        <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Sliders size={16} strokeWidth={1.5} color="var(--text-secondary)" aria-hidden="true" />
+          <span>{isZh ? '3. 超參數設定' : '3. Hyperparameters'}</span>
+        </h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-          {/* Epochs */}
-          <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <label className="form-label" style={{ marginBottom: 0 }}>{isZh ? '訓練輪數 (Epochs)' : 'Epochs'}</label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>
+                {isZh ? '訓練輪數 (Epochs)' : 'Epochs'}
+              </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input
                   type="number"
@@ -245,19 +278,16 @@ export const ModelTrainView: React.FC = () => {
                     setEpochs(val);
                     setPreset('custom');
                   }}
+                  className="form-input vf-num"
                   style={{
-                    width: '64px',
-                    padding: '2px 6px',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color: 'var(--accent-primary)',
-                    background: 'var(--bg-surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-xs)',
+                    width: '72px',
+                    padding: '4px 8px',
+                    fontSize: '13px',
+                    fontWeight: 500,
                     textAlign: 'center',
                   }}
                 />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isZh ? '輪' : 'ep'}</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{isZh ? '輪' : 'ep'}</span>
               </div>
             </div>
             <input
@@ -271,48 +301,47 @@ export const ModelTrainView: React.FC = () => {
               }}
               style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
             />
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? '範圍: 1 ~ 500 輪' : 'Range: 1 ~ 500'}</span>
+            <span className="vf-num" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {isZh ? '範圍：1–500 輪' : 'Range: 1–500'}
+            </span>
           </div>
 
-          {/* Batch Size */}
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">{isZh ? '批次大小 (Batch Size)' : 'Batch Size'}</label>
             <select
-              className="form-select"
+              className="form-select vf-num"
               value={batchSize}
               onChange={(e) => {
                 setBatchSize(Number(e.target.value));
                 setPreset('custom');
               }}
             >
-              <option value={4}>{isZh ? '4 (超微批次 / 低顯存)' : '4 (Micro batch / Low VRAM)'}</option>
-              <option value={8}>{isZh ? '8 (省記憶體 / 偵測推薦)' : '8 (Memory saving / Rec. for Detection)'}</option>
-              <option value={16}>{isZh ? '16 (標準推薦預設)' : '16 (Standard / Default)'}</option>
-              <option value={32}>{isZh ? '32 (快速批次訓練)' : '32 (Fast batch)'}</option>
-              <option value={64}>{isZh ? '64 (大型批次)' : '64 (Large batch)'}</option>
+              <option value={4}>{isZh ? '4（低顯存）' : '4 (Low VRAM)'}</option>
+              <option value={8}>{isZh ? '8（省記憶體／偵測推薦）' : '8 (Memory saving / Detection)'}</option>
+              <option value={16}>{isZh ? '16（標準預設）' : '16 (Standard default)'}</option>
+              <option value={32}>{isZh ? '32（快速批次）' : '32 (Fast batch)'}</option>
+              <option value={64}>{isZh ? '64（大型批次）' : '64 (Large batch)'}</option>
             </select>
           </div>
 
-          {/* Learning Rate */}
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">{isZh ? '學習率 (Learning Rate)' : 'Learning Rate'}</label>
             <select
-              className="form-select"
+              className="form-select vf-num"
               value={learningRate}
               onChange={(e) => {
                 setLearningRate(Number(e.target.value));
                 setPreset('custom');
               }}
             >
-              <option value={0.01}>{isZh ? '0.01 (較快收斂)' : '0.01 (Faster convergence)'}</option>
-              <option value={0.001}>{isZh ? '0.001 (標準推薦)' : '0.001 (Standard recommended)'}</option>
-              <option value={0.0005}>{isZh ? '0.0005 (微調推薦)' : '0.0005 (Fine-tuning recommended)'}</option>
-              <option value={0.0001}>{isZh ? '0.0001 (高精細微調)' : '0.0001 (High-precision fine-tuning)'}</option>
+              <option value={0.01}>{isZh ? '0.01（較快收斂）' : '0.01 (Faster convergence)'}</option>
+              <option value={0.001}>{isZh ? '0.001（標準）' : '0.001 (Standard)'}</option>
+              <option value={0.0005}>{isZh ? '0.0005（均衡微調）' : '0.0005 (Balanced fine-tune)'}</option>
+              <option value={0.0001}>{isZh ? '0.0001（細緻微調）' : '0.0001 (Fine-grained tuning)'}</option>
             </select>
           </div>
 
-          {/* Optimizer */}
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">{isZh ? '優化器 (Optimizer)' : 'Optimizer'}</label>
             <select
               className="form-select"
@@ -322,17 +351,16 @@ export const ModelTrainView: React.FC = () => {
                 setPreset('custom');
               }}
             >
-              <option value="adamw">{isZh ? 'AdamW (權重衰減，最穩定)' : 'AdamW (Weight Decay, Stable)'}</option>
-              <option value="adam">{isZh ? 'Adam (經典自適應)' : 'Adam (Classic Adaptive)'}</option>
-              <option value="sgd">{isZh ? 'SGD + Momentum (傳統動量)' : 'SGD + Momentum'}</option>
+              <option value="adamw">{isZh ? 'AdamW（權重衰減）' : 'AdamW (Weight decay)'}</option>
+              <option value="adam">{isZh ? 'Adam（自適應）' : 'Adam (Adaptive)'}</option>
+              <option value="sgd">{isZh ? 'SGD + Momentum' : 'SGD + Momentum'}</option>
             </select>
           </div>
 
-          {/* Image Size Resolution */}
-          <div className="form-group">
-            <label className="form-label">{isZh ? '輸入影像尺寸 (Input Resolution)' : 'Input Resolution'}</label>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">{isZh ? '輸入影像尺寸' : 'Input Resolution'}</label>
             <select
-              className="form-select"
+              className="form-select vf-num"
               value={imageSize}
               onChange={(e) => {
                 setImageSize(Number(e.target.value));
@@ -341,187 +369,98 @@ export const ModelTrainView: React.FC = () => {
             >
               {taskType === 'detection' ? (
                 <>
-                  <option value={640}>{isZh ? '640 × 640 (標準高精度偵測，推薦)' : '640 × 640 (Standard High-Res, Recommended)'}</option>
-                  <option value={512}>{isZh ? '512 × 512 (均衡解析度)' : '512 × 512 (Balanced)'}</option>
-                  <option value={416}>{isZh ? '416 × 416 (經典 YOLO 尺寸)' : '416 × 416 (Classic YOLO)'}</option>
-                  <option value={320}>{isZh ? '320 × 320 (極速邊緣推論)' : '320 × 320 (Edge Inference)'}</option>
+                  <option value={640}>{isZh ? '640 × 640（標準偵測）' : '640 × 640 (Standard detection)'}</option>
+                  <option value={512}>{isZh ? '512 × 512（均衡）' : '512 × 512 (Balanced)'}</option>
+                  <option value={416}>{isZh ? '416 × 416（快速 YOLO）' : '416 × 416 (Fast YOLO)'}</option>
+                  <option value={320}>{isZh ? '320 × 320（邊緣裝置）' : '320 × 320 (Edge inference)'}</option>
                 </>
               ) : (
                 <>
-                  <option value={224}>{isZh ? '224 × 224 (標準 ImageNet 推薦)' : '224 × 224 (ImageNet Standard)'}</option>
-                  <option value={256}>{isZh ? '256 × 256 (高解析度分類)' : '256 × 256 (High-Res Classification)'}</option>
-                  <option value={384}>{isZh ? '384 × 384 (細粒度分類)' : '384 × 384 (Fine-grained)'}</option>
-                  <option value={128}>{isZh ? '128 × 128 (快速輕量)' : '128 × 128 (Lightweight & Fast)'}</option>
+                  <option value={224}>{isZh ? '224 × 224（ImageNet 標準）' : '224 × 224 (ImageNet standard)'}</option>
+                  <option value={256}>{isZh ? '256 × 256（高解析）' : '256 × 256 (High-res)'}</option>
+                  <option value={384}>{isZh ? '384 × 384（細粒度）' : '384 × 384 (Fine-grained)'}</option>
+                  <option value={128}>{isZh ? '128 × 128（輕量快速）' : '128 × 128 (Lightweight)'}</option>
                 </>
               )}
             </select>
           </div>
         </div>
 
-        {/* Checkbox toggles */}
-        <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem', flexWrap: 'wrap', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+        <div style={{ display: 'flex', gap: '24px', marginTop: '20px', flexWrap: 'wrap', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text-primary)' }}>
             <input
               type="checkbox"
               checked={pretrained}
               onChange={(e) => setPretrained(e.target.checked)}
+              style={{ accentColor: 'var(--accent-primary)' }}
             />
             <span>{getPretrainedLabel(taskType)}</span>
           </label>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text-primary)' }}>
             <input
               type="checkbox"
               checked={earlyStoppingPatience > 0}
               onChange={(e) => setEarlyStoppingPatience(e.target.checked ? 5 : 0)}
+              style={{ accentColor: 'var(--accent-primary)' }}
             />
-            <span>{isZh ? '啟用早停機制 (Early Stopping, 容忍 5 輪無提升)' : 'Enable Early Stopping (Patience: 5 Epochs)'}</span>
+            <span>{isZh ? '啟用早停機制（容忍 5 輪無提升）' : 'Enable early stopping (patience: 5 epochs)'}</span>
           </label>
         </div>
       </Card>
 
       {/* Step 4: Data Augmentation */}
       <Card>
-        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Layers size={17} color="#10b981" /> {isZh ? '步驟四：資料增強配置 (Data Augmentation)' : 'Step 4: Data Augmentation'}
-        </h3>
+        <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Layers size={16} strokeWidth={1.5} color="var(--text-secondary)" aria-hidden="true" />
+          <span>{isZh ? '4. 資料增強配置' : '4. Data augmentation'}</span>
+        </h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          {/* Mosaic Augmentation (for detection) */}
-          {taskType === 'detection' && (
-            <label
-              style={{
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-sm)',
-                background: mosaic ? 'rgba(6, 182, 212, 0.12)' : 'var(--bg-surface-elevated)',
-                border: `1px solid ${mosaic ? '#06b6d4' : 'var(--border-subtle)'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: mosaic ? '#67e8f9' : 'inherit' }}>
-                  🧩 {isZh ? 'Mosaic 馬賽克拼接' : 'Mosaic Augmentation'}
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? '4 圖隨機拼接增強多尺度特徵 (p=0.5)' : '4-image random mosaic (p=0.5)'}</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={mosaic}
-                onChange={(e) => setMosaic(e.target.checked)}
-              />
-            </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+          {taskType === 'detection' &&
+            renderAugCard(
+              mosaic,
+              setMosaic,
+              isZh ? 'Mosaic 四圖拼接' : 'Mosaic augmentation',
+              isZh ? '隨機 4 圖拼接增強多尺度特徵 (p=0.5)' : '4-image random mosaic (p=0.5)'
+            )}
+          {renderAugCard(
+            randomFlip,
+            setRandomFlip,
+            isZh ? '水平隨機翻轉' : 'Random horizontal flip',
+            'p=0.5'
           )}
-
-          <label
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-sm)',
-              background: randomFlip ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-surface-elevated)',
-              border: `1px solid ${randomFlip ? '#10b981' : 'var(--border-subtle)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{isZh ? '水平隨機翻轉' : 'Random Horizontal Flip'}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? 'Random Horizontal Flip (p=0.5)' : 'p=0.5'}</div>
-            </div>
-            <input
-              type="checkbox"
-              checked={randomFlip}
-              onChange={(e) => setRandomFlip(e.target.checked)}
-            />
-          </label>
-
-          <label
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-sm)',
-              background: randomRotation ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-surface-elevated)',
-              border: `1px solid ${randomRotation ? '#10b981' : 'var(--border-subtle)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{isZh ? '隨機微角度旋轉' : 'Random Rotation'}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? 'Random Rotation (±15°)' : '±15°'}</div>
-            </div>
-            <input
-              type="checkbox"
-              checked={randomRotation}
-              onChange={(e) => setRandomRotation(e.target.checked)}
-            />
-          </label>
-
-          <label
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-sm)',
-              background: colorJitter ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-surface-elevated)',
-              border: `1px solid ${colorJitter ? '#10b981' : 'var(--border-subtle)'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{isZh ? '色彩擾動' : 'Color Jitter'}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? 'Color Jitter (亮度/對比)' : 'Brightness/Contrast'}</div>
-            </div>
-            <input
-              type="checkbox"
-              checked={colorJitter}
-              onChange={(e) => setColorJitter(e.target.checked)}
-            />
-          </label>
-
-          {taskType === 'detection' && (
-            <label
-              style={{
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-sm)',
-                background: randomCrop ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-surface-elevated)',
-                border: `1px solid ${randomCrop ? '#10b981' : 'var(--border-subtle)'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-              }}
-            >
-              <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{isZh ? '隨機縮放與裁切' : 'Random Scale & Crop'}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? 'Random Scale & Crop (0.8~1.2)' : '0.8~1.2'}</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={randomCrop}
-                onChange={(e) => setRandomCrop(e.target.checked)}
-              />
-            </label>
+          {renderAugCard(
+            randomRotation,
+            setRandomRotation,
+            isZh ? '隨機角度旋轉' : 'Random rotation',
+            '±15°'
           )}
+          {renderAugCard(
+            colorJitter,
+            setColorJitter,
+            isZh ? '色彩擾動' : 'Color jitter',
+            isZh ? '亮度與對比度調整' : 'Brightness and contrast'
+          )}
+          {taskType === 'detection' &&
+            renderAugCard(
+              randomCrop,
+              setRandomCrop,
+              isZh ? '隨機縮放與裁切' : 'Random scale & crop',
+              '0.8–1.2'
+            )}
         </div>
       </Card>
 
-      {/* Start Button Bottom Action */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button
           variant="primary"
           size="lg"
-          icon={<Play size={16} />}
+          icon={<Play size={16} strokeWidth={1.5} />}
           loading={starting}
           onClick={handleStartTraining}
-          style={{ width: '100%', maxWidth: '320px' }}
         >
-          🚀 {isZh ? '立即啟動模型訓練' : 'Start Training'}
+          {isZh ? '啟動訓練' : 'Start training'}
         </Button>
       </div>
     </div>

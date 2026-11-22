@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, Zap, Image as ImageIcon, CheckCircle, AlertCircle } from 'lucide-react';
+import { UploadCloud, Zap } from 'lucide-react';
 import { PredictionResponse } from '../../types';
 import { api } from '../../services/api';
-import { Button } from '../common/Button';
 import { useProject } from '../../context/ProjectContext';
 
 interface SingleImageInferenceProps {
@@ -10,7 +9,7 @@ interface SingleImageInferenceProps {
 }
 
 export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ projectId }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,17 +21,21 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
 
   React.useEffect(() => {
     if (projectId) {
-      api.getCategories(projectId).then(cats => {
-        const m: Record<string, string> = {};
-        cats.forEach(c => { m[c.name] = c.color; });
-        setCategoryColorMap(m);
-      }).catch(() => {});
+      api
+        .getCategories(projectId)
+        .then((cats) => {
+          const m: Record<string, string> = {};
+          cats.forEach((c) => {
+            m[c.name] = c.color;
+          });
+          setCategoryColorMap(m);
+        })
+        .catch(() => {});
     }
   }, [projectId]);
 
   const requestSeqRef = useRef(0);
 
-  // Release the previous preview blob whenever it is replaced, and on unmount.
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -41,8 +44,7 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      processFile(file);
+      processFile(e.target.files[0]);
     }
   };
 
@@ -61,11 +63,9 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
     setErrorMsg('');
     setResult(null);
 
-    // Auto-trigger prediction
     try {
       setLoading(true);
       const res = await api.predictImage(projectId, file);
-      // A newer image was picked while this one was predicting: drop the stale result.
       if (seq !== requestSeqRef.current) return;
       setResult(res);
     } catch (err: any) {
@@ -77,193 +77,196 @@ export const SingleImageInference: React.FC<SingleImageInferenceProps> = ({ proj
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
-        {/* Upload & Preview Box */}
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            minHeight: '220px',
-            borderRadius: 'var(--radius-md)',
-            border: '2px dashed var(--border-subtle)',
-            background: previewUrl ? 'transparent' : 'var(--bg-base)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem',
-            cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'border-color 0.2s',
-          }}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+      <div
+        className={previewUrl ? '' : 'vf-reticle'}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        style={{
+          minHeight: '220px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px dashed var(--border-strong)',
+          background: previewUrl ? 'var(--canvas-bg)' : 'var(--bg-surface-elevated)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'border-color var(--dur-fast) var(--ease-out)',
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
 
-          {previewUrl ? (
-            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-              <img
-                src={previewUrl}
-                alt="Upload preview"
+        {previewUrl ? (
+          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <img
+              src={previewUrl}
+              alt="Upload preview"
+              style={{
+                maxHeight: '180px',
+                maxWidth: '100%',
+                objectFit: 'contain',
+                borderRadius: 'var(--radius-sm)',
+              }}
+            />
+            <span style={{ fontSize: '12px', color: 'var(--canvas-muted)' }}>
+              {isZh ? '點擊或拖曳更換測試圖片' : 'Click or drop to change image'}
+            </span>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <UploadCloud size={18} strokeWidth={1.5} />
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+              {isZh ? '拖曳圖片至此，或點擊選擇檔案' : 'Drop an image here, or click to select'}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {isZh ? '支援 JPG, PNG, WebP · 上傳後自動推論' : 'JPG, PNG, WebP · Predicts automatically'}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          background: 'var(--bg-surface-elevated)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+              {isZh ? '預測結果' : 'Prediction'}
+            </span>
+            {result && (
+              <span className="badge badge-neutral vf-num">
+                <Zap size={11} strokeWidth={1.5} /> {result.inference_time_ms} ms
+              </span>
+            )}
+          </div>
+
+          {loading ? (
+            <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <span
+                aria-hidden="true"
                 style={{
-                  maxHeight: '180px',
-                  maxWidth: '100%',
-                  objectFit: 'contain',
-                  borderRadius: 'var(--radius-sm)',
+                  display: 'inline-block',
+                  width: '14px',
+                  height: '14px',
+                  border: '2px solid currentColor',
+                  borderRightColor: 'transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
                 }}
               />
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{isZh ? '點擊或拖曳更換測試圖片' : 'Click or drag to change image'}</span>
+              <span>{isZh ? '正在執行推論…' : 'Running inference…'}</span>
             </div>
-          ) : (
-            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+          ) : errorMsg ? (
+            <div style={{ padding: '12px', color: 'var(--accent-rose)', fontSize: '13px', background: 'var(--accent-rose-soft)', borderRadius: 'var(--radius-sm)' }}>
+              {errorMsg}
+            </div>
+          ) : result ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '50%',
-                  background: 'rgba(99, 102, 241, 0.15)',
-                  color: '#818cf8',
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-strong)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
                 }}
               >
-                <UploadCloud size={22} />
-              </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                {isZh ? '拖曳圖片至此，或點擊選擇檔案' : 'Drag & drop an image, or click to select'}
-              </div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                {isZh ? '支援 JPG, PNG, WebP · 自動進行即時推論' : 'Supports JPG, PNG, WebP · Auto inference'}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Prediction Results Display */}
-        <div
-          style={{
-            background: 'var(--bg-base)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-subtle)',
-            padding: '1.25rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                {isZh ? '即時預測結果' : 'Live Prediction'}
-              </span>
-              {result && (
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    color: '#06b6d4',
-                    background: 'rgba(6, 182, 212, 0.12)',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <Zap size={11} /> {isZh ? `耗時 ${result.inference_time_ms} ms` : `${result.inference_time_ms} ms`}
-                </span>
-              )}
-            </div>
-
-            {loading ? (
-              <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                <span className="spinner" style={{ marginRight: '8px' }} />
-                {isZh ? '正在進行 PyTorch 影像特徵提取與分類...' : 'Running PyTorch feature extraction & classification...'}
-              </div>
-            ) : errorMsg ? (
-              <div style={{ padding: '1rem', color: '#fda4af', fontSize: '0.8rem', background: 'rgba(244,63,94,0.1)', borderRadius: 'var(--radius-sm)' }}>
-                {errorMsg}
-              </div>
-            ) : result ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                {/* Top Prediction Banner */}
-                {(() => {
-                  const topColor = categoryColorMap[result.top_label] || '#10b981';
-                  return (
-                    <div
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span
                       style={{
-                        padding: '0.75rem 1rem',
-                        borderRadius: 'var(--radius-sm)',
-                        background: `${topColor}18`,
-                        border: `1.5px solid ${topColor}55`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        boxShadow: `0 2px 10px ${topColor}20`,
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: categoryColorMap[result.top_label] || 'var(--accent-primary)',
                       }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '0.7rem', color: topColor, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: topColor }} />
-                          {isZh ? '最高機率預測' : 'Top Prediction'}
-                        </div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
-                          {result.top_label}
-                        </div>
+                    />
+                    <span>{isZh ? '最高機率預測' : 'Top prediction'}</span>
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {result.top_label}
+                  </div>
+                </div>
+                <div className="vf-num" style={{ fontSize: '24px', fontWeight: 500, color: 'var(--accent-primary)', flexShrink: 0 }}>
+                  {result.top_confidence.toFixed(1)}%
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  {isZh ? '各類別機率分佈' : 'Class probabilities'}
+                </span>
+                {result.predictions.map((p, idx) => {
+                  const isTop = idx === 0;
+                  const barColor = isTop ? 'var(--accent-primary)' : 'var(--text-muted)';
+                  return (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div className="vf-num" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                        <span style={{ color: isTop ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: isTop ? 500 : 400 }}>
+                          {p.label}
+                        </span>
+                        <span style={{ color: isTop ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: isTop ? 500 : 400 }}>
+                          {p.confidence.toFixed(1)}%
+                        </span>
                       </div>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: topColor }}>
-                        {result.top_confidence.toFixed(1)}%
+                      <div style={{ width: '100%', height: '4px', background: 'var(--bg-surface)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${p.confidence}%`,
+                            height: '100%',
+                            background: barColor,
+                            opacity: isTop ? 1 : 0.45,
+                            borderRadius: '2px',
+                            transition: 'width var(--dur-med) var(--ease-out)',
+                          }}
+                        />
                       </div>
                     </div>
                   );
-                })()}
-
-                {/* All Classes Breakdown */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    {isZh ? '各類別機率分佈 (Softmax Confidence):' : 'Class Probability Distribution (Softmax):'}
-                  </span>
-                  {result.predictions.map((p, idx) => {
-                    const cColor = categoryColorMap[p.label] || (idx === 0 ? '#10b981' : '#818cf8');
-                    return (
-                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                          <span style={{ color: idx === 0 ? cColor : 'var(--text-secondary)', fontWeight: idx === 0 ? 700 : 500, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: cColor }} />
-                            {p.label}
-                          </span>
-                          <span style={{ color: 'var(--text-muted)' }}>{p.confidence.toFixed(1)}%</span>
-                        </div>
-                        <div style={{ width: '100%', height: '5px', background: 'var(--bg-surface-elevated)', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div
-                            style={{
-                              width: `${p.confidence}%`,
-                              height: '100%',
-                              background: cColor,
-                              borderRadius: '3px',
-                              transition: 'width 0.3s ease',
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                })}
               </div>
-            ) : (
-              <div style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                {isZh ? '請上傳或拖入一張圖片以開始即時推論' : 'Upload or drag an image to start inference'}
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div style={{ padding: '48px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+              {isZh ? '請上傳或拖入圖片以檢視預測結果' : 'Upload or drop an image to see predictions'}
+            </div>
+          )}
         </div>
       </div>
     </div>

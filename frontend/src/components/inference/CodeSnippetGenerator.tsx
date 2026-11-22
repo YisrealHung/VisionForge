@@ -148,58 +148,52 @@ void sendInference(String base64Image) {
 
   return (
     <Card>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Code2 size={18} color="#06b6d4" />
-          <h3 style={{ fontSize: '1rem', fontWeight: 700 }}>{isZh ? '多語言 API 串接程式碼產生器' : 'Multi-Language API Code Generator'}</h3>
+          <Code2 size={16} strokeWidth={1.5} color="var(--text-secondary)" />
+          <h3 style={{ fontSize: '16px', fontWeight: 500 }}>
+            {isZh ? 'API 串接程式碼範例' : 'API integration code samples'}
+          </h3>
         </div>
 
         <button
+          type="button"
           className="btn btn-ghost btn-sm"
           onClick={handleCopy}
-          style={{ fontSize: '0.75rem', gap: '4px' }}
         >
-          {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-          {copied ? isZh ? '已複製到剪貼簿！' : 'Copied!' : isZh ? '複製代碼' : 'Copy Code'}
+          {copied ? <Check size={14} strokeWidth={1.75} color="var(--accent-emerald)" /> : <Copy size={14} strokeWidth={1.5} />}
+          <span>{copied ? (isZh ? '已複製' : 'Copied') : (isZh ? '複製程式碼' : 'Copy code')}</span>
         </button>
       </div>
 
-      {/* Language Switcher Tabs */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '0.75rem', overflowX: 'auto', paddingBottom: '4px' }}>
-        {languages.map((l) => (
-          <button
-            key={l.key}
-            onClick={() => setSelectedLang(l.key)}
-            style={{
-              padding: '5px 12px',
-              fontSize: '0.75rem',
-              borderRadius: 'var(--radius-sm)',
-              border: selectedLang === l.key ? '1px solid #06b6d4' : '1px solid var(--border-subtle)',
-              background: selectedLang === l.key ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-surface-elevated)',
-              color: selectedLang === l.key ? '#06b6d4' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-              transition: 'all 0.2s',
-            }}
-          >
-            {l.label}
-          </button>
-        ))}
+      <div style={{ marginBottom: '12px' }}>
+        <div className="vf-tabs" role="tablist" aria-label={isZh ? '選擇程式語言' : 'Select language'}>
+          {languages.map((l) => (
+            <button
+              key={l.key}
+              type="button"
+              role="tab"
+              aria-selected={selectedLang === l.key}
+              className={`vf-tab ${selectedLang === l.key ? 'active' : ''}`}
+              onClick={() => setSelectedLang(l.key)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Code Block Display */}
       <pre
+        className="vf-mono"
         style={{
-          background: '#070a12',
-          padding: '1rem 1.25rem',
+          background: 'var(--canvas-bg)',
+          padding: '16px',
           borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--border-subtle)',
-          fontSize: '0.8rem',
-          fontFamily: "'JetBrains Mono', monospace",
-          color: '#cbd5e1',
+          border: '1px solid var(--canvas-border)',
+          fontSize: '12px',
+          color: 'var(--canvas-text)',
           overflowX: 'auto',
-          lineHeight: '1.5',
+          lineHeight: 1.55,
           margin: 0,
         }}
       >

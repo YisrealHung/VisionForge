@@ -39,26 +39,27 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload, loading 
 
   return (
     <div
+      className="vf-reticle"
       onDragOver={(e) => {
         e.preventDefault();
         setDragOver(true);
       }}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
+      onClick={() => fileInputRef.current?.click()}
       style={{
-        border: `2px dashed ${dragOver ? 'var(--accent-primary)' : 'var(--border-card)'}`,
-        background: dragOver ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-glass-card)',
+        border: `1px dashed ${dragOver ? 'var(--accent-primary)' : 'var(--border-strong)'}`,
+        backgroundColor: dragOver ? 'var(--accent-primary-soft)' : 'var(--bg-surface)',
         borderRadius: 'var(--radius-md)',
-        padding: '2.5rem 1.5rem',
+        padding: '32px 24px',
         textAlign: 'center',
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        transition: 'border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '0.85rem',
+        gap: '12px',
       }}
-      onClick={() => fileInputRef.current?.click()}
     >
       <input
         type="file"
@@ -71,30 +72,36 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload, loading 
 
       <div
         style={{
-          width: '52px',
-          height: '52px',
-          borderRadius: '50%',
-          background: 'rgba(99, 102, 241, 0.15)',
-          color: '#818cf8',
+          width: '44px',
+          height: '44px',
+          borderRadius: 'var(--radius-sm)',
+          background: dragOver ? 'var(--accent-primary-soft)' : 'var(--bg-surface-elevated)',
+          border: '1px solid var(--border-subtle)',
+          color: dragOver ? 'var(--accent-primary)' : 'var(--text-secondary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <UploadCloud size={26} />
+        <UploadCloud size={20} strokeWidth={1.5} />
       </div>
 
       <div>
-        <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-          {isZh
-            ? <>拖放圖片至此處，或 <span style={{ color: '#818cf8', textDecoration: 'underline' }}>點擊瀏覽檔案</span></>
-            : <>Drag & drop images here, or <span style={{ color: '#818cf8', textDecoration: 'underline' }}>click to browse</span></>
-          }
+        <h4 style={{ fontSize: '15px', fontWeight: 500, marginBottom: '4px', color: 'var(--text-primary)' }}>
+          {isZh ? (
+            <>
+              拖放圖片至此處，或{' '}
+              <span style={{ color: 'var(--accent-primary)', textDecoration: 'underline' }}>點擊瀏覽檔案</span>
+            </>
+          ) : (
+            <>
+              Drag & drop images here, or{' '}
+              <span style={{ color: 'var(--accent-primary)', textDecoration: 'underline' }}>browse files</span>
+            </>
+          )}
         </h4>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          {isZh
-            ? 'JPG, PNG, WebP, BMP · 支援多檔案批次匯入'
-            : 'JPG, PNG, WebP, BMP · Supports batch import'}
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          {isZh ? 'JPG, PNG, WebP, BMP · 支援多檔案批次匯入' : 'JPG, PNG, WebP, BMP · Batch import supported'}
         </p>
       </div>
 
@@ -103,13 +110,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onUpload, loading 
         variant="secondary"
         size="sm"
         loading={loading}
-        icon={<ImageIcon size={14} />}
+        icon={<ImageIcon size={14} strokeWidth={1.5} />}
         onClick={(e) => {
           e.stopPropagation();
           fileInputRef.current?.click();
         }}
       >
-        {isZh ? '選擇本地圖片' : 'Select Images'}
+        {isZh ? '選擇本機圖片' : 'Select images'}
       </Button>
     </div>
   );

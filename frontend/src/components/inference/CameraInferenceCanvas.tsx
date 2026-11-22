@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   Cpu,
   Video,
-  RefreshCw
 } from 'lucide-react';
 import { RoiBox, TriggerRule, InferenceResponse, ImageItem, isAllClasses } from '../../types';
 import { api } from '../../services/api';
@@ -19,7 +18,6 @@ import { describeCameraError, openCameraStream, stopStream, videoConstraints } f
 import { Button } from '../common/Button';
 import { useProject } from '../../context/ProjectContext';
 
-/** The element has decoded at least one frame we can draw. */
 const hasVideoFrame = (v: HTMLVideoElement) => v.readyState >= v.HAVE_CURRENT_DATA && v.videoWidth > 0;
 
 interface CameraInferenceCanvasProps {
@@ -39,8 +37,8 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   const [feedMode, setFeedMode] = useState<'webcam' | 'image'>('webcam');
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
-  const [customImageSrc, setCustomImageSrc] = useState<string | null>(null);
-  const [confThreshold, setConfThreshold] = useState<number>(40); // 1% ~ 100% (Default 40%)
+  const [, setCustomImageSrc] = useState<string | null>(null);
+  const [confThreshold, setConfThreshold] = useState<number>(40);
   const [fps, setFps] = useState(0);
   const [latency, setLatency] = useState(0);
   const [prediction, setPrediction] = useState<InferenceResponse | null>(null);
@@ -55,10 +53,8 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const loopRef = useRef<boolean>(false);
-  // Each Start gets a new generation; frames from an older loop stop rescheduling themselves.
   const loopGenRef = useRef<number>(0);
   const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Incremented on every start/stop so a getUserMedia call that resolves late is discarded.
   const cameraSeqRef = useRef<number>(0);
   const fpsCountRef = useRef<number>(0);
   const lastFpsTimeRef = useRef<number>(Date.now());
@@ -69,20 +65,25 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
   const { language } = useProject();
   const isZh = language === 'zh-TW';
 
-  // Load project categories & dataset images
   useEffect(() => {
     if (projectId) {
-      api.getCategories(projectId).then((cats) => {
-        const cMap: Record<string, string> = {};
-        cats.forEach((c) => {
-          cMap[c.name] = c.color;
-        });
-        setCategoryColorMap(cMap);
-      }).catch(() => { });
+      api
+        .getCategories(projectId)
+        .then((cats) => {
+          const cMap: Record<string, string> = {};
+          cats.forEach((c) => {
+            cMap[c.name] = c.color;
+          });
+          setCategoryColorMap(cMap);
+        })
+        .catch(() => {});
 
-      api.listImages(projectId).then((imgs) => {
-        setDatasetImages(imgs);
-      }).catch(() => { });
+      api
+        .listImages(projectId)
+        .then((imgs) => {
+          setDatasetImages(imgs);
+        })
+        .catch(() => {});
     }
   }, [projectId]);
 
@@ -103,38 +104,31 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     enumerateDevices();
   }, [enumerateDevices]);
 
-  // Start Camera Stream
   const startCamera = async (deviceId?: string) => {
     stopCamera();
     const seq = cameraSeqRef.current;
     try {
       setErrorMsg('');
       const targetId = deviceId !== undefined ? deviceId : selectedDeviceId;
-      // Queued: never overlaps another open (Windows webcams reject a second concurrent open).
       const stream = await openCameraStream(videoConstraints(targetId || undefined, 1280, 720));
       if (seq !== cameraSeqRef.current) {
-        // Stopped / restarted / unmounted while the permission prompt was open: release it.
         stopStream(stream);
         return;
       }
       streamRef.current = stream;
       const v = videoRef.current;
       if (v) {
-        v.muted = true; // React does not always reflect the `muted` attribute; autoplay needs it
+        v.muted = true;
         v.srcObject = stream;
-        // Not awaited: with a camera that never sends a frame, play() stays pending forever and
-        // the watchdog below would never start.
         v.play().catch((playErr) => {
           if (seq !== cameraSeqRef.current) return;
           console.warn('Video play() rejected:', playErr);
           setErrorMsg(
             isZh
-              ? '攝影機已連線，但瀏覽器沒有開始播放影像。請按「重試」。'
-              : 'The camera is connected but the browser did not start playback. Click Retry.'
+              ? '攝影機已連線但瀏覽器尚未開始播放畫面，請按「重試」'
+              : 'Camera connected but playback did not start. Click Retry'
           );
         });
-        // Watchdog: some webcams open fine but never deliver a frame (e.g. still held by another
-        // tab / app, or a driver hiccup). Say so instead of showing a silent black canvas.
         const startedAt = Date.now();
         const waitForFrame = () => {
           if (seq !== cameraSeqRef.current) return;
@@ -142,8 +136,8 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           if (Date.now() - startedAt > 4000) {
             setErrorMsg(
               isZh
-                ? `攝影機已連線但沒有收到影像（狀態 ${v.readyState}）。請關閉其他使用攝影機的分頁或程式（包含資料蒐集的拍照視窗）後按「重試」，或切換其他裝置。`
-                : `The camera is connected but no frames arrived (state ${v.readyState}). Close other tabs/apps using it (including the capture dialog), then Retry or pick another device.`
+                ? `攝影機已連線但未收到影像（狀態 ${v.readyState}）。請關閉其他使用攝影機的分頁或程式後重試，或切換裝置`
+                : `Camera connected but no frames arrived (state ${v.readyState}). Close other apps using the camera and retry`
             );
             return;
           }
@@ -167,8 +161,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     }
   };
 
-  // Live preview while inference is not running: show the camera feed so the user can aim it and
-  // draw an ROI before pressing Start (previously the canvas stayed blank until Start).
   useEffect(() => {
     if (feedMode !== 'webcam' || isRunning) return;
     let raf = 0;
@@ -198,9 +190,9 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     return () => {
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedMode]);
 
-  // Handle custom image upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -214,7 +206,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         customImgRef.current = img;
         setFeedMode('image');
         if (!isRunning) {
-          // Trigger a single frame render
           renderSingleImage(img);
         }
       };
@@ -223,14 +214,13 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // Re-run inference on static image when selected architecture changes
   useEffect(() => {
     if (customImgRef.current && feedMode === 'image') {
       renderSingleImage(customImgRef.current);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [architecture]);
 
-  // Load sample image from dataset
   const handleLoadDatasetSample = () => {
     if (datasetImages.length === 0) {
       alert(isZh ? '專案資料集中暫無圖片' : 'No images in the project dataset');
@@ -251,7 +241,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     img.src = imgUrl;
   };
 
-  // Render single static image with inference
   const renderSingleImage = async (img: HTMLImageElement) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -274,8 +263,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
 
       setPrediction(res);
       setLatency(res.inference_time_ms);
-
-      // Draw bounding boxes based on confThreshold
       drawBoundingBoxes(ctx, canvas, res.predictions || [], res.trigger_matched);
 
       if (res.trigger_matched && res.triggered_events.length > 0 && onTriggerEvent) {
@@ -286,7 +273,12 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     }
   };
 
-  const drawBoundingBoxes = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, predictions: any[], triggerMatched: boolean) => {
+  const drawBoundingBoxes = (
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    predictions: any[],
+    triggerMatched: boolean
+  ) => {
     predictions.forEach((p) => {
       if (p.bbox && p.bbox.length === 4 && p.confidence >= confThreshold) {
         const [bx, by, bw, bh] = p.bbox;
@@ -295,15 +287,15 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         const pw = bw * canvas.width;
         const ph = bh * canvas.height;
 
-        const isAlert = triggerMatched && triggerRules.some(
-          (r) => r.enabled && (isAllClasses(r.class_name) || r.class_name === p.label) && p.confidence >= r.min_confidence
-        );
-        const catColor = categoryColorMap[p.label] || '#10b981';
-        const boxColor = isAlert ? '#f43f5e' : catColor;
+        const isAlert =
+          triggerMatched &&
+          triggerRules.some(
+            (r) => r.enabled && (isAllClasses(r.class_name) || r.class_name === p.label) && p.confidence >= r.min_confidence
+          );
+        const catColor = categoryColorMap[p.label] || '#15803d';
+        const boxColor = isAlert ? '#e5484d' : catColor;
 
-        // Check if it's a point (Regression) instead of a Bounding Box
         if (bw === 0 && bh === 0) {
-          // Draw a point / crosshair
           ctx.beginPath();
           ctx.arc(px, py, 7, 0, 2 * Math.PI);
           ctx.fillStyle = boxColor;
@@ -312,17 +304,17 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           ctx.strokeStyle = '#ffffff';
           ctx.stroke();
 
-          // Crosshair lines
           ctx.lineWidth = 2;
           ctx.strokeStyle = boxColor;
           ctx.beginPath();
-          ctx.moveTo(px - 16, py); ctx.lineTo(px + 16, py);
-          ctx.moveTo(px, py - 16); ctx.lineTo(px, py + 16);
+          ctx.moveTo(px - 16, py);
+          ctx.lineTo(px + 16, py);
+          ctx.moveTo(px, py - 16);
+          ctx.lineTo(px, py + 16);
           ctx.stroke();
 
-          // Badge text for point
           const labelText = p.label;
-          ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+          ctx.font = '500 13px Allo, system-ui, sans-serif';
           const textMetrics = ctx.measureText(labelText);
           const badgeW = textMetrics.width + 14;
           const badgeH = 22;
@@ -332,35 +324,36 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           ctx.fillStyle = '#ffffff';
           ctx.fillText(labelText, px - badgeW / 2 + 7, badgeY + 16);
         } else {
-          // Standard Bounding box stroke
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 2.5;
           ctx.strokeStyle = boxColor;
           ctx.strokeRect(px, py, pw, ph);
 
-          // Fill semi-transparent tint
           ctx.fillStyle = `${boxColor}20`;
           ctx.fillRect(px, py, pw, ph);
 
-          // Corner markers
           const len = Math.min(16, pw / 3, ph / 3);
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 3.5;
           ctx.strokeStyle = '#ffffff';
-          // Top-left
-          ctx.beginPath(); ctx.moveTo(px, py + len); ctx.lineTo(px, py); ctx.lineTo(px + len, py); ctx.stroke();
-          // Bottom-right
-          ctx.beginPath(); ctx.moveTo(px + pw, py + ph - len); ctx.lineTo(px + pw, py + ph); ctx.lineTo(px + pw - len, py + ph); ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(px, py + len);
+          ctx.lineTo(px, py);
+          ctx.lineTo(px + len, py);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(px + pw, py + ph - len);
+          ctx.lineTo(px + pw, py + ph);
+          ctx.lineTo(px + pw - len, py + ph);
+          ctx.stroke();
 
-          // Badge background
           ctx.fillStyle = boxColor;
           const labelText = `${p.label} ${p.confidence.toFixed(1)}%`;
-          ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+          ctx.font = '500 13px Allo, system-ui, sans-serif';
           const textMetrics = ctx.measureText(labelText);
           const badgeW = textMetrics.width + 12;
           const badgeH = 22;
           const badgeY = Math.max(0, py - badgeH);
           ctx.fillRect(px, badgeY, badgeW, badgeH);
 
-          // Badge text
           ctx.fillStyle = '#ffffff';
           ctx.fillText(labelText, px + 6, badgeY + 16);
         }
@@ -368,9 +361,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     });
   };
 
-  // Continuous Inference Frame Loop
-  // Plain function re-created every render; the loop always calls the latest one via processFrameRef,
-  // so ROI / rules / threshold / feed mode / architecture changes apply while running.
   const processFrame = async (gen: number) => {
     if (!loopRef.current || gen !== loopGenRef.current) return;
 
@@ -384,8 +374,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     const video = videoRef.current;
     const ctx = canvas?.getContext('2d') ?? null;
     if (!canvas || !ctx) {
-      // Canvas briefly unavailable (e.g. re-render/layout change): retry instead of silently
-      // ending the loop while the UI still shows "running".
       scheduleNext(250);
       return;
     }
@@ -401,31 +389,31 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       canvas.height = img.naturalHeight || 480;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     } else {
-      // Standby / No Feed Display
       canvas.width = 640;
       canvas.height = 480;
-      ctx.fillStyle = '#070a12';
+      ctx.fillStyle = '#111113';
       ctx.fillRect(0, 0, 640, 480);
-      ctx.fillStyle = '#64748b';
-      ctx.font = '14px Inter, sans-serif';
+      ctx.fillStyle = '#9898a1';
+      ctx.font = '14px Allo, system-ui, sans-serif';
       ctx.textAlign = 'center';
       const waiting = feedMode === 'webcam' && !!streamRef.current;
       ctx.fillText(
         waiting
-          ? (isZh ? '等待攝影機畫面…' : 'Waiting for camera frames…')
-          : (isZh ? '攝影機尚未開啟 · 請點擊「攝影機」或「載入專案樣本」' : 'Camera not started · Click “Camera” or “Load Sample”'),
+          ? isZh
+            ? '等待攝影機畫面…'
+            : 'Waiting for camera frames…'
+          : isZh
+          ? '請開啟攝影機或載入影像樣本'
+          : 'Start camera or load an image sample',
         320,
         240
       );
       ctx.textAlign = 'left';
-      // Nothing real to look at: don't send the placeholder to the model (it produced bogus
-      // predictions like "向上 55%" on a blank frame). Keep polling for the feed instead.
       setPrediction(null);
       scheduleNext(300);
       return;
     }
 
-    // Capture Base64 & send inference
     const b64 = canvas.toDataURL('image/jpeg', 0.8);
 
     try {
@@ -442,7 +430,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
       setPrediction(res);
       setLatency(res.inference_time_ms);
 
-      // Draw bounding boxes filtered by user-selected confThreshold
       if (res.predictions && res.predictions.length > 0) {
         drawBoundingBoxes(ctx, canvas, res.predictions, res.trigger_matched);
       }
@@ -451,7 +438,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
         res.triggered_events.forEach((ev) => onTriggerEvent(ev));
       }
 
-      // Calculate FPS
       fpsCountRef.current += 1;
       const now = Date.now();
       if (now - lastFpsTimeRef.current >= 1000) {
@@ -477,7 +463,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     }
   };
 
-  // Stop the inference loop and release the camera on unmount.
   useEffect(() => {
     return () => {
       stopLoop();
@@ -499,7 +484,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     }
   };
 
-  // Mouse ROI Drawing Handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -546,34 +530,42 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
     setCurrentRoi(null);
   };
 
-  const validPredictionsCount = prediction?.predictions?.filter(
-    (p) => p.bbox && p.confidence >= confThreshold
-  ).length || 0;
+  const validPredictionsCount =
+    prediction?.predictions?.filter((p) => p.bbox && p.confidence >= confThreshold).length || 0;
+
+  const chipStyle: React.CSSProperties = {
+    background: 'rgba(17, 17, 19, 0.84)',
+    color: '#ededf0',
+    padding: '3px 8px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 500,
+    fontVariantNumeric: 'tabular-nums',
+    backdropFilter: 'blur(6px)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Canvas Container */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div
+        className="vf-reticle"
         style={{
           position: 'relative',
           width: '100%',
           aspectRatio: '16/10',
           maxHeight: '440px',
-          background: '#070a12',
+          background: 'var(--canvas-bg)',
           borderRadius: 'var(--radius-md)',
           overflow: 'hidden',
           border: prediction?.trigger_matched
-            ? '2px solid #f43f5e'
+            ? '1.5px solid var(--accent-rose)'
             : '1px solid var(--border-subtle)',
-          boxShadow: prediction?.trigger_matched
-            ? '0 0 20px rgba(244, 63, 94, 0.4)'
-            : 'none',
-          transition: 'all 0.2s ease',
+          transition: 'border-color var(--dur-fast) var(--ease-out)',
         }}
       >
-        {/* Hidden video element for webcam decoding */}
-        {/* Webcam decoder. Kept in the render tree (1px, transparent) rather than display:none:
-            browsers may not decode frames for hidden, muted, video-only elements. */}
         <video
           ref={videoRef}
           autoPlay
@@ -583,7 +575,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           style={{ position: 'absolute', left: 0, top: 0, width: '2px', height: '2px', opacity: 0.01, pointerEvents: 'none' }}
         />
 
-        {/* Hidden File Input for Image Upload */}
         <input
           ref={fileInputRef}
           type="file"
@@ -592,7 +583,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           onChange={handleFileUpload}
         />
 
-        {/* Main Rendering Canvas */}
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
@@ -607,7 +597,6 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           }}
         />
 
-        {/* ROI Overlay Box */}
         {(roi || currentRoi) && (
           <div
             style={{
@@ -616,8 +605,8 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
               top: `${((currentRoi || roi)!.y / (canvasRef.current?.height || 480)) * 100}%`,
               width: `${((currentRoi || roi)!.width / (canvasRef.current?.width || 640)) * 100}%`,
               height: `${((currentRoi || roi)!.height / (canvasRef.current?.height || 480)) * 100}%`,
-              border: '2px dashed #06b6d4',
-              background: 'rgba(6, 182, 212, 0.1)',
+              border: '1.5px dashed var(--accent-primary)',
+              background: 'rgba(29, 95, 214, 0.12)',
               pointerEvents: 'none',
               borderRadius: '4px',
               display: 'flex',
@@ -627,12 +616,12 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           >
             <span
               style={{
-                fontSize: '0.65rem',
-                color: '#fff',
-                background: '#06b6d4',
-                padding: '1px 5px',
+                fontSize: '11px',
+                color: '#ffffff',
+                background: 'var(--accent-primary)',
+                padding: '1px 6px',
                 borderRadius: '3px',
-                fontWeight: 700,
+                fontWeight: 500,
               }}
             >
               ROI {isZh ? '關注區域' : 'Region of Interest'}
@@ -649,87 +638,36 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
+            flexWrap: 'wrap',
             pointerEvents: 'none',
           }}
         >
-          <span
-            style={{
-              background: 'rgba(0, 0, 0, 0.75)',
-              color: isRunning ? '#10b981' : '#94a3b8',
-              padding: '3px 8px',
-              borderRadius: '4px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              backdropFilter: 'blur(4px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-            }}
-          >
+          <span style={{ ...chipStyle, color: isRunning ? '#4cc38a' : '#a1a1aa' }}>
             <span
               style={{
                 width: '6px',
                 height: '6px',
                 borderRadius: '50%',
-                background: isRunning ? '#10b981' : '#64748b',
+                background: isRunning ? '#4cc38a' : '#71717a',
               }}
             />
-            {isRunning ? `${fps} FPS` : (isZh ? '已暫停' : 'Paused')}
+            {isRunning ? `${fps} FPS` : isZh ? '已暫停' : 'Paused'}
           </span>
 
-          <span
-            style={{
-              background: 'rgba(0, 0, 0, 0.75)',
-              color: '#06b6d4',
-              padding: '3px 8px',
-              borderRadius: '4px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              backdropFilter: 'blur(4px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
-            <Zap size={11} /> {latency} ms
+          <span style={chipStyle}>
+            <Zap size={11} strokeWidth={1.5} /> {latency} ms
           </span>
 
           {prediction?.model_architecture && (
-            <span
-              style={{
-                background: 'rgba(15, 23, 42, 0.85)',
-                color: '#a5b4fc',
-                padding: '3px 8px',
-                borderRadius: '4px',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(165, 180, 252, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              <Cpu size={11} /> {prediction.model_architecture.toUpperCase().replace('_', '-')}
+            <span style={chipStyle}>
+              <Cpu size={11} strokeWidth={1.5} /> {prediction.model_architecture.toUpperCase().replace('_', '-')}
             </span>
           )}
 
           {feedMode === 'webcam' && (
             <span
               style={{
-                background: 'rgba(15, 23, 42, 0.85)',
-                color: '#38bdf8',
-                padding: '3px 8px',
-                borderRadius: '4px',
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
+                ...chipStyle,
                 maxWidth: '180px',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -737,9 +675,9 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
               }}
               title={devices.find((d) => d.deviceId === selectedDeviceId)?.label || 'Camera'}
             >
-              <Video size={11} style={{ flexShrink: 0 }} />
+              <Video size={11} strokeWidth={1.5} style={{ flexShrink: 0 }} />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {devices.find((d) => d.deviceId === selectedDeviceId)?.label || (isZh ? '即時相機' : 'Live Cam')}
+                {devices.find((d) => d.deviceId === selectedDeviceId)?.label || (isZh ? '攝影機' : 'Camera')}
               </span>
             </span>
           )}
@@ -747,13 +685,10 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
 
         {/* Top Right Live Prediction Badge */}
         {prediction && (() => {
-          const topColor = categoryColorMap[prediction.top_label] || '#10b981';
+          const topColor = categoryColorMap[prediction.top_label] || '#4cc38a';
           const isAlert = prediction.trigger_matched;
-          const badgeBg = isAlert
-            ? 'rgba(244, 63, 94, 0.92)'
-            : 'rgba(15, 23, 42, 0.88)';
-          const badgeBorder = isAlert ? '#f43f5e' : topColor;
-          const glowColor = isAlert ? '#f43f5e' : topColor;
+          const badgeBg = isAlert ? 'rgba(200, 30, 30, 0.92)' : 'rgba(17, 17, 19, 0.88)';
+          const badgeBorder = isAlert ? '#e5484d' : 'rgba(255, 255, 255, 0.16)';
 
           return (
             <div
@@ -762,131 +697,117 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
                 top: '12px',
                 right: '12px',
                 background: badgeBg,
-                color: '#ffffff',
-                padding: '6px 14px',
+                color: '#ededf0',
+                padding: '8px 12px',
                 borderRadius: 'var(--radius-sm)',
                 backdropFilter: 'blur(8px)',
-                border: `1.5px solid ${badgeBorder}`,
+                border: `1px solid ${badgeBorder}`,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
-                boxShadow: `0 4px 16px ${glowColor}40`,
+                gap: '12px',
                 pointerEvents: 'none',
               }}
             >
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.8)' }}>
+                <div className="vf-num" style={{ fontSize: '11px', color: 'rgba(237, 237, 240, 0.78)' }}>
                   {isAlert
-                    ? (isZh ? '🚨 觸發條件命中' : '🚨 Trigger Hit')
-                    : (prediction.predictions?.some((p) => p.bbox)
-                      ? (isZh ? `🎯 檢出 ${validPredictionsCount} 個目標 (≥${confThreshold}%)` : `🎯 ${validPredictionsCount} object(s) detected (≥${confThreshold}%)`)
-                      : (isZh ? '即時辨識結果' : 'Live Result'))}
+                    ? isZh
+                      ? '觸發條件命中'
+                      : 'Trigger hit'
+                    : prediction.predictions?.some((p) => p.bbox)
+                    ? isZh
+                      ? `檢出 ${validPredictionsCount} 個目標 (≥${confThreshold}%)`
+                      : `${validPredictionsCount} object(s) (≥${confThreshold}%)`
+                    : isZh
+                    ? '即時辨識結果'
+                    : 'Live result'}
                 </div>
-                <div style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-                  <span
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '50%',
-                      background: topColor,
-                      boxShadow: `0 0 8px ${topColor}`,
-                    }}
-                  />
+                <div style={{ fontSize: '16px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: topColor }} />
                   {prediction.top_label}
                 </div>
               </div>
-              <div
-                style={{
-                  fontSize: '1.35rem',
-                  fontWeight: 800,
-                  color: isAlert ? '#fff' : topColor,
-                }}
-              >
+              <div className="vf-num" style={{ fontSize: '20px', fontWeight: 500, color: isAlert ? '#ffffff' : topColor }}>
                 {prediction.top_confidence > 0 ? `${prediction.top_confidence.toFixed(1)}%` : '--'}
               </div>
             </div>
           );
         })()}
 
-        {/* Bottom Hint Banner */}
         <div
           style={{
             position: 'absolute',
-            bottom: '10px',
+            bottom: '12px',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(0, 0, 0, 0.65)',
-            color: 'var(--text-muted)',
-            padding: '3px 12px',
-            borderRadius: 'var(--radius-full)',
-            fontSize: '0.7rem',
+            background: 'rgba(17, 17, 19, 0.84)',
+            border: '1px solid rgba(255, 255, 255, 0.10)',
+            color: '#d4d4d8',
+            padding: '4px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
             pointerEvents: 'none',
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(6px)',
+            whiteSpace: 'nowrap',
           }}
         >
           {isZh
-            ? '💡 在畫面上拖曳可設定 ROI 關注區域 · 支援攝影機 / 上傳圖片 / 載入專案樣本'
-            : '💡 Drag on canvas to set ROI · Supports Camera / Upload / Dataset Sample'}
+            ? '在畫面上拖曳可設定 ROI · 支援攝影機、上傳圖片或專案樣本'
+            : 'Drag on canvas to set ROI · Supports camera, upload, or sample'}
         </div>
       </div>
 
       {errorMsg && (
         <div
           style={{
-            padding: '0.6rem 0.85rem',
-            background: 'rgba(244, 63, 94, 0.12)',
-            border: '1px solid rgba(244, 63, 94, 0.3)',
+            padding: '10px 12px',
+            background: 'var(--accent-rose-soft)',
+            border: '1px solid rgba(200, 30, 30, 0.25)',
             borderRadius: 'var(--radius-sm)',
-            color: '#fda4af',
-            fontSize: '0.8rem',
+            color: 'var(--accent-rose)',
+            fontSize: '13px',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '8px',
           }}
         >
-          <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+          <AlertTriangle size={15} strokeWidth={1.5} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1 }}>{errorMsg}</span>
           {feedMode === 'webcam' && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => startCamera()}
-              style={{ flexShrink: 0 }}
-            >
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => startCamera()} style={{ flexShrink: 0 }}>
               {isZh ? '重試' : 'Retry'}
             </button>
           )}
         </div>
       )}
 
-      {/* Control Actions & Confidence Slider Bar */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '0.75rem',
+          gap: '12px',
           background: 'var(--bg-surface-elevated)',
-          padding: '0.6rem 1rem',
+          padding: '10px 12px',
           borderRadius: 'var(--radius-sm)',
           border: '1px solid var(--border-subtle)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <Button
             variant={isRunning ? 'danger' : 'primary'}
             size="sm"
-            icon={isRunning ? <Square size={14} /> : <Play size={14} />}
+            icon={isRunning ? <Square size={14} strokeWidth={1.5} /> : <Play size={14} strokeWidth={1.5} />}
             onClick={toggleRunning}
           >
-            {isRunning ? (isZh ? '停止即時推論' : 'Stop Inference') : (isZh ? '啟動即時推論' : 'Start Inference')}
+            {isRunning ? (isZh ? '停止推論' : 'Stop inference') : isZh ? '啟動推論' : 'Start inference'}
           </Button>
 
           <Button
             variant={feedMode === 'webcam' ? 'secondary' : 'ghost'}
             size="sm"
-            icon={<Camera size={14} />}
+            icon={<Camera size={14} strokeWidth={1.5} />}
             onClick={() => {
               if (feedMode === 'webcam') {
                 if (!streamRef.current) startCamera();
@@ -901,18 +822,18 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           {feedMode === 'webcam' && (
             <div
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '6px',
+                height: '32px',
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-sm)',
-                padding: '2px 6px',
+                padding: '0 8px',
               }}
             >
-              <Video size={13} style={{ color: '#818cf8', flexShrink: 0 }} />
+              <Video size={13} strokeWidth={1.5} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
               <select
-                className="form-select"
                 value={selectedDeviceId}
                 onChange={(e) => {
                   const newId = e.target.value;
@@ -920,8 +841,7 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
                   startCamera(newId);
                 }}
                 style={{
-                  fontSize: '0.75rem',
-                  padding: '2px 4px',
+                  fontSize: '12px',
                   background: 'transparent',
                   border: 'none',
                   color: 'var(--text-primary)',
@@ -930,14 +850,18 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
                   textOverflow: 'ellipsis',
                   outline: 'none',
                 }}
-                title={isZh ? '選擇攝影機裝置' : 'Select Camera Device'}
+                title={isZh ? '選擇攝影機裝置' : 'Select camera device'}
               >
                 {devices.length === 0 ? (
-                  <option value="">{isZh ? '正在偵測相機...' : 'Detecting cameras...'}</option>
+                  <option value="">{isZh ? '偵測相機中…' : 'Detecting cameras…'}</option>
                 ) : (
                   devices.map((d, i) => (
-                    <option key={d.deviceId || i} value={d.deviceId} style={{ background: '#0f172a', color: '#fff' }}>
-                      {d.label || `${isZh ? '攝影機裝置' : 'Camera'} #${i + 1}`}
+                    <option
+                      key={d.deviceId || i}
+                      value={d.deviceId}
+                      style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+                    >
+                      {d.label || `${isZh ? '攝影機' : 'Camera'} #${i + 1}`}
                     </option>
                   ))
                 )}
@@ -948,29 +872,28 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
           <Button
             variant={feedMode === 'image' ? 'secondary' : 'ghost'}
             size="sm"
-            icon={<Upload size={14} />}
+            icon={<Upload size={14} strokeWidth={1.5} />}
             onClick={() => fileInputRef.current?.click()}
           >
-            {isZh ? '上傳圖片' : 'Upload Image'}
+            {isZh ? '上傳圖片' : 'Upload image'}
           </Button>
 
           {datasetImages.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              icon={<ImageIcon size={14} />}
+              icon={<ImageIcon size={14} strokeWidth={1.5} />}
               onClick={handleLoadDatasetSample}
             >
-              {isZh ? '載入專案樣本' : 'Load Dataset Sample'}
+              {isZh ? '載入樣本' : 'Load sample'}
             </Button>
           )}
         </div>
 
-        {/* Interactive Confidence Threshold Slider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sliders size={14} color="#818cf8" />
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-            {isZh ? '信心度門檻:' : 'Confidence:'}
+          <Sliders size={14} strokeWidth={1.5} color="var(--text-secondary)" />
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+            {isZh ? '信心度門檻' : 'Confidence'}
           </span>
           <input
             type="range"
@@ -978,35 +901,20 @@ export const CameraInferenceCanvas: React.FC<CameraInferenceCanvasProps> = ({
             max={90}
             value={confThreshold}
             onChange={(e) => setConfThreshold(Number(e.target.value))}
-            style={{ width: '110px', accentColor: '#818cf8', cursor: 'pointer' }}
+            style={{ width: '108px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
           />
-          <span
-            style={{
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              color: '#818cf8',
-              background: 'rgba(99, 102, 241, 0.15)',
-              padding: '1px 6px',
-              borderRadius: '3px',
-              minWidth: '34px',
-              textAlign: 'center',
-            }}
-          >
+          <span className="badge badge-indigo vf-num" style={{ minWidth: '42px', justifyContent: 'center' }}>
             {confThreshold}%
           </span>
         </div>
 
         {roi && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="vf-num" style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 500 }}>
               ROI {isZh ? `已啟用 (${Math.round(roi.width)}×${Math.round(roi.height)} px)` : `Active (${Math.round(roi.width)}×${Math.round(roi.height)} px)`}
             </span>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={clearRoi}
-              style={{ fontSize: '0.75rem', padding: '2px 8px', color: 'var(--text-muted)' }}
-            >
-              <RotateCcw size={12} /> {isZh ? '清除 ROI' : 'Clear ROI'}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={clearRoi} style={{ height: '28px', padding: '0 8px', fontSize: '12px' }}>
+              <RotateCcw size={12} strokeWidth={1.5} /> {isZh ? '清除 ROI' : 'Clear ROI'}
             </button>
           </div>
         )}

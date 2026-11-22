@@ -1,0 +1,81 @@
+/* Allo 1.0.3: self-hosted variable font (optical size, weight, roundness) and nine obliques. SIL Open Font License 1.1. */
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/AlloVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-ThinOblique.woff2") format("woff2");
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-ExtraLightOblique.woff2") format("woff2");
+  font-weight: 200;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-LightOblique.woff2") format("woff2");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-Oblique.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-MediumOblique.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-SemiBoldOblique.woff2") format("woff2");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-BoldOblique.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-ExtraBoldOblique.woff2") format("woff2");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Allo";
+  src: url("../assets/fonts/allo/Allo-BlackOblique.woff2") format("woff2");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}

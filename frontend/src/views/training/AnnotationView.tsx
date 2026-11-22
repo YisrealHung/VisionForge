@@ -1,27 +1,23 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  Tag, 
-  ChevronLeft, 
-  ChevronRight, 
-  Save, 
-  Trash2, 
-  Plus,
-  Check, 
-  AlertCircle,
-  HelpCircle,
+import {
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  Trash2,
+  Check,
   CheckSquare,
-  Sparkles,
-  Zap,
   Sliders,
   X,
   Send,
   Download,
-  UploadCloud
+  UploadCloud,
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { ImageItem, CategoryItem, AnnotationItem } from '../../types';
 import { api, DATASET_IMPORT_ACCEPT, formatImportSummary } from '../../services/api';
 import { Button } from '../../components/common/Button';
+import { Card } from '../../components/common/Card';
 import { TaskBadge } from '../../components/common/Badge';
 import { CanvasAnnotator } from '../../components/annotation/CanvasAnnotator';
 import { CategoryManager } from '../../components/annotation/CategoryManager';
@@ -39,20 +35,16 @@ export const AnnotationView: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Classification Direct UI Input & Click states
   const [classInputText, setClassInputText] = useState('');
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
   const [imageCategoryMap, setImageCategoryMap] = useState<Record<string, number>>({});
 
-  // Regression Target Point state
-  const [regressionPoint, setRegressionPoint] = useState<{x: number, y: number} | null>(null);
+  const [regressionPoint, setRegressionPoint] = useState<{ x: number; y: number } | null>(null);
 
   const [importing, setImporting] = useState(false);
   const [annoReloadKey, setAnnoReloadKey] = useState(0);
-  // Load state of the active image's annotations. Editing is blocked unless 'ready', so nothing the
-  // user draws can be lost to a pending/failed load or written onto the wrong image.
   const [annoStatus, setAnnoStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -66,9 +58,8 @@ export const AnnotationView: React.FC = () => {
   const handleImportDataset = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !activeProject) return;
-    // The reload after import replaces the current image's annotations; persist unsaved boxes first.
     if ((taskType === 'detection' || taskType === 'feature') && !(await saveCurrentAnnotations())) {
-      alert(isZh ? '目前圖片的標註儲存失敗，已取消匯入以免遺失。' : 'Saving the current image failed; import cancelled so nothing is lost.');
+      alert(isZh ? '目前圖片的標註儲存失敗，已取消匯入以免遺失' : 'Saving the current image failed; import cancelled');
       if (importInputRef.current) importInputRef.current.value = '';
       return;
     }
@@ -79,7 +70,7 @@ export const AnnotationView: React.FC = () => {
       await loadInitialData();
       setAnnoReloadKey((k) => k + 1);
     } catch (err: any) {
-      alert(isZh ? `匯入失敗: ${err.message || '檔案格式不支援'}` : `Import failed: ${err.message || 'Unsupported format'}`);
+      alert(isZh ? `匯入失敗：${err.message || '檔案格式不支援'}` : `Import failed: ${err.message || 'Unsupported format'}`);
     } finally {
       setImporting(false);
       if (importInputRef.current) {
@@ -88,7 +79,6 @@ export const AnnotationView: React.FC = () => {
     }
   };
 
-  // Load project images, categories, and existing annotations map
   const loadInitialData = useCallback(async () => {
     if (!activeProject) return;
     try {
@@ -99,17 +89,16 @@ export const AnnotationView: React.FC = () => {
         api.getAnnotationsCoco(activeProject.id).catch((err) => {
           console.error('Failed to load COCO annotations:', err);
           return { annotations: [] };
-        })
+        }),
       ]);
 
       setImages(imgs);
-      setCurrentIndex(prev => Math.min(prev, Math.max(imgs.length - 1, 0)));
+      setCurrentIndex((prev) => Math.min(prev, Math.max(imgs.length - 1, 0)));
       setCategories(cats);
       if (cats.length > 0) {
         setSelectedCategoryId(cats[0].id);
       }
 
-      // Build image -> category map
       const catMap: Record<string, number> = {};
       if (coco && coco.annotations) {
         for (const a of coco.annotations) {
@@ -120,7 +109,6 @@ export const AnnotationView: React.FC = () => {
         }
       }
       setImageCategoryMap(catMap);
-
     } catch (err) {
       console.error('Failed to load annotation data:', err);
     } finally {
@@ -138,21 +126,14 @@ export const AnnotationView: React.FC = () => {
   const activeProjectId = activeProject?.id ?? null;
   const activeTaskType = activeProject?.task_type;
 
-  // Which image the `annotations` state currently belongs to. null while loading or after a failed load,
-  // so a save can never write one image's boxes onto another image.
   const annotationsOwnerRef = useRef<string | null>(null);
-  // Incremented per load so a slow, out-of-order response for a previous image is ignored.
   const loadSeqRef = useRef(0);
-  // Prevents a second navigation (e.g. pressing D twice quickly) while one is saving.
   const navBusyRef = useRef(false);
 
-  // Start from the first image when switching projects.
   useEffect(() => {
     setCurrentIndex(0);
   }, [activeProjectId]);
 
-  // Load annotations when the active image changes (keyed by filename, not object identity,
-  // so updating `images` after a save does not trigger a reload).
   useEffect(() => {
     if (!activeProjectId || !activeFilename) return;
     const seq = ++loadSeqRef.current;
@@ -172,7 +153,7 @@ export const AnnotationView: React.FC = () => {
 
         if (annos.length > 0) {
           setSelectedCategoryId(annos[0].category_id);
-          setImageCategoryMap(prev => ({ ...prev, [activeFilename]: annos[0].category_id }));
+          setImageCategoryMap((prev) => ({ ...prev, [activeFilename]: annos[0].category_id }));
           if (activeTaskType === 'regression' && annos[0].bbox) {
             setRegressionPoint({ x: annos[0].bbox[0], y: annos[0].bbox[1] });
           } else {
@@ -190,8 +171,6 @@ export const AnnotationView: React.FC = () => {
     })();
   }, [activeProjectId, activeFilename, activeTaskType, annoReloadKey]);
 
-  // A direct save (category click, clear, regression point) replaces the image's annotations on the
-  // server. Drop any load still in flight so its older response cannot overwrite what was just saved.
   const invalidatePendingLoad = () => {
     loadSeqRef.current += 1;
   };
@@ -200,7 +179,6 @@ export const AnnotationView: React.FC = () => {
     setAnnoStatus('ready');
   };
 
-  // Direct Click or Input: Assign category to current image
   const handleAssignCategory = async (catId: number, advance = autoAdvance) => {
     if (!activeProject || !activeImage) return;
     try {
@@ -211,27 +189,26 @@ export const AnnotationView: React.FC = () => {
         category_id: catId,
         bbox: [0, 0, activeImage.width || 800, activeImage.height || 600],
         area: (activeImage.width || 800) * (activeImage.height || 600),
-        is_crowd: 0
+        is_crowd: 0,
       };
 
       invalidatePendingLoad();
       await api.saveImageAnnotations(activeProject.id, activeImage.filename, {
         image_id: activeImage.filename,
-        annotations: [singleAnno]
+        annotations: [singleAnno],
       });
 
       setAnnotations([singleAnno]);
       claimAnnotations(activeImage.filename);
       setSelectedCategoryId(catId);
-      setImageCategoryMap(prev => ({ ...prev, [activeImage.filename]: catId }));
-      setImages(prev => prev.map((img, i) => i === currentIndex ? { ...img, labeled: true, annotation_count: 1 } : img));
+      setImageCategoryMap((prev) => ({ ...prev, [activeImage.filename]: catId }));
+      setImages((prev) => prev.map((img, i) => (i === currentIndex ? { ...img, labeled: true, annotation_count: 1 } : img)));
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 800);
 
-      // Auto advance if enabled
       if (advance && currentIndex < images.length - 1) {
-        setCurrentIndex(prev => prev + 1);
+        setCurrentIndex((prev) => prev + 1);
       }
     } catch (err) {
       console.error('Failed to assign category:', err);
@@ -240,7 +217,6 @@ export const AnnotationView: React.FC = () => {
     }
   };
 
-  // Direct Input Submit (Create category if new, then assign)
   const handleDirectInputSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = classInputText.trim();
@@ -248,12 +224,10 @@ export const AnnotationView: React.FC = () => {
 
     try {
       setSaving(true);
-      // Check if category already exists
-      let targetCat = categories.find(c => c.name.toLowerCase() === trimmed.toLowerCase());
+      let targetCat = categories.find((c) => c.name.toLowerCase() === trimmed.toLowerCase());
       if (!targetCat) {
-        // Create new category
         targetCat = await api.addCategory(activeProject.id, trimmed);
-        setCategories(prev => [...prev, targetCat!]);
+        setCategories((prev) => [...prev, targetCat!]);
       }
 
       setClassInputText('');
@@ -265,7 +239,6 @@ export const AnnotationView: React.FC = () => {
     }
   };
 
-  // Clear current image label
   const handleClearCurrentLabel = async () => {
     if (!activeProject || !activeImage) return;
     try {
@@ -273,17 +246,17 @@ export const AnnotationView: React.FC = () => {
       invalidatePendingLoad();
       await api.saveImageAnnotations(activeProject.id, activeImage.filename, {
         image_id: activeImage.filename,
-        annotations: []
+        annotations: [],
       });
 
       setAnnotations([]);
       claimAnnotations(activeImage.filename);
-      setImageCategoryMap(prev => {
+      setImageCategoryMap((prev) => {
         const next = { ...prev };
         delete next[activeImage.filename];
         return next;
       });
-      setImages(prev => prev.map((img, i) => i === currentIndex ? { ...img, labeled: false, annotation_count: 0 } : img));
+      setImages((prev) => prev.map((img, i) => (i === currentIndex ? { ...img, labeled: false, annotation_count: 0 } : img)));
     } catch (err) {
       console.error('Failed to clear label:', err);
     } finally {
@@ -291,21 +264,22 @@ export const AnnotationView: React.FC = () => {
     }
   };
 
-  // Batch Assign Category
   const handleBatchAssign = async (catId: number) => {
     if (!activeProject || selectedImageIds.length === 0) return;
     try {
       setSaving(true);
       await api.batchAssignCategory(activeProject.id, selectedImageIds, catId);
-      
+
       const selectedSet = new Set(selectedImageIds);
-      setImageCategoryMap(prev => {
+      setImageCategoryMap((prev) => {
         const next = { ...prev };
-        selectedImageIds.forEach(id => { next[id] = catId; });
+        selectedImageIds.forEach((id) => {
+          next[id] = catId;
+        });
         return next;
       });
 
-      setImages(prev => prev.map(img => selectedSet.has(img.filename) ? { ...img, labeled: true, annotation_count: 1 } : img));
+      setImages((prev) => prev.map((img) => (selectedSet.has(img.filename) ? { ...img, labeled: true, annotation_count: 1 } : img)));
       if (activeFilename && selectedSet.has(activeFilename)) {
         setAnnoReloadKey((k) => k + 1);
       }
@@ -313,26 +287,22 @@ export const AnnotationView: React.FC = () => {
       setIsBatchMode(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 1500);
-    } catch (err) {
+    } catch {
       alert(isZh ? '批次標註失敗' : 'Batch annotation failed');
     } finally {
       setSaving(false);
     }
   };
 
-  // General Save (for Detection & Feature)
-  // Returns false only when a save was attempted and failed (callers then stay on this image).
   const saveCurrentAnnotations = async (): Promise<boolean> => {
     if (!activeProject || !activeImage) return true;
     if (annotationsOwnerRef.current !== activeImage.filename) {
-      // Not loaded yet / load failed: editing is blocked in that state, so there is nothing to save.
       return true;
     }
     try {
       setSaving(true);
       let toSave = [...annotations];
 
-      // If feature task and no box drawn, but category is selected, auto-create a full-image ROI
       if (toSave.length === 0 && selectedCategoryId && taskType === 'feature') {
         const fullBox: AnnotationItem = {
           id: `anno_${Date.now()}`,
@@ -352,7 +322,7 @@ export const AnnotationView: React.FC = () => {
       });
 
       if (toSave.length > 0) {
-        setImageCategoryMap(prev => ({ ...prev, [activeImage.filename]: toSave[0].category_id }));
+        setImageCategoryMap((prev) => ({ ...prev, [activeImage.filename]: toSave[0].category_id }));
       }
 
       setSaveSuccess(true);
@@ -368,7 +338,11 @@ export const AnnotationView: React.FC = () => {
       return true;
     } catch (err) {
       console.error('Save failed:', err);
-      alert(isZh ? '標註儲存失敗，請稍後再試（尚未切換圖片，標註仍保留在畫面上）。' : 'Saving annotations failed. Please retry (you are still on this image; your boxes are kept).');
+      alert(
+        isZh
+          ? '標註儲存失敗，請稍後再試（尚未切換圖片，標註仍保留在畫面上）'
+          : 'Saving annotations failed. Please retry (current boxes are kept)'
+      );
       return false;
     } finally {
       setSaving(false);
@@ -380,9 +354,8 @@ export const AnnotationView: React.FC = () => {
     navBusyRef.current = true;
     try {
       if ((taskType === 'detection' || taskType === 'feature') && !(await saveCurrentAnnotations())) {
-        return; // keep the user's unsaved boxes on screen
+        return;
       }
-      // Note: Regression is auto-saved on click, classification is auto-saved on button click.
       setCurrentIndex((prev) => Math.min(Math.max(prev + delta, 0), Math.max(images.length - 1, 0)));
     } finally {
       navBusyRef.current = false;
@@ -392,13 +365,12 @@ export const AnnotationView: React.FC = () => {
   const handleNext = () => navigate(1);
   const handlePrev = () => navigate(-1);
 
-  // Keep the latest handlers in a ref so the keydown listener is registered once and never stale.
   const keyStateRef = useRef({ handleNext, handlePrev, selectedBoxId });
   keyStateRef.current = { handleNext, handlePrev, selectedBoxId };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return; // e.g. CanvasAnnotator used the key to nudge/delete a box
+      if (e.defaultPrevented) return;
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -408,7 +380,6 @@ export const AnnotationView: React.FC = () => {
         return;
       }
       const isArrow = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
-      // Arrow keys nudge the selected box; never also change images.
       if (isArrow && keyStateRef.current.selectedBoxId) return;
       const k = e.key.toLowerCase();
       if (k === 'd' || e.key === '.' || e.key === '>' || e.key === 'ArrowRight') {
@@ -434,7 +405,6 @@ export const AnnotationView: React.FC = () => {
     const targetCat = categories.find((c) => c.id === catId);
     const catName = targetCat ? targetCat.name : (isZh ? '此' : 'this');
 
-    // Count how many images in the project are labeled with this category
     let affectedImageCount = 0;
     try {
       const cocoRes = await api.getAnnotationsCoco(activeProject.id);
@@ -450,13 +420,14 @@ export const AnnotationView: React.FC = () => {
       affectedImageCount = Object.values(imageCategoryMap).filter((cid) => cid === catId).length;
     }
 
-    const confirmMsg = affectedImageCount > 0
-      ? (isZh 
-          ? `⚠️ 目前共有 ${affectedImageCount} 張照片標註了「${catName}」標籤！\n\n確定要刪除此標籤嗎？一旦確認，這 ${affectedImageCount} 張照片上的相關標註將一併全數移除。`
-          : `⚠️ There are ${affectedImageCount} images labeled with "${catName}"!\n\nAre you sure you want to delete this category? All related annotations will be removed.`)
-      : (isZh 
-          ? `確定要刪除標籤「${catName}」嗎？`
-          : `Are you sure you want to delete category "${catName}"?`);
+    const confirmMsg =
+      affectedImageCount > 0
+        ? isZh
+          ? `目前共有 ${affectedImageCount} 張照片標註了「${catName}」標籤。確定要刪除此標籤嗎？刪除後相關標註將一併移除。`
+          : `${affectedImageCount} images are labeled with "${catName}". Delete this category and all related annotations?`
+        : isZh
+        ? `確定要刪除標籤「${catName}」嗎？`
+        : `Delete category "${catName}"?`;
 
     if (!window.confirm(confirmMsg)) {
       return;
@@ -485,7 +456,7 @@ export const AnnotationView: React.FC = () => {
 
       await loadInitialData();
     } catch (err: any) {
-      alert(isZh ? `刪除標籤失敗: ${err.message || err}` : `Failed to delete category: ${err.message || err}`);
+      alert(isZh ? `刪除標籤失敗：${err.message || err}` : `Failed to delete category: ${err.message || err}`);
     } finally {
       setSaving(false);
     }
@@ -495,85 +466,98 @@ export const AnnotationView: React.FC = () => {
   const progressPercent = images.length > 0 ? Math.round((labeledCount / images.length) * 100) : 0;
 
   if (!activeProject) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>{isZh ? '請先在頂部選單選擇專案' : 'Please select a project from the top menu first'}</div>;
+    return (
+      <div className="vf-container">
+        <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <p style={{ color: 'var(--text-muted)' }}>
+            {isZh ? '請先在頂部選單選擇專案' : 'Select a project from the header first'}
+          </p>
+        </Card>
+      </div>
+    );
   }
 
   if (images.length === 0 && !loading) {
     return (
-      <div className="glass-card" style={{ textAlign: 'center', padding: '4rem 1.5rem' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-          {isZh ? '資料集中目前沒有任何圖片' : 'No images in the dataset'}
-        </h3>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          {isZh ? '請先前往「資料集管理」上傳圖片或透過攝影機進行擷取。' : 'Please go to Dataset Management to upload or capture images first.'}
-        </p>
-        <Button variant="primary" onClick={() => setCurrentView('dataset')}>
-          {isZh ? '前往資料集管理' : 'Go to Dataset Management'}
-        </Button>
+      <div className="vf-container">
+        <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 500, marginBottom: '8px' }}>
+            {isZh ? '資料集中尚未新增圖片' : 'No images in dataset'}
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '20px' }}>
+            {isZh ? '請先前往資料集管理頁上傳圖片或開啟攝影機擷取' : 'Upload images or capture from camera in the Dataset view first'}
+          </p>
+          <Button variant="primary" onClick={() => setCurrentView('dataset')}>
+            {isZh ? '前往資料集' : 'Open dataset'}
+          </Button>
+        </Card>
       </div>
     );
   }
 
   const currentCatId = activeImage ? imageCategoryMap[activeImage.filename] : null;
-  const currentAssignedCat = categories.find(c => c.id === currentCatId);
+  const currentAssignedCat = categories.find((c) => c.id === currentCatId);
 
   return (
     <div className="vf-page vf-page-fill">
-      {/* Page header: title + current image, label progress highlight, actions */}
       <div className="vf-page-header">
         <div className="vf-page-heading">
           <div className="vf-page-eyebrow">
-            <Tag size={14} aria-hidden="true" /> {isZh ? '影像標註' : 'Annotation'}
+            <Tag size={14} strokeWidth={1.5} aria-hidden="true" />
+            <span>{isZh ? '影像標註' : 'Annotation'}</span>
             <TaskBadge taskType={taskType} />
           </div>
           <div className="vf-page-title-row">
-          <h1 className="vf-page-title" title={activeImage?.filename}>
-            {activeImage ? activeImage.filename : (isZh ? '載入中...' : 'Loading...')}
-          </h1>
-          {currentAssignedCat ? (
-            <div
-              style={{
-                fontSize: '0.8rem',
-                padding: '3px 10px',
-                borderRadius: 'var(--radius-full)',
-                background: `${currentAssignedCat.color}25`,
-                color: currentAssignedCat.color,
-                border: `1px solid ${currentAssignedCat.color}`,
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <Check size={13} /> {isZh ? '當前標籤:' : 'Current Tag:'} {currentAssignedCat.name}
-              <button
-                onClick={handleClearCurrentLabel}
-                aria-label={isZh ? '清除此圖片的標籤' : 'Clear tag for this image'}
-                title={isZh ? '清除此圖片的標籤' : 'Clear tag for this image'}
+            <h1 className="vf-page-title" title={activeImage?.filename}>
+              {activeImage ? activeImage.filename : (isZh ? '載入中…' : 'Loading…')}
+            </h1>
+            {currentAssignedCat ? (
+              <span
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  padding: '0 2px',
-                  display: 'flex',
-                  alignItems: 'center'
+                  fontSize: '12px',
+                  padding: '2px 8px',
+                  borderRadius: 'var(--radius-xs)',
+                  background: 'var(--bg-surface-elevated)',
+                  color: 'var(--text-primary)',
+                  border: `1px solid ${currentAssignedCat.color}`,
+                  fontWeight: 500,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
               >
-                <X size={12} />
-              </button>
-            </div>
-          ) : (
-            <span className="vf-chip">
-              {isZh ? '尚未標註' : 'Unlabeled'}
-            </span>
-          )}
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: currentAssignedCat.color }} />
+                <span>{currentAssignedCat.name}</span>
+                <button
+                  type="button"
+                  onClick={handleClearCurrentLabel}
+                  aria-label={isZh ? '清除此圖片的標籤' : 'Clear tag'}
+                  title={isZh ? '清除此圖片的標籤' : 'Clear tag'}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <X size={12} strokeWidth={1.5} />
+                </button>
+              </span>
+            ) : (
+              <span className="vf-chip">{isZh ? '尚未標註' : 'Unlabeled'}</span>
+            )}
           </div>
         </div>
 
         <div className="vf-page-actions">
-          {/* Progress highlight */}
-          <div className="vf-progress-pill" role="status" aria-label={isZh ? `已標註 ${labeledCount} / ${images.length} 張` : `${labeledCount} of ${images.length} labeled`}>
+          <div
+            className="vf-progress-pill"
+            role="status"
+            aria-label={isZh ? `已標註 ${labeledCount} / ${images.length} 張` : `${labeledCount} of ${images.length} labeled`}
+          >
             <span className="vf-progress-pill-value">{progressPercent}%</span>
             <span className="vf-progress-pill-text">
               {isZh ? '已標註' : 'Labeled'} {labeledCount} / {images.length}
@@ -583,7 +567,6 @@ export const AnnotationView: React.FC = () => {
             </span>
           </div>
 
-          {/* Hidden Import Input */}
           <input
             ref={importInputRef}
             type="file"
@@ -596,7 +579,7 @@ export const AnnotationView: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            icon={<UploadCloud size={14} />}
+            icon={<UploadCloud size={14} strokeWidth={1.5} />}
             loading={importing}
             onClick={() => importInputRef.current?.click()}
             title={isZh ? '匯入圖片與標註 JSON / ZIP' : 'Import images and annotations JSON / ZIP'}
@@ -607,7 +590,7 @@ export const AnnotationView: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            icon={<Download size={14} />}
+            icon={<Download size={14} strokeWidth={1.5} />}
             onClick={handleExportDataset}
             title={isZh ? '匯出資料集與標註檔 (ZIP)' : 'Export dataset and annotations (ZIP)'}
           >
@@ -618,13 +601,15 @@ export const AnnotationView: React.FC = () => {
             <Button
               variant={isBatchMode ? 'primary' : 'secondary'}
               size="sm"
-              icon={<CheckSquare size={14} />}
+              icon={<CheckSquare size={14} strokeWidth={1.5} />}
               onClick={() => {
                 setIsBatchMode(!isBatchMode);
                 setSelectedImageIds([]);
               }}
             >
-              {isBatchMode ? (isZh ? `退出批次 (${selectedImageIds.length})` : `Exit Batch (${selectedImageIds.length})`) : (isZh ? '批次模式' : 'Batch Mode')}
+              {isBatchMode
+                ? (isZh ? `退出批次 (${selectedImageIds.length})` : `Exit batch (${selectedImageIds.length})`)
+                : (isZh ? '批次模式' : 'Batch mode')}
             </Button>
           )}
 
@@ -634,85 +619,87 @@ export const AnnotationView: React.FC = () => {
               size="sm"
               onClick={() => {
                 if (annoStatus === 'error') {
-                  alert(isZh ? '此圖片的標註載入失敗，請先按「重新載入」。' : 'Annotations for this image failed to load. Click "Reload" first.');
+                  alert(isZh ? '此圖片的標註載入失敗，請先重新載入' : 'Failed to load annotations. Reload first');
                   return;
                 }
                 saveCurrentAnnotations();
               }}
               loading={saving}
-              icon={saveSuccess ? <Check size={14} /> : <Save size={14} />}
+              icon={saveSuccess ? <Check size={14} strokeWidth={1.75} /> : <Save size={14} strokeWidth={1.5} />}
             >
-              {saveSuccess ? (isZh ? '已儲存！' : 'Saved!') : (isZh ? '儲存標註' : 'Save Annotations')}
+              {saveSuccess ? (isZh ? '已儲存' : 'Saved') : (isZh ? '儲存標註' : 'Save annotations')}
             </Button>
           )}
         </div>
       </div>
 
-      {/* Batch Mode Toolbar */}
       {isBatchMode && (
         <div
           style={{
-            background: 'var(--accent-primary-glow)',
-            border: '2px solid var(--accent-primary)',
-            padding: '0.6rem 1rem',
-            borderRadius: 'var(--radius-md)',
+            background: 'var(--accent-primary-soft)',
+            border: '1px solid var(--accent-primary-border)',
+            padding: '10px 16px',
+            borderRadius: 'var(--radius-sm)',
             flexWrap: 'wrap',
-            gap: '0.5rem',
+            gap: '8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            animation: 'fadeIn 0.2s'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.85rem' }}>
-            <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>
-              {isZh ? `已選取 ${selectedImageIds.length} 張圖片` : `${selectedImageIds.length} images selected`}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', flexWrap: 'wrap' }}>
+            <span className="vf-num" style={{ fontWeight: 500, color: 'var(--accent-primary)' }}>
+              {isZh ? `已選取 ${selectedImageIds.length} 張` : `${selectedImageIds.length} selected`}
             </span>
             <button
+              type="button"
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-              onClick={() => setSelectedImageIds(images.map(i => i.filename))}
+              onClick={() => setSelectedImageIds(images.map((i) => i.filename))}
             >
-              {isZh ? `全選 (${images.length})` : `Select All (${images.length})`}
+              {isZh ? `全選 (${images.length})` : `Select all (${images.length})`}
             </button>
             <button
+              type="button"
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '0.75rem', padding: '2px 6px' }}
-              onClick={() => setSelectedImageIds(images.filter(i => !i.labeled).map(i => i.filename))}
+              onClick={() => setSelectedImageIds(images.filter((i) => !i.labeled).map((i) => i.filename))}
             >
-              {isZh ? `選取未標註 (${images.filter(i => !i.labeled).length})` : `Select Unlabeled (${images.filter(i => !i.labeled).length})`}
+              {isZh ? `未標註 (${images.filter((i) => !i.labeled).length})` : `Unlabeled (${images.filter((i) => !i.labeled).length})`}
             </button>
             <button
+              type="button"
               className="btn btn-ghost btn-sm"
-              style={{ fontSize: '0.75rem', padding: '2px 6px', color: 'var(--text-muted)' }}
               onClick={() => setSelectedImageIds([])}
             >
-              {isZh ? '清除選取' : 'Clear Selection'}
+              {isZh ? '清除選取' : 'Clear'}
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{isZh ? '批次套用標籤：' : 'Batch apply tags:'}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              {isZh ? '套用標籤：' : 'Apply tag:'}
+            </span>
             {categories.map((c) => (
               <button
                 key={c.id}
+                type="button"
                 disabled={selectedImageIds.length === 0 || saving}
                 onClick={() => handleBatchAssign(c.id)}
                 style={{
-                  background: c.color,
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 'var(--radius-full)',
-                  padding: '6px 12px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  border: `1.5px solid ${c.color}`,
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '4px 10px',
+                  fontSize: '12px',
+                  fontWeight: 500,
                   cursor: selectedImageIds.length > 0 ? 'pointer' : 'not-allowed',
                   opacity: selectedImageIds.length > 0 ? 1 : 0.5,
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '4px'
+                  gap: '6px',
                 }}
               >
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c.color }} />
                 {c.name}
               </button>
             ))}
@@ -720,27 +707,24 @@ export const AnnotationView: React.FC = () => {
         </div>
       )}
 
-      {/* Main 2-Column Layout: Center Work Area & Right Panel */}
-      <div style={{ display: 'flex', flex: 1, gap: '1rem', overflow: 'hidden', minHeight: 0 }}>
-        {/* Center: Specialized Workspace */}
+      {/* Main 2-Column Layout */}
+      <div style={{ display: 'flex', flex: 1, gap: '16px', overflow: 'hidden', minHeight: 0 }}>
         <div className="vf-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-          
-          {/* A. CLASSIFICATION WORKSPACE (Direct Click & Type UI) */}
+          {/* Classification Workspace */}
           {taskType === 'classification' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem', overflowY: 'auto' }}>
-              {/* Image Preview */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', gap: '12px', overflowY: 'auto' }}>
               <div
                 style={{
                   flex: 1,
                   minHeight: '280px',
-                  background: '#090a0f',
+                  background: 'var(--canvas-bg)',
                   borderRadius: 'var(--radius-sm)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   position: 'relative',
                   overflow: 'hidden',
-                  border: '1px solid var(--border-subtle)'
+                  border: '1px solid var(--border-subtle)',
                 }}
               >
                 {activeImage ? (
@@ -750,130 +734,121 @@ export const AnnotationView: React.FC = () => {
                     style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
                   />
                 ) : (
-                  <div style={{ color: 'var(--text-muted)' }}>{isZh ? '無圖片' : 'No image'}</div>
+                  <div style={{ color: 'var(--canvas-muted)' }}>{isZh ? '無圖片' : 'No image'}</div>
                 )}
 
-                {/* Current Tag Floating Indicator on Image */}
                 {currentAssignedCat && (
                   <div
                     style={{
                       position: 'absolute',
                       top: '12px',
                       right: '12px',
-                      background: `${currentAssignedCat.color}e6`,
-                      color: 'white',
-                      padding: '6px 14px',
-                      borderRadius: 'var(--radius-full)',
-                      fontWeight: 700,
-                      fontSize: '0.9rem',
-                      boxShadow: `0 4px 14px ${currentAssignedCat.color}66`,
-                      display: 'flex',
+                      background: 'rgba(17, 17, 19, 0.85)',
+                      color: '#ededf0',
+                      padding: '4px 12px',
+                      borderRadius: 'var(--radius-xs)',
+                      border: `1px solid ${currentAssignedCat.color}`,
+                      fontWeight: 500,
+                      fontSize: '13px',
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px'
+                      gap: '8px',
                     }}
                   >
-                    <Check size={16} /> {currentAssignedCat.name}
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: currentAssignedCat.color }} />
+                    <span>{currentAssignedCat.name}</span>
                   </div>
                 )}
               </div>
 
-              {/* Direct Class Input & Click Control Panel */}
               <div
                 style={{
                   background: 'var(--bg-surface-elevated)',
                   border: '1px solid var(--border-subtle)',
                   borderRadius: 'var(--radius-sm)',
-                  padding: '1rem',
+                  padding: '16px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.75rem'
+                  gap: '12px',
                 }}
               >
-                {/* 1. Direct Text Input Form */}
-                <form onSubmit={handleDirectInputSubmit} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <form onSubmit={handleDirectInputSubmit} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder={isZh ? '點此輸入類別名稱（例如：正常品、刮痕瑕疵、貓、狗）...' : 'Enter category name (e.g. Cat, Dog, Defect)...'}
+                    placeholder={isZh ? '輸入類別名稱（例如：良品、刮痕、異常）…' : 'Enter category name (e.g. Pass, Scratch)…'}
                     value={classInputText}
                     onChange={(e) => setClassInputText(e.target.value)}
-                    style={{ flex: 1, fontSize: '0.9rem', padding: '0.5rem 0.8rem' }}
+                    style={{ flex: 1, minWidth: '200px' }}
                   />
 
                   <Button
                     type="submit"
                     variant="primary"
                     size="sm"
-                    icon={<Send size={14} />}
+                    icon={<Send size={14} strokeWidth={1.5} />}
                     disabled={!classInputText.trim()}
                   >
-                    {isZh ? '套用標籤' : 'Apply Tag'}
+                    {isZh ? '套用標籤' : 'Apply tag'}
                   </Button>
 
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer', marginLeft: '8px', userSelect: 'none' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-secondary)', cursor: 'pointer', marginLeft: '8px', userSelect: 'none' }}>
                     <input
                       type="checkbox"
                       checked={autoAdvance}
                       onChange={(e) => setAutoAdvance(e.target.checked)}
-                      style={{ accentColor: '#818cf8', cursor: 'pointer' }}
+                      style={{ accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
                     />
-                    {isZh ? '標註後自動下一張' : 'Auto-advance on tag'}
+                    {isZh ? '標註後自動下一張' : 'Auto-advance'}
                   </label>
                 </form>
 
-                {/* 2. Direct Click Category Pills */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Tag size={13} /> {isZh ? '點選下方類別直接標註此圖片：' : 'Click category below to tag this image:'}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Tag size={13} strokeWidth={1.5} />
+                    <span>{isZh ? '點選類別直接標註' : 'Click a category to label'}</span>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     {categories.length === 0 ? (
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        {isZh ? '尚未建立任何類別，可在上方輸入框輸入名稱直接建立！' : 'No categories yet. Type above to create one!'}
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                        {isZh ? '尚未建立類別，請在上方輸入名稱建立' : 'No categories yet. Enter a name above to create one'}
                       </div>
                     ) : (
                       categories.map((cat) => {
                         const isCurrent = currentCatId === cat.id;
-
                         return (
                           <button
                             key={cat.id}
                             type="button"
                             onClick={() => handleAssignCategory(cat.id, autoAdvance)}
                             style={{
-                              display: 'flex',
+                              display: 'inline-flex',
                               alignItems: 'center',
                               gap: '8px',
-                              padding: '0.5rem 1rem',
+                              height: '36px',
+                              padding: '0 12px',
                               borderRadius: 'var(--radius-sm)',
-                              background: isCurrent ? `${cat.color}33` : 'var(--bg-surface)',
-                              border: `2px solid ${isCurrent ? cat.color : 'var(--border-subtle)'}`,
-                              color: isCurrent ? 'white' : 'var(--text-primary)',
+                              background: isCurrent ? 'var(--bg-surface)' : 'var(--bg-surface-elevated)',
+                              border: `1.5px solid ${isCurrent ? cat.color : 'var(--border-subtle)'}`,
+                              color: 'var(--text-primary)',
                               cursor: 'pointer',
-                              fontSize: '0.9rem',
-                              fontWeight: 700,
-                              transition: 'all 0.15s ease',
-                              boxShadow: isCurrent ? `0 0 10px ${cat.color}40` : 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isCurrent) e.currentTarget.style.borderColor = cat.color;
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isCurrent) e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                              fontSize: '13px',
+                              fontWeight: isCurrent ? 500 : 400,
+                              transition: 'border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out)',
                             }}
                           >
                             <span
                               style={{
-                                width: '10px',
-                                height: '10px',
+                                width: '8px',
+                                height: '8px',
                                 borderRadius: '50%',
                                 background: cat.color,
-                                boxShadow: `0 0 6px ${cat.color}`,
+                                flexShrink: 0,
                               }}
                             />
                             <span>{cat.name}</span>
-                            {isCurrent && <Check size={14} color={cat.color} />}
+                            {isCurrent && <Check size={14} strokeWidth={1.75} color={cat.color} />}
                           </button>
                         );
                       })
@@ -884,52 +859,68 @@ export const AnnotationView: React.FC = () => {
             </div>
           )}
 
-          {/* B. REGRESSION WORKSPACE */}
+          {/* Regression Workspace */}
           {taskType === 'regression' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1.5rem', gap: '1.5rem', overflowY: 'auto' }}>
-              
-              <div className="glass-card" style={{ padding: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sliders size={15} color="#06b6d4" /> {isZh ? '圖像迴歸 (2D 座標標註)' : 'Image Regression (2D Coordinate)'}
-                  </span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#06b6d4' }}>
-                    {regressionPoint ? `( X: ${regressionPoint.x.toFixed(3)}, Y: ${regressionPoint.y.toFixed(3)} )` : (isZh ? '尚未標註' : 'Unlabeled')}
-                  </span>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', gap: '16px', overflowY: 'auto' }}>
+              <div
+                style={{
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sliders size={15} strokeWidth={1.5} color="var(--text-secondary)" />
+                    <span>{isZh ? '2D 座標點標註' : '2D coordinate annotation'}</span>
+                  </div>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    {isZh ? '在影像上點擊目標位置即可自動儲存座標' : 'Click on the image to set and save the target point'}
+                  </p>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  {isZh ? '請在下方圖片中點擊標註目標位置。點擊後將自動儲存並顯示十字標記。' : 'Click on the image to mark the target location. It will automatically save and show a crosshair.'}
-                </p>
-                <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button variant="primary" size="sm" onClick={handleNext}>{isZh ? '確認並下一張' : 'Confirm & Next'}</Button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span className="vf-mono" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--accent-primary)' }}>
+                    {regressionPoint
+                      ? `(${regressionPoint.x.toFixed(3)}, ${regressionPoint.y.toFixed(3)})`
+                      : (isZh ? '尚未標註' : 'Unlabeled')}
+                  </span>
+                  <Button variant="primary" size="sm" onClick={handleNext}>
+                    {isZh ? '確認並下一張' : 'Confirm & next'}
+                  </Button>
                 </div>
               </div>
 
               <div
                 style={{
                   flex: 1,
-                  minHeight: '400px',
-                  background: '#090a0f',
+                  minHeight: '360px',
+                  background: 'var(--canvas-bg)',
                   borderRadius: 'var(--radius-sm)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   border: '1px solid var(--border-subtle)',
                   position: 'relative',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
                 }}
               >
                 {activeImage && (
-                  <div 
-                    style={{ position: 'relative', display: 'inline-block' }}
+                  <div
+                    style={{ position: 'relative', display: 'inline-block', cursor: 'crosshair' }}
                     onClick={async (e) => {
                       if (!activeProject || !activeImage) return;
                       const rect = e.currentTarget.getBoundingClientRect();
                       const x = (e.clientX - rect.left) / rect.width;
                       const y = (e.clientY - rect.top) / rect.height;
                       setRegressionPoint({ x, y });
-                      
-                      // Auto save
+
                       try {
                         setSaving(true);
                         const singleAnno: AnnotationItem = {
@@ -938,22 +929,20 @@ export const AnnotationView: React.FC = () => {
                           category_id: 0,
                           bbox: [x, y, 0, 0],
                           area: 0,
-                          is_crowd: 0
+                          is_crowd: 0,
                         };
-                        
+
                         invalidatePendingLoad();
                         await api.saveImageAnnotations(activeProject.id, activeImage.filename, {
                           image_id: activeImage.filename,
-                          annotations: [singleAnno]
+                          annotations: [singleAnno],
                         });
-                        
+
                         setAnnotations([singleAnno]);
                         claimAnnotations(activeImage.filename);
                         setImages((prev) =>
                           prev.map((img, i) =>
-                            i === currentIndex
-                              ? { ...img, labeled: true, annotation_count: 1 }
-                              : img
+                            i === currentIndex ? { ...img, labeled: true, annotation_count: 1 } : img
                           )
                         );
                         setSaveSuccess(true);
@@ -972,23 +961,22 @@ export const AnnotationView: React.FC = () => {
                       draggable={false}
                     />
                     {regressionPoint && (
-                      <div 
+                      <div
                         style={{
                           position: 'absolute',
                           left: `${regressionPoint.x * 100}%`,
                           top: `${regressionPoint.y * 100}%`,
                           width: '14px',
                           height: '14px',
-                          border: '2px solid red',
+                          border: '2px solid #e5484d',
                           borderRadius: '50%',
                           transform: 'translate(-50%, -50%)',
                           pointerEvents: 'none',
-                          boxShadow: '0 0 4px rgba(0,0,0,0.5)',
-                          backgroundColor: 'rgba(255, 0, 0, 0.4)'
+                          backgroundColor: 'rgba(229, 72, 77, 0.35)',
                         }}
                       >
-                        <div style={{ position: 'absolute', top: '50%', left: '-100%', width: '300%', height: '1px', background: 'red', transform: 'translateY(-50%)' }} />
-                        <div style={{ position: 'absolute', left: '50%', top: '-100%', height: '300%', width: '1px', background: 'red', transform: 'translateX(-50%)' }} />
+                        <div style={{ position: 'absolute', top: '50%', left: '-100%', width: '300%', height: '1px', background: '#e5484d', transform: 'translateY(-50%)' }} />
+                        <div style={{ position: 'absolute', left: '50%', top: '-100%', height: '300%', width: '1px', background: '#e5484d', transform: 'translateX(-50%)' }} />
                       </div>
                     )}
                   </div>
@@ -997,7 +985,7 @@ export const AnnotationView: React.FC = () => {
             </div>
           )}
 
-          {/* C. DETECTION / FEATURE CANVAS WORKSPACE */}
+          {/* Detection / Feature Canvas Workspace */}
           {(taskType === 'detection' || taskType === 'feature') && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
               {activeImage ? (
@@ -1020,16 +1008,24 @@ export const AnnotationView: React.FC = () => {
                     <div
                       role={annoStatus === 'error' ? 'alert' : 'status'}
                       style={{
-                        position: 'absolute', top: '0.75rem', left: '50%', transform: 'translateX(-50%)',
-                        padding: '0.4rem 0.8rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem',
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        background: annoStatus === 'error' ? 'rgba(244, 63, 94, 0.15)' : 'var(--bg-surface-elevated)',
-                        border: `1px solid ${annoStatus === 'error' ? '#f43f5e' : 'var(--border-subtle)'}`,
+                        position: 'absolute',
+                        top: '12px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: annoStatus === 'error' ? 'var(--accent-rose-soft)' : 'var(--bg-surface)',
+                        color: annoStatus === 'error' ? 'var(--accent-rose)' : 'var(--text-primary)',
+                        border: `1px solid ${annoStatus === 'error' ? 'rgba(200, 30, 30, 0.3)' : 'var(--border-strong)'}`,
                       }}
                     >
                       {annoStatus === 'loading'
                         ? (isZh ? '正在載入標註…' : 'Loading annotations…')
-                        : (isZh ? '標註載入失敗，暫停編輯以免覆蓋既有標註。' : 'Failed to load annotations; editing is paused so existing labels are not overwritten.')}
+                        : (isZh ? '標註載入失敗，已暫停編輯以免覆蓋既有標註' : 'Failed to load annotations; editing paused')}
                       {annoStatus === 'error' && (
                         <Button variant="secondary" size="sm" onClick={() => setAnnoReloadKey((k) => k + 1)}>
                           {isZh ? '重新載入' : 'Reload'}
@@ -1039,7 +1035,7 @@ export const AnnotationView: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
                   {isZh ? '無圖片' : 'No image'}
                 </div>
               )}
@@ -1047,20 +1043,19 @@ export const AnnotationView: React.FC = () => {
           )}
         </div>
 
-        {/* Right Sidebar: Category Management & Settings */}
+        {/* Right Sidebar */}
         <div
           className="vf-panel"
           style={{
             width: '280px',
             flexShrink: 0,
-            padding: '1.1rem',
+            padding: '16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1.25rem',
+            gap: '16px',
             overflowY: 'auto',
           }}
         >
-          {/* Category Selector & Manager */}
           <CategoryManager
             categories={categories}
             selectedCategoryId={selectedCategoryId}
@@ -1079,31 +1074,35 @@ export const AnnotationView: React.FC = () => {
             onDeleteCategory={handleDeleteCategory}
           />
 
-          {/* Detection / Feature Bounding Box List */}
           {(taskType === 'detection' || taskType === 'feature') && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                  {taskType === 'feature' ? (isZh ? `特徵 ROI 區域 (${annotations.length})` : `Feature ROI (${annotations.length})`) : (isZh ? `已標註框 (${annotations.length})` : `Bounding Boxes (${annotations.length})`)}
+                <span className="vf-num" style={{ fontSize: '13px', fontWeight: 500 }}>
+                  {taskType === 'feature'
+                    ? (isZh ? `特徵 ROI (${annotations.length})` : `Feature ROI (${annotations.length})`)
+                    : (isZh ? `標註框 (${annotations.length})` : `Bounding boxes (${annotations.length})`)}
                 </span>
                 {selectedBoxId && (
                   <button
+                    type="button"
                     className="btn btn-ghost btn-sm"
-                    style={{ color: 'var(--accent-rose)', padding: '2px 8px', fontSize: '0.72rem' }}
+                    style={{ color: 'var(--accent-rose)', height: '28px', padding: '0 8px', fontSize: '12px' }}
                     onClick={() => {
                       setAnnotations((prev) => prev.filter((a) => a.id !== selectedBoxId));
                       setSelectedBoxId(null);
                     }}
                   >
-                    <Trash2 size={12} /> {isZh ? '刪除選中框' : 'Delete Box'}
+                    <Trash2 size={12} strokeWidth={1.5} /> {isZh ? '刪除' : 'Delete'}
                   </button>
                 )}
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '160px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '180px', overflowY: 'auto' }}>
                 {annotations.length === 0 ? (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.75rem 0' }}>
-                    {taskType === 'feature' ? (isZh ? '可拖曳框選局部特徵，未框選時將自動以全圖標記' : 'Drag to crop ROI, or leave empty for full image') : (isZh ? '在畫布上按住滑鼠拖曳以繪製框選' : 'Click and drag on canvas to draw a bounding box')}
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', padding: '12px 4px' }}>
+                    {taskType === 'feature'
+                      ? (isZh ? '可拖曳框選局部特徵，留空則使用全圖' : 'Drag to select ROI, or leave empty for full image')
+                      : (isZh ? '在畫布上按住滑鼠拖曳繪製標註框' : 'Drag on the canvas to draw a bounding box')}
                   </div>
                 ) : (
                   annotations.map((anno) => {
@@ -1123,23 +1122,25 @@ export const AnnotationView: React.FC = () => {
                           }
                         }}
                         style={{
-                          padding: '0.45rem 0.7rem',
+                          padding: '8px 10px',
                           borderRadius: 'var(--radius-sm)',
-                          background: isSelected ? 'var(--accent-primary-glow)' : 'var(--bg-surface-elevated)',
-                          border: `2px solid ${isSelected ? 'var(--accent-primary)' : 'transparent'}`,
+                          background: isSelected ? 'var(--accent-primary-soft)' : 'var(--bg-surface-elevated)',
+                          border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'transparent'}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           cursor: 'pointer',
-                          fontSize: '0.75rem',
+                          fontSize: '12px',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: cat?.color || 'var(--accent-primary)' }} />
-                          <span style={{ fontWeight: 600 }}>{cat?.name || (isZh ? '未命名標籤' : 'Unnamed tag')}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: cat?.color || 'var(--accent-primary)', flexShrink: 0 }} />
+                          <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {cat?.name || (isZh ? '未命名' : 'Unnamed')}
+                          </span>
                         </div>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
-                          [{anno.bbox[0]}, {anno.bbox[1]}, {anno.bbox[2]}×{anno.bbox[3]}]
+                        <span className="vf-mono" style={{ color: 'var(--text-muted)', fontSize: '11px', flexShrink: 0 }}>
+                          {anno.bbox[2]}×{anno.bbox[3]}
                         </span>
                       </div>
                     );
@@ -1158,18 +1159,23 @@ export const AnnotationView: React.FC = () => {
           size="sm"
           onClick={handlePrev}
           disabled={currentIndex === 0}
-          icon={<ChevronLeft size={15} />}
-          title={isZh ? '上一張圖片 (快捷鍵: A 或 ←)' : 'Previous image (Shortcut: A or ←)'}
+          icon={<ChevronLeft size={15} strokeWidth={1.5} />}
+          title={isZh ? '上一張 (快捷鍵 A 或 ←)' : 'Previous (A or ←)'}
         >
-          {isZh ? '上一張 (A)' : 'Prev (A)'}
+          {isZh ? '上一張' : 'Previous'}
         </Button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-            {isZh ? '第' : 'Image'} <strong style={{ color: 'var(--accent-primary)', fontSize: '1.05rem' }}>{currentIndex + 1}</strong> / {images.length} {isZh ? '張' : ''}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span className="vf-num" style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+            {isZh ? '第 ' : 'Image '}
+            <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{currentIndex + 1}</strong>
+            {' / '}
+            {images.length}
+            {isZh ? ' 張' : ''}
           </span>
           <span className="vf-chip vf-pager-hint">
-            {isZh ? '快捷鍵' : 'Keys'} <kbd className="vf-kbd">A</kbd> {isZh ? '上一張' : 'prev'} · <kbd className="vf-kbd">D</kbd> {isZh ? '下一張' : 'next'}
+            <kbd className="vf-kbd">A</kbd> {isZh ? '上一張' : 'prev'}
+            <kbd className="vf-kbd">D</kbd> {isZh ? '下一張' : 'next'}
           </span>
         </div>
 
@@ -1178,9 +1184,9 @@ export const AnnotationView: React.FC = () => {
           size="sm"
           onClick={handleNext}
           disabled={currentIndex === images.length - 1}
-          title={isZh ? '下一張圖片 (快捷鍵: D 或 →)' : 'Next image (Shortcut: D or →)'}
+          title={isZh ? '下一張 (快捷鍵 D 或 →)' : 'Next (D or →)'}
         >
-          {isZh ? '下一張 (D)' : 'Next (D)'} <ChevronRight size={15} />
+          {isZh ? '下一張' : 'Next'} <ChevronRight size={15} strokeWidth={1.5} />
         </Button>
       </div>
     </div>

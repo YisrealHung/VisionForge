@@ -73,7 +73,7 @@ export interface DatasetSplitRequest {
   test_ratio: number;
 }
 
-export type ModelArchitecture = 
+export type ModelArchitecture =
   // Object Detection
   | 'yolo26_n'
   | 'yolo26_s'
@@ -160,7 +160,7 @@ export interface TrainingStatus {
 
 export type ActiveWorkspace = 'training' | 'inference';
 
-export type NavView = 
+export type NavView =
   // Training Section
   | 'dashboard'
   | 'dataset'
@@ -349,107 +349,106 @@ export interface ThemeDefinition {
   palette: string[];
   bgSample: string;
   cardSample: string;
+  sidebarSample: string;
   accentSample: string;
   description: string;
   tag?: string;
 }
 
 export const THEME_REGISTRY: ThemeDefinition[] = [
-  // --- 0. Maker Studio: flat, rounded, dark floating sidebar (restyles layout, not just colors) ---
   {
     id: 'maker-studio',
-    name: '創客工作室',
-    nameEn: 'Maker Studio',
-    subtitle: '墨紫側欄 · 萊姆亮點',
+    name: '光學石墨',
+    nameEn: 'Optical Graphite',
+    subtitle: '中性石墨淺色 · 光學鈷藍',
     category: 'studio',
-    categoryLabel: '工作室',
+    categoryLabel: '淺色',
     mode: 'light',
-    palette: ['#F4F2FF', '#5B3FD9', '#C6F432'],
-    bgSample: '#f4f2ff',
+    palette: ['#F7F7F8', '#141416', '#1D5FD6'],
+    bgSample: '#f7f7f8',
     cardSample: '#ffffff',
-    accentSample: '#5b3fd9',
-    description: '平面圓角卡片、深墨紫浮動側欄與萊姆綠「下一步」提示，清楚引導每個操作步驟，適合教學與初學者。',
-    tag: '系統預設',
+    sidebarSample: '#141416',
+    accentSample: '#1d5fd6',
+    description: '霧面中性灰白檢驗檯面搭配單一光學鈷藍強調色，確保標註框與指標讀數保持最高辨識度。',
+    tag: '預設',
   },
   {
     id: 'harbor-studio',
-    name: '海港工作室',
-    nameEn: 'Harbor Studio',
-    subtitle: '深海藍側欄 · 向日葵黃',
+    name: '海港灰藍',
+    nameEn: 'Harbor Slate',
+    subtitle: '冷調灰藍 · 鋼藍訊號',
     category: 'studio',
-    categoryLabel: '工作室',
+    categoryLabel: '淺色',
     mode: 'light',
-    palette: ['#EEF5FB', '#0B6FB8', '#FFD43B'],
-    bgSample: '#eef5fb',
+    palette: ['#F6F8FA', '#12171D', '#0E6BA8'],
+    bgSample: '#f6f8fa',
     cardSample: '#ffffff',
-    accentSample: '#0b6fb8',
-    description: '沉穩海軍藍搭配明亮向日葵黃，專業清爽，適合產線與企業展示。',
-    tag: '沉穩專業',
+    sidebarSample: '#12171d',
+    accentSample: '#0e6ba8',
+    description: '微冷灰藍表面與深海軍藍側欄，適合產線監控與高亮度室內檢驗環境。',
   },
   {
     id: 'forest-studio',
-    name: '森林工作室',
-    nameEn: 'Forest Studio',
-    subtitle: '松林綠側欄 · 杏桃橘',
+    name: '松林苔石',
+    nameEn: 'Moss Graphite',
+    subtitle: '靜謐石灰 · 松綠強調',
     category: 'studio',
-    categoryLabel: '工作室',
+    categoryLabel: '淺色',
     mode: 'light',
-    palette: ['#EFF5EE', '#1F7A4D', '#FFB347'],
-    bgSample: '#eff5ee',
+    palette: ['#F6F7F6', '#141916', '#1E724A'],
+    bgSample: '#f6f7f6',
     cardSample: '#ffffff',
-    accentSample: '#1f7a4d',
-    description: '松林深綠與溫暖杏桃橘，自然穩定，長時間標註也不刺眼。',
-    tag: '自然舒適',
+    sidebarSample: '#141916',
+    accentSample: '#1e724a',
+    description: '低反光中性灰綠檯面搭配深松林綠強調色，降低長時間影像標註的視覺疲勞。',
   },
   {
     id: 'coral-studio',
-    name: '珊瑚工作室',
-    nameEn: 'Coral Studio',
-    subtitle: '可可棕側欄 · 湖水綠',
+    name: '暖紙琥珀',
+    nameEn: 'Warm Paper',
+    subtitle: '暖調米白 · 焦糖琥珀',
     category: 'studio',
-    categoryLabel: '工作室',
+    categoryLabel: '淺色',
     mode: 'light',
-    palette: ['#FFF4EF', '#C2410C', '#66E3D9'],
-    bgSample: '#fff4ef',
-    cardSample: '#ffffff',
-    accentSample: '#c2410c',
-    description: '陶土珊瑚橘配湖水綠點綴，溫暖有活力，適合展示與教學活動。',
-    tag: '溫暖活力',
+    palette: ['#F7F5F1', '#1B1917', '#C24914'],
+    bgSample: '#f7f5f1',
+    cardSample: '#fdfcfa',
+    sidebarSample: '#1b1917',
+    accentSample: '#c24914',
+    description: '暖色紙面與炭棕側欄配陶土橘重點標記，維持紙本工作檯的溫潤閱讀感。',
   },
   {
     id: 'berry-studio',
-    name: '莓果工作室',
-    nameEn: 'Berry Studio',
-    subtitle: '莓果紫紅側欄 · 芥末黃',
+    name: '石墨絳紅',
+    nameEn: 'Crimson Neutral',
+    subtitle: '中性暖灰 · 絳紅重點',
     category: 'studio',
-    categoryLabel: '工作室',
+    categoryLabel: '淺色',
     mode: 'light',
-    palette: ['#FFF0F6', '#C2255C', '#FCC419'],
-    bgSample: '#fff0f6',
+    palette: ['#F8F7F7', '#191517', '#B02555'],
+    bgSample: '#f8f7f7',
     cardSample: '#ffffff',
-    accentSample: '#c2255c',
-    description: '覆盆子莓果紅與芥末黃撞色，鮮明俏皮，讓介面更有個性。',
-    tag: '俏皮撞色',
+    sidebarSample: '#191517',
+    accentSample: '#b02555',
+    description: '克制中性白面配深炭側欄與絳紅訊號色，清楚突顯操作狀態與關鍵按鈕。',
   },
   {
     id: 'midnight-studio',
-    name: '午夜工作室',
-    nameEn: 'Midnight Studio',
-    subtitle: '深夜靛藍 · 萊姆亮點',
+    name: '暗室石墨',
+    nameEn: 'Dark Bench',
+    subtitle: '深色石墨 · 晴空藍訊號',
     category: 'studio',
-    categoryLabel: '工作室',
+    categoryLabel: '深色',
     mode: 'dark',
-    palette: ['#121218', '#6E5CF0', '#C6F432'],
-    bgSample: '#121218',
-    cardSample: '#1c1c26',
-    accentSample: '#6e5cf0',
-    description: '工作室版型的深色版本，夜間或暗室操作推論工作站時更護眼。',
-    tag: '深色版',
+    palette: ['#141415', '#0F0F10', '#5B93F5'],
+    bgSample: '#141415',
+    cardSample: '#19191b',
+    sidebarSample: '#0f0f10',
+    accentSample: '#5b93f5',
+    description: '純淨深石墨階調，將畫面光線留給攝影機串流、標註影像與即時訓練曲線，適合暗室作業。',
+    tag: '深色',
   },
 ];
-
-
-
 
 /** Language-neutral trigger-rule class name meaning "any class". */
 export const ALL_CLASSES = '*';

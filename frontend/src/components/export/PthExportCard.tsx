@@ -24,82 +24,99 @@ export const PthExportCard: React.FC<PthExportCardProps> = ({ projectId, info })
 
   return (
     <Card>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-sm)', background: 'rgba(238, 76, 44, 0.15)', color: '#ee4c2c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Flame size={20} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Flame size={16} strokeWidth={1.5} />
           </div>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>
-              {isZh ? 'PyTorch 原生模型權重匯出 (.pth / .pt)' : 'PyTorch Native Weight Export (.pth / .pt)'}
+            <h3 style={{ fontSize: '16px', fontWeight: 500 }}>
+              {isZh ? 'PyTorch 原生模型權重 (.pth / .pt)' : 'PyTorch Native Checkpoint (.pth / .pt)'}
             </h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
               {isZh
-                ? '匯出原生 PyTorch 模型權重檔，適用於 Python / C++ LibTorch 二次開發、遷移學習與推論部署'
-                : 'Export native PyTorch weights for Python / C++ LibTorch development, transfer learning, and deployment'}
+                ? '匯出原生 PyTorch 權重檔，適用於 Python / LibTorch 二次開發與遷移學習'
+                : 'Export native PyTorch weights for Python / LibTorch development and transfer learning'}
             </p>
           </div>
         </div>
 
         {hasCheckpoint ? (
-          <span className="badge badge-emerald" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <CheckCircle2 size={13} /> {isZh ? `權重檔就緒 (${info?.checkpoint_size_str || '0 B'})` : `Weights ready (${info?.checkpoint_size_str || '0 B'})`}
+          <span className="badge badge-emerald">
+            <CheckCircle2 size={12} strokeWidth={1.5} />
+            {isZh ? `權重就緒 (${info?.checkpoint_size_str || '0 B'})` : `Ready (${info?.checkpoint_size_str || '0 B'})`}
           </span>
         ) : (
-          <span className="badge badge-amber" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {isZh ? '尚未訓練模型' : 'No model trained yet'}
-          </span>
+          <span className="badge badge-neutral">{isZh ? '尚未訓練模型' : 'No checkpoint'}</span>
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-        <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <FileCode size={13} color="#ee4c2c" /> {isZh ? '檔案規格' : 'File Spec'}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ padding: '12px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FileCode size={13} strokeWidth={1.5} /> {isZh ? '檔案規格' : 'Format'}
           </div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>PyTorch Checkpoint (.pth)</div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {isZh ? '含神經層參數 (state_dict)' : 'Contains layer parameters (state_dict)'}
+          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>PyTorch Checkpoint (.pth)</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+            {isZh ? '含模型權重字典 (state_dict)' : 'Contains state_dict weights'}
           </div>
         </div>
 
-        <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Layers size={13} color="#818cf8" /> {isZh ? '目標模型架構' : 'Architecture'}
+        <div style={{ padding: '12px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Layers size={13} strokeWidth={1.5} /> {isZh ? '模型架構' : 'Architecture'}
           </div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
             {info ? info.architecture.replace(/_/g, ' ') : '--'}
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+          <div className="vf-num" style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
             {isZh ? `${info?.num_classes || 0} 個目標類別` : `${info?.num_classes || 0} target classes`}
           </div>
         </div>
 
-        <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <HardDrive size={13} color="#10b981" /> {isZh ? '權重大小' : 'Weight Size'}
+        <div style={{ padding: '12px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <HardDrive size={13} strokeWidth={1.5} /> {isZh ? '權重大小' : 'Size'}
           </div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#10b981' }}>{info?.checkpoint_size_str || '--'}</div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {isZh ? '最佳輪次權重 (Best Weights)' : 'Best epoch checkpoint'}
+          <div className="vf-num" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+            {info?.checkpoint_size_str || '--'}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+            {isZh ? '最佳驗證權重' : 'Best validation checkpoint'}
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          {isZh
-            ? <>💡 提示：在 Python 中可直接使用 <code>{`torch.load('${info?.architecture || 'model'}_best.pth')`}</code> 載入推論。</>
-            : <>💡 Tip: Load with <code>{`torch.load('${info?.architecture || 'model'}_best.pth')`}</code> in Python.</>
-          }
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          {isZh ? (
+            <>
+              在 Python 中可使用 <code>{`torch.load('${info?.architecture || 'model'}_best.pth')`}</code> 載入推論
+            </>
+          ) : (
+            <>
+              Load in Python with <code>{`torch.load('${info?.architecture || 'model'}_best.pth')`}</code>
+            </>
+          )}
         </div>
 
         <Button
           variant="primary"
-          icon={<Download size={15} />}
+          icon={<Download size={15} strokeWidth={1.5} />}
           disabled={!hasCheckpoint}
           onClick={handleDownloadPth}
-          style={{ background: hasCheckpoint ? 'linear-gradient(135deg, #ee4c2c 0%, #d03010 100%)' : undefined }}
         >
           {hasCheckpoint
             ? `${isZh ? '下載' : 'Download'} ${info?.architecture}_best.pth`

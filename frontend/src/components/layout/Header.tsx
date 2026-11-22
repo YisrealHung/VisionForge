@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  FolderGit2, 
-  Plus, 
-  ChevronDown, 
-  Check, 
-  Cpu, 
-  Sparkles,
+import {
+  FolderGit2,
+  Plus,
+  ChevronDown,
+  Check,
+  Cpu,
   Server,
   Moon,
   Sun,
-  Palette
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { Button } from '../common/Button';
@@ -17,18 +15,19 @@ import { TaskBadge } from '../common/Badge';
 import { THEME_REGISTRY } from '../../types';
 
 export const Header: React.FC = () => {
-  const { 
-    activeProject, 
-    projects, 
-    activateProject, 
+  const {
+    activeProject,
+    projects,
+    activateProject,
     setIsCreateModalOpen,
     systemHealth,
     theme,
     setTheme,
     language,
-    t
+    t,
   } = useProject();
 
+  const isZh = language === 'zh-TW';
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -47,25 +46,29 @@ export const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const currentThemeDef = THEME_REGISTRY.find((t) => t.id === theme) || THEME_REGISTRY[0];
+  const currentThemeDef = THEME_REGISTRY.find((item) => item.id === theme) || THEME_REGISTRY[0];
   const isOnline = systemHealth?.status === 'online';
 
   return (
     <header className="app-header">
       <div className="header-left">
-        {/* Project Selector Dropdown */}
         <div className="project-selector-dropdown" ref={dropdownRef}>
           <button
+            type="button"
             className="project-selector-btn"
             onClick={() => setDropdownOpen(!dropdownOpen)}
             title={t.switchProject}
           >
-            <FolderGit2 size={16} color="var(--accent-primary)" />
+            <FolderGit2 size={16} strokeWidth={1.5} color="var(--text-secondary)" aria-hidden="true" />
             <span className="header-project-name">
               {activeProject ? activeProject.name : t.selectOrCreateProject}
             </span>
-            {activeProject && <span className="header-task-badge"><TaskBadge taskType={activeProject.task_type} /></span>}
-            <ChevronDown size={14} color="var(--text-muted)" />
+            {activeProject && (
+              <span className="header-task-badge">
+                <TaskBadge taskType={activeProject.task_type} />
+              </span>
+            )}
+            <ChevronDown size={14} strokeWidth={1.5} color="var(--text-muted)" aria-hidden="true" />
           </button>
 
           {dropdownOpen && (
@@ -75,70 +78,85 @@ export const Header: React.FC = () => {
                 top: 'calc(100% + 6px)',
                 left: 0,
                 width: '320px',
-                background: 'var(--bg-surface-elevated)',
-                border: '1px solid var(--border-card)',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-strong)',
                 borderRadius: 'var(--radius-md)',
                 boxShadow: 'var(--shadow-lg)',
-                padding: '0.5rem',
+                padding: '8px',
                 zIndex: 50,
-                animation: 'scaleIn 0.15s ease'
+                animation: 'enterUp var(--dur-fast) var(--ease-out) forwards',
               }}
             >
-              <div style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                {t.switchProject} ({projects.length})
+              <div
+                style={{
+                  padding: '6px 8px',
+                  fontSize: '12px',
+                  color: 'var(--text-muted)',
+                  fontWeight: 500,
+                }}
+              >
+                {t.switchProject} (<span className="vf-num">{projects.length}</span>)
               </div>
-              <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 {projects.length === 0 ? (
-                  <div style={{ padding: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  <div style={{ padding: '12px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>
                     {t.noProjectsFound}
                   </div>
                 ) : (
-                  projects.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => {
-                        activateProject(p.id);
-                        setDropdownOpen(false);
-                      }}
-                      style={{
-                        padding: '0.6rem 0.75rem',
-                        borderRadius: 'var(--radius-sm)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: 'pointer',
-                        background: activeProject?.id === p.id ? 'var(--accent-primary-glow)' : 'transparent',
-                        color: activeProject?.id === p.id ? 'var(--accent-primary)' : 'var(--text-primary)',
-                        marginBottom: '2px',
-                        transition: 'background 0.15s'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (activeProject?.id !== p.id) e.currentTarget.style.background = 'var(--bg-surface-hover)';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (activeProject?.id !== p.id) e.currentTarget.style.background = 'transparent';
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{p.name}</span>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                          更新於 {p.updated_at.split(' ')[0]}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <TaskBadge taskType={p.task_type} />
-                        {activeProject?.id === p.id && <Check size={14} color="#818cf8" />}
-                      </div>
-                    </div>
-                  ))
+                  projects.map((p) => {
+                    const isSelected = activeProject?.id === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          activateProject(p.id);
+                          setDropdownOpen(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '8px 10px',
+                          borderRadius: 'var(--radius-sm)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          border: 'none',
+                          background: isSelected ? 'var(--accent-primary-soft)' : 'transparent',
+                          color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                          transition: 'background-color var(--dur-fast) var(--ease-out)',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) e.currentTarget.style.background = 'var(--bg-surface-elevated)';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                          <span style={{ fontWeight: 500, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {p.name}
+                          </span>
+                          <span className="vf-num" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {isZh ? '更新於' : 'Updated'} {p.updated_at.split(' ')[0]}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                          <TaskBadge taskType={p.task_type} />
+                          {isSelected && <Check size={14} strokeWidth={1.75} color="var(--accent-primary)" />}
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
               </div>
-              <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
+              <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '8px', paddingTop: '8px' }}>
                 <Button
                   variant="ghost"
                   size="sm"
                   style={{ width: '100%', justifyContent: 'center' }}
-                  icon={<Plus size={14} />}
+                  icon={<Plus size={14} strokeWidth={1.5} />}
                   onClick={() => {
                     setDropdownOpen(false);
                     setIsCreateModalOpen(true);
@@ -153,45 +171,55 @@ export const Header: React.FC = () => {
       </div>
 
       <div className="header-right">
-        {/* Quick Theme Selector Dropdown */}
         <div style={{ position: 'relative' }} ref={themeDropdownRef}>
           <button
+            type="button"
             onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
-            title={`${t.themeSelector}：${language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}`}
-            aria-label={`${t.themeSelector}：${language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}`}
+            title={`${t.themeSelector}: ${isZh ? currentThemeDef.name : currentThemeDef.nameEn}`}
+            aria-label={`${t.themeSelector}: ${isZh ? currentThemeDef.name : currentThemeDef.nameEn}`}
             style={{
+              height: '32px',
               background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-card)',
+              border: '1px solid var(--border-subtle)',
               color: 'var(--text-primary)',
-              padding: '0.45rem 0.75rem',
+              padding: '0 10px',
               borderRadius: 'var(--radius-sm)',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              transition: 'all 0.15s ease',
+              gap: '8px',
+              fontSize: '13px',
+              fontWeight: 500,
+              transition: 'border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out)',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-primary)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-card)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
           >
-            <div
+            <span
               style={{
-                width: '12px',
-                height: '12px',
+                width: '8px',
+                height: '8px',
                 borderRadius: '50%',
                 background: currentThemeDef.accentSample,
-                boxShadow: `0 0 6px ${currentThemeDef.accentSample}`,
+                flexShrink: 0,
               }}
             />
             {currentThemeDef.mode === 'dark' ? (
-              <Moon size={13} color="var(--accent-primary)" />
+              <Moon size={14} strokeWidth={1.5} color="var(--text-secondary)" aria-hidden="true" />
             ) : (
-              <Sun size={13} color="var(--accent-primary)" />
+              <Sun size={14} strokeWidth={1.5} color="var(--text-secondary)" aria-hidden="true" />
             )}
-            <span className="header-label" style={{ fontSize: '0.78rem' }}>{language === 'zh-TW' ? currentThemeDef.name : currentThemeDef.nameEn}</span>
-            <ChevronDown size={13} style={{ opacity: 0.6, transform: themeDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
+            <span className="header-label">{isZh ? currentThemeDef.name : currentThemeDef.nameEn}</span>
+            <ChevronDown
+              size={14}
+              strokeWidth={1.5}
+              color="var(--text-muted)"
+              style={{
+                transform: themeDropdownOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform var(--dur-fast) var(--ease-out)',
+              }}
+              aria-hidden="true"
+            />
           </button>
 
           {themeDropdownOpen && (
@@ -200,24 +228,24 @@ export const Header: React.FC = () => {
                 position: 'absolute',
                 top: 'calc(100% + 6px)',
                 right: 0,
-                width: '280px',
+                width: '272px',
                 background: 'var(--bg-surface)',
-                border: '1px solid var(--border-card)',
+                border: '1px solid var(--border-strong)',
                 borderRadius: 'var(--radius-md)',
                 boxShadow: 'var(--shadow-lg)',
-                padding: '0.5rem',
+                padding: '8px',
                 zIndex: 100,
-                animation: 'scaleIn 0.15s ease forwards',
+                animation: 'enterUp var(--dur-fast) var(--ease-out) forwards',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '2px',
+                gap: '4px',
               }}
             >
               <div
                 style={{
-                  padding: '4px 8px 6px',
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
+                  padding: '4px 8px 8px',
+                  fontSize: '12px',
+                  fontWeight: 500,
                   color: 'var(--text-muted)',
                   borderBottom: '1px solid var(--border-subtle)',
                   marginBottom: '4px',
@@ -227,33 +255,36 @@ export const Header: React.FC = () => {
                 }}
               >
                 <span>{t.themeSelector}</span>
-                <span style={{ fontSize: '0.65rem' }}>{THEME_REGISTRY.length} {t.themeCountLabel}</span>
+                <span className="vf-num">{THEME_REGISTRY.length} {t.themeCountLabel}</span>
               </div>
 
-              <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <div style={{ maxHeight: '340px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 {THEME_REGISTRY.map((tItem) => {
                   const isCur = theme === tItem.id;
                   return (
-                    <div
+                    <button
                       key={tItem.id}
+                      type="button"
                       onClick={() => {
                         setTheme(tItem.id);
                         setThemeDropdownOpen(false);
                       }}
                       style={{
-                        padding: '6px 8px',
-                        borderRadius: 'var(--radius-xs)',
-                        background: isCur ? 'var(--accent-primary-glow)' : 'transparent',
-                        border: `1px solid ${isCur ? 'var(--border-highlight)' : 'transparent'}`,
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: isCur ? 'var(--accent-primary-soft)' : 'transparent',
+                        border: `1px solid ${isCur ? 'var(--accent-primary-border)' : 'transparent'}`,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         gap: '8px',
-                        transition: 'all 0.12s ease',
+                        transition: 'background-color var(--dur-fast) var(--ease-out)',
                       }}
                       onMouseEnter={(e) => {
-                        if (!isCur) e.currentTarget.style.background = 'var(--bg-surface-hover)';
+                        if (!isCur) e.currentTarget.style.background = 'var(--bg-surface-elevated)';
                       }}
                       onMouseLeave={(e) => {
                         if (!isCur) e.currentTarget.style.background = 'transparent';
@@ -262,30 +293,30 @@ export const Header: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ display: 'flex', gap: '3px' }}>
                           {tItem.palette.slice(0, 3).map((c, i) => (
-                            <div
+                            <span
                               key={i}
                               style={{
                                 width: '10px',
                                 height: '10px',
                                 borderRadius: '50%',
                                 background: c,
-                                border: '1px solid rgba(128, 128, 128, 0.35)',
+                                border: '1px solid var(--border-strong)',
                               }}
                             />
                           ))}
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.8rem', fontWeight: isCur ? 700 : 500, color: 'var(--text-primary)' }}>
-                            {language === 'zh-TW' ? tItem.name : tItem.nameEn}
+                          <div style={{ fontSize: '13px', fontWeight: isCur ? 500 : 400, color: 'var(--text-primary)' }}>
+                            {isZh ? tItem.name : tItem.nameEn}
                           </div>
-                          <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>
-                            {language === 'zh-TW' ? tItem.nameEn : tItem.name} · {tItem.mode === 'dark' ? (language === 'zh-TW' ? '深色' : 'Dark') : (language === 'zh-TW' ? '淺色' : 'Light')}
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {isZh ? tItem.nameEn : tItem.name} · {tItem.mode === 'dark' ? (isZh ? '深色' : 'Dark') : (isZh ? '淺色' : 'Light')}
                           </div>
                         </div>
                       </div>
 
-                      {isCur && <Check size={14} color="var(--accent-primary)" />}
-                    </div>
+                      {isCur && <Check size={14} strokeWidth={1.75} color="var(--accent-primary)" />}
+                    </button>
                   );
                 })}
               </div>
@@ -293,24 +324,25 @@ export const Header: React.FC = () => {
           )}
         </div>
 
-        {/* System Health / GPU Indicator */}
-        <div className="system-status-indicator" title={isOnline ? `Python: ${systemHealth?.python_version} | ${systemHealth?.platform}` : t.offline}>
-          <div className={`project-status-dot ${!isOnline ? 'offline' : ''}`} />
-          <Server size={13} />
+        <div
+          className="system-status-indicator"
+          title={isOnline ? `Python: ${systemHealth?.python_version} | ${systemHealth?.platform}` : t.offline}
+        >
+          <span className={`vf-status-dot ${isOnline ? 'online' : 'offline'}`} aria-hidden="true" />
+          <Server size={14} strokeWidth={1.5} color="var(--text-muted)" aria-hidden="true" />
           <span className="header-label">{isOnline ? t.online : t.offline}</span>
           {isOnline && systemHealth?.gpu.available && (
-            <span className="header-gpu" style={{ display: 'flex', alignItems: 'center', gap: '3px', marginLeft: '6px', color: 'var(--accent-emerald)' }}>
-              <Cpu size={13} />
+            <span className="header-gpu" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '6px', color: 'var(--text-primary)' }}>
+              <Cpu size={14} strokeWidth={1.5} color="var(--text-muted)" aria-hidden="true" />
               <span className="header-label">{systemHealth.gpu.device.replace('NVIDIA GeForce ', '')}</span>
             </span>
           )}
         </div>
 
-        {/* Create Project Button */}
         <Button
           variant="primary"
           size="sm"
-          icon={<Plus size={15} />}
+          icon={<Plus size={15} strokeWidth={1.5} />}
           onClick={() => setIsCreateModalOpen(true)}
           aria-label={t.createNewProject}
           title={t.createNewProject}

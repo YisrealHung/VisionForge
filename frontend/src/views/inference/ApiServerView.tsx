@@ -1,26 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Radio,
-  Code2,
   Copy,
   Check,
   Power,
-  Activity,
-  Zap,
-  Server,
   BookOpen,
-  ArrowRight,
-  RotateCcw
+  RotateCcw,
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { ApiServerStatus } from '../../types';
 import { api, getPredictEndpoint } from '../../services/api';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+import { TaskBadge } from '../../components/common/Badge';
 import { ApiPlayground } from '../../components/api_server/ApiPlayground';
 
 export const ApiServerView: React.FC = () => {
-  const { activeProject, setCurrentView, language } = useProject();
+  const { activeProject, language } = useProject();
   const isZh = language === 'zh-TW';
   const [status, setStatus] = useState<ApiServerStatus | null>(null);
   const [loadingToggle, setLoadingToggle] = useState(false);
@@ -47,14 +43,13 @@ export const ApiServerView: React.FC = () => {
       const next = status ? !status.is_running : true;
       const updated = await api.toggleApiServer(next);
       setStatus(updated);
-    } catch (err) {
+    } catch {
       alert(isZh ? '切換伺服器狀態失敗' : 'Failed to toggle API server');
     } finally {
       setLoadingToggle(false);
     }
   };
 
-  // The backend only knows its own bind address; the browser's origin is what other clients should use.
   const endpointUrl = getPredictEndpoint();
 
   const copyEndpoint = () => {
@@ -67,8 +62,12 @@ export const ApiServerView: React.FC = () => {
 
   if (!activeProject) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <p style={{ color: 'var(--text-muted)' }}>{isZh ? '請先在頂部選單選擇或建立一個專案' : 'Please select or create a project from the top menu first'}</p>
+      <div className="vf-container">
+        <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <p style={{ color: 'var(--text-muted)' }}>
+            {isZh ? '請先在頂部選單選擇或建立專案' : 'Select or create a project from the header first'}
+          </p>
+        </Card>
       </div>
     );
   }
@@ -76,176 +75,171 @@ export const ApiServerView: React.FC = () => {
   const isOnline = status?.is_running ?? true;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
-      {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.25rem' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>🔌 {isZh ? '本機推論 API 伺服器' : 'Local Inference API Server'}</h1>
+    <div className="vf-container">
+      <div className="vf-page-header">
+        <div className="vf-page-heading">
+          <div className="vf-page-eyebrow">
+            <Radio size={14} strokeWidth={1.5} aria-hidden="true" />
+            <span>{isZh ? '推論 API 伺服器' : 'Inference API server'}</span>
+            <TaskBadge taskType={activeProject.task_type} />
+          </div>
+          <div className="vf-page-title-row">
+            <h1 className="vf-page-title">{activeProject.name}</h1>
             <span className={isOnline ? 'badge badge-emerald' : 'badge badge-amber'}>
-              {isOnline ? (isZh ? '🟢 API 運行中' : '🟢 API Running') : (isZh ? '⚪ 服務已暫停' : '⚪ Service Paused')}
+              <span className={`vf-status-dot ${isOnline ? 'online' : 'warning'}`} aria-hidden="true" />
+              {isOnline ? (isZh ? '運行中' : 'Running') : (isZh ? '已暫停' : 'Paused')}
             </span>
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            {isZh ? '專案：' : 'Project: '}<span style={{ color: '#818cf8', fontWeight: 600 }}>{activeProject.name}</span> · {isZh ? '高效能本機 REST API · 支援 Base64、Multipart 及 GPU 批次加速' : 'High-perf local REST API · Base64/Multipart & GPU Batching'}
-          </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className="vf-page-actions">
           <Button
-            variant={isOnline ? 'danger' : 'primary'}
-            icon={<Power size={14} />}
-            loading={loadingToggle}
-            onClick={handleToggle}
+            variant="secondary"
+            size="sm"
+            icon={<RotateCcw size={14} strokeWidth={1.5} />}
+            onClick={fetchStatus}
           >
-            {isOnline ? (isZh ? '暫停 API 伺服器' : 'Pause API Server') : (isZh ? '啟動 API 伺服器' : 'Start API Server')}
+            {isZh ? '重新整理' : 'Refresh'}
           </Button>
 
           <Button
-            variant="secondary"
-            icon={<RotateCcw size={14} />}
-            onClick={fetchStatus}
+            variant={isOnline ? 'danger' : 'primary'}
+            size="sm"
+            icon={<Power size={14} strokeWidth={1.5} />}
+            loading={loadingToggle}
+            onClick={handleToggle}
           >
-            {isZh ? '刷新數據' : 'Refresh Data'}
+            {isOnline ? (isZh ? '暫停 API 服務' : 'Pause API server') : (isZh ? '啟動 API 服務' : 'Start API server')}
           </Button>
         </div>
       </div>
 
-      {/* Server Stats Dashboard Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        {/* Status & Port */}
+      {/* Server Stats Strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px' }}>
         <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Server size={16} color={isOnline ? '#10b981' : '#f59e0b'} />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isZh ? '服務狀態 / Port' : 'Service Status / Port'}</span>
+          <div className="vf-stat-label">{isZh ? '服務狀態與通訊埠' : 'Service status'}</div>
+          <div
+            className="vf-stat-value vf-num"
+            style={{ fontSize: '22px', lineHeight: 1.25, color: isOnline ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}
+          >
+            {isOnline ? (isZh ? '運行中' : 'Running') : (isZh ? '已暫停' : 'Paused')}
           </div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: isOnline ? '#10b981' : '#f59e0b' }}>
-            {isOnline ? 'ONLINE' : 'STOPPED'}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {isZh ? '本機通訊埠:' : 'Local Port:'} <strong>:{status?.port || 8000}</strong>
+          <div className="vf-stat-sub vf-mono">
+            {isZh ? 'Port ' : 'Port '}
+            {status?.port || 8000}
           </div>
         </Card>
 
-        {/* Total Requests */}
         <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Activity size={16} color="#818cf8" />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isZh ? '已處理請求 (Requests)' : 'Total Requests'}</span>
-          </div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#818cf8' }}>
-            {status?.total_requests || 0} {isZh ? '次' : ''}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {isZh ? '累計呼叫次數' : 'Cumulative calls'}
-          </div>
+          <div className="vf-stat-label">{isZh ? '累計請求數' : 'Total requests'}</div>
+          <div className="vf-stat-value vf-num">{(status?.total_requests || 0).toLocaleString()}</div>
+          <div className="vf-stat-sub">{isZh ? '已處理推論請求' : 'Completed inference calls'}</div>
         </Card>
 
-        {/* Average Latency */}
         <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Zap size={16} color="#06b6d4" />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isZh ? '平均推論延遲' : 'Average Latency'}</span>
-          </div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#06b6d4' }}>
-            {status?.avg_latency_ms || 0} ms
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {isZh ? '前向傳播平均耗時' : 'Avg forward pass time'}
-          </div>
+          <div className="vf-stat-label">{isZh ? '平均推論延遲' : 'Average latency'}</div>
+          <div className="vf-stat-value vf-num">{status?.avg_latency_ms || 0} ms</div>
+          <div className="vf-stat-sub">{isZh ? '前向推論平均耗時' : 'Mean forward pass duration'}</div>
         </Card>
 
-        {/* Active Model */}
         <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Radio size={16} color="#f59e0b" />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{isZh ? '已載入熱模型' : 'Hot Loaded Model'}</span>
-          </div>
-          <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div className="vf-stat-label">{isZh ? '目前載入模型' : 'Loaded model'}</div>
+          <div
+            className="vf-stat-value"
+            style={{ fontSize: '20px', lineHeight: 1.3, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            title={activeProject.name}
+          >
             {activeProject.name}
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-            {isZh ? '記憶體快取熱加載' : 'Memory cached hot load'}
-          </div>
+          <div className="vf-stat-sub">{isZh ? '記憶體快取熱載入' : 'Cached in memory'}</div>
         </Card>
       </div>
 
       {/* Endpoint URL Banner */}
       <div
         style={{
-          background: 'var(--bg-surface-elevated)',
-          padding: '0.85rem 1.25rem',
+          background: 'var(--bg-surface)',
+          padding: '12px 16px',
           borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-subtle)',
+          border: '1px solid var(--border-card)',
+          boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '0.75rem',
+          gap: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
-            POST
-          </span>
-          <code style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+          <span className="badge badge-emerald vf-mono">POST</span>
+          <code
+            className="vf-mono"
+            style={{
+              fontSize: '13px',
+              color: 'var(--text-primary)',
+              fontWeight: 500,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {endpointUrl}
           </code>
         </div>
 
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={copyEndpoint}
-          style={{ fontSize: '0.75rem', gap: '4px' }}
-        >
-          {copiedUrl ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-          {copiedUrl ? (isZh ? '已複製！' : 'Copied!') : (isZh ? '複製 API 端點' : 'Copy Endpoint')}
+        <button type="button" className="btn btn-ghost btn-sm" onClick={copyEndpoint}>
+          {copiedUrl ? <Check size={14} strokeWidth={1.75} color="var(--accent-emerald)" /> : <Copy size={14} strokeWidth={1.5} />}
+          <span>{copiedUrl ? (isZh ? '已複製' : 'Copied') : (isZh ? '複製端點' : 'Copy endpoint')}</span>
         </button>
       </div>
 
-      {/* Interactive API Playground */}
       <ApiPlayground projectId={activeProject.id} />
 
-      {/* Full API Documentation Reference */}
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.25rem' }}>
-          <BookOpen size={18} color="#06b6d4" />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>{isZh ? 'API 規格說明文件 (REST Reference)' : 'API Specification (REST Reference)'}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <BookOpen size={16} strokeWidth={1.5} color="var(--text-secondary)" />
+          <h3 style={{ fontSize: '16px', fontWeight: 500 }}>
+            {isZh ? 'REST API 規格參考' : 'REST API specification'}
+          </h3>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.85rem' }}>
-          {/* Endpoint 1 */}
-          <div style={{ padding: '0.85rem 1rem', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontWeight: 700, color: '#10b981', fontSize: '0.75rem', background: 'rgba(16,185,129,0.15)', padding: '1px 6px', borderRadius: '3px' }}>POST</span>
-              <strong style={{ color: '#fff' }}>/api/inference/predict</strong>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>- {isZh ? 'Base64 單張推論 (支援可選 ROI 裁剪)' : 'Base64 Single Inference (Supports optional ROI crop)'}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
+          <div style={{ padding: '12px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+              <span className="badge badge-emerald vf-mono">POST</span>
+              <code style={{ color: 'var(--text-primary)', fontWeight: 500 }}>/api/inference/predict</code>
+              <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                {isZh ? 'Base64 單張影像推論（支援可選 ROI 裁切）' : 'Base64 single image inference (optional ROI)'}
+              </span>
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Request Body: <code>{`{ "model_id": "${activeProject.id}", "image_base64": "...", "roi": {"x":0.1,"y":0.1,"width":0.8,"height":0.8} }`}</code>
-            </div>
-          </div>
-
-          {/* Endpoint 2 */}
-          <div style={{ padding: '0.85rem 1rem', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontWeight: 700, color: '#10b981', fontSize: '0.75rem', background: 'rgba(16,185,129,0.15)', padding: '1px 6px', borderRadius: '3px' }}>POST</span>
-              <strong style={{ color: '#fff' }}>/api/inference/predict-form</strong>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>- {isZh ? 'Multipart Form 圖片檔案上傳推論' : 'Multipart Form Image Upload Inference'}</span>
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Content-Type: <code>multipart/form-data</code> with field <code>file</code>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Request Body:{' '}
+              <code>{`{ "model_id": "${activeProject.id}", "image_base64": "...", "roi": {"x":0.1,"y":0.1,"width":0.8,"height":0.8} }`}</code>
             </div>
           </div>
 
-          {/* Endpoint 3 */}
-          <div style={{ padding: '0.85rem 1rem', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontWeight: 700, color: '#10b981', fontSize: '0.75rem', background: 'rgba(16,185,129,0.15)', padding: '1px 6px', borderRadius: '3px' }}>POST</span>
-              <strong style={{ color: '#fff' }}>/api/inference/batch</strong>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>- {isZh ? '批次推論加速 (傳入多張 Base64 圖片)' : 'Batch Inference Acceleration (Multiple Base64 images)'}</span>
+          <div style={{ padding: '12px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+              <span className="badge badge-emerald vf-mono">POST</span>
+              <code style={{ color: 'var(--text-primary)', fontWeight: 500 }}>/api/inference/predict-form</code>
+              <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                {isZh ? 'Multipart 表單圖片檔案上傳推論' : 'Multipart form image upload inference'}
+              </span>
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Content-Type: <code>multipart/form-data</code> (field <code>file</code>)
+            </div>
+          </div>
+
+          <div style={{ padding: '12px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+              <span className="badge badge-emerald vf-mono">POST</span>
+              <code style={{ color: 'var(--text-primary)', fontWeight: 500 }}>/api/inference/batch</code>
+              <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                {isZh ? '多張 Base64 影像批次推論' : 'Batch inference for multiple Base64 images'}
+              </span>
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
               Request Body: <code>{`{ "model_id": "${activeProject.id}", "images_base64": ["...", "..."] }`}</code>
             </div>
           </div>

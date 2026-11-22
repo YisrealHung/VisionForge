@@ -1,27 +1,26 @@
 import React from 'react';
-import { 
-  Flame, 
-  LayoutDashboard, 
-  FolderSearch, 
-  Tag, 
-  BrainCircuit, 
-  Activity, 
-  PackageCheck, 
-  ScanEye, 
-  Radio, 
+import {
+  Flame,
+  LayoutDashboard,
+  FolderSearch,
+  Tag,
+  BrainCircuit,
+  Activity,
+  PackageCheck,
+  ScanEye,
+  Radio,
   Settings,
-  Sparkles
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { NavView } from '../../types';
 
 export const Sidebar: React.FC = () => {
-  const { 
-    activeWorkspace, 
-    setActiveWorkspace, 
-    currentView, 
+  const {
+    activeWorkspace,
+    setActiveWorkspace,
+    currentView,
     setCurrentView,
-    t
+    t,
   } = useProject();
 
   const trainingNavItems = [
@@ -45,28 +44,19 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className="app-sidebar">
-      {/* Brand Header */}
       <div className="sidebar-header">
         <div className="brand-badge">
-          <div className="brand-icon-box">
-            <Flame size={20} />
+          <div className="brand-icon-box" aria-hidden="true">
+            <Flame size={16} strokeWidth={1.5} />
           </div>
-          <div>
-            <div className="brand-name">VisionForge</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span className="brand-tag">No-Code AI</span>
-            </div>
-          </div>
+          <span className="brand-name">VisionForge</span>
         </div>
       </div>
 
-      {/* Navigation list */}
-      <div className="sidebar-nav">
-        {/* Workspace 1: Training Section */}
-        <div>
+      <nav className="sidebar-nav" aria-label="Main navigation">
+        <div className="nav-section">
           <div className="nav-section-title">
-            <span>🛠️ {t.trainingWorkspace}</span>
-            <span className="nav-section-badge">{t.trainingWorkspaceBadge}</span>
+            <span>{t.trainingWorkspace}</span>
           </div>
           <ul className="nav-list">
             {trainingNavItems.map((item) => {
@@ -75,10 +65,11 @@ export const Sidebar: React.FC = () => {
               return (
                 <li key={item.id}>
                   <button
+                    type="button"
                     className={`nav-item-btn ${isActive ? 'active' : ''}`}
                     onClick={() => handleNavClick(item.id, 'training')}
                   >
-                    <Icon className="nav-item-icon" />
+                    <Icon className="nav-item-icon" size={16} strokeWidth={1.5} aria-hidden="true" />
                     <span>{item.label}</span>
                   </button>
                 </li>
@@ -87,13 +78,9 @@ export const Sidebar: React.FC = () => {
           </ul>
         </div>
 
-        {/* Workspace 2: Inference Section */}
-        <div>
+        <div className="nav-section">
           <div className="nav-section-title">
-            <span>🚀 {t.inferenceWorkspace}</span>
-            <span className="nav-section-badge" style={{ color: '#06b6d4', background: 'rgba(6, 182, 212, 0.1)' }}>
-              {t.inferenceWorkspaceBadge}
-            </span>
+            <span>{t.inferenceWorkspace}</span>
           </div>
           <ul className="nav-list">
             {inferenceNavItems.map((item) => {
@@ -102,10 +89,11 @@ export const Sidebar: React.FC = () => {
               return (
                 <li key={item.id}>
                   <button
+                    type="button"
                     className={`nav-item-btn ${isActive ? 'active' : ''}`}
                     onClick={() => handleNavClick(item.id, 'inference')}
                   >
-                    <Icon className="nav-item-icon" />
+                    <Icon className="nav-item-icon" size={16} strokeWidth={1.5} aria-hidden="true" />
                     <span>{item.label}</span>
                   </button>
                 </li>
@@ -113,15 +101,15 @@ export const Sidebar: React.FC = () => {
             })}
           </ul>
         </div>
-      </div>
+      </nav>
 
-      {/* Footer / System Settings */}
       <div className="sidebar-footer">
         <button
+          type="button"
           className={`nav-item-btn ${currentView === 'settings' ? 'active' : ''}`}
           onClick={() => setCurrentView('settings')}
         >
-          <Settings className="nav-item-icon" />
+          <Settings className="nav-item-icon" size={16} strokeWidth={1.5} aria-hidden="true" />
           <span>{t.navSettings}</span>
         </button>
       </div>

@@ -37,9 +37,21 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {loading ? (
-        <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'inline-block',
+            width: '14px',
+            height: '14px',
+            border: '2px solid currentColor',
+            borderRightColor: 'transparent',
+            borderRadius: '50%',
+            opacity: 0.75,
+            animation: 'spin 0.8s linear infinite',
+          }}
+        />
       ) : (
-        icon && <span style={{ display: 'flex', alignItems: 'center' }}>{icon}</span>
+        icon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span>
       )}
       {children}
     </button>

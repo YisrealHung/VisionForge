@@ -12,9 +12,8 @@ interface LabelProgress {
 type StepState = 'done' | 'current' | 'todo';
 
 /**
- * "What should I do next?" card plus the five-step pipeline (data → label → train → export → deploy)
- * for the active project. Colors come from the --next-step-* tokens, so every theme renders it;
- * Maker Studio gives it the lime highlight.
+ * Guided next-step card plus the five-step pipeline (data -> label -> train -> export -> deploy)
+ * for the active project.
  */
 export const NextStepPanel: React.FC<{ project: Project }> = ({ project }) => {
   const { setCurrentView, language, systemHealth } = useProject();
@@ -35,7 +34,6 @@ export const NextStepPanel: React.FC<{ project: Project }> = ({ project }) => {
         }
       })
       .catch(() => {
-        // Don't pretend nothing is labeled when we simply couldn't ask (e.g. backend restarting).
         if (!cancelled) setProgressError(true);
       });
     return () => {
@@ -55,35 +53,37 @@ export const NextStepPanel: React.FC<{ project: Project }> = ({ project }) => {
   let target: NavView;
   if (progressError) {
     title = isZh ? '暫時無法取得標註進度' : "Couldn't load labeling progress";
-    subtitle = isZh ? '後端連線恢復後會自動更新。' : 'This refreshes once the backend is reachable again.';
+    subtitle = isZh ? '後端連線恢復後將自動更新' : 'Updates automatically once the backend is reachable';
     cta = isZh ? '前往資料集' : 'Open dataset';
     target = 'dataset';
   } else if (progress === null && total > 0) {
     title = isZh ? '正在讀取標註進度…' : 'Loading labeling progress…';
-    subtitle = isZh ? `專案共 ${total.toLocaleString()} 張影像。` : `${total.toLocaleString()} images in this project.`;
+    subtitle = isZh ? `專案共 ${total.toLocaleString()} 張影像` : `${total.toLocaleString()} images in this project`;
     cta = isZh ? '前往標註' : 'Open annotation';
     target = 'annotator';
   } else if (total === 0) {
-    title = isZh ? '先上傳第一批影像吧！' : 'Start by uploading your first images!';
-    subtitle = isZh ? '支援拖放、資料夾與攝影機擷取。' : 'Drag & drop, folders and camera capture are supported.';
-    cta = isZh ? '上傳影像' : 'Upload images';
+    title = isZh ? '先上傳第一批影像' : 'Upload your first images';
+    subtitle = isZh ? '支援拖放上傳、COCO / YOLO 匯入與攝影機擷取' : 'Drag & drop upload, COCO / YOLO import, and camera capture supported';
+    cta = isZh ? '前往資料集' : 'Upload images';
     target = 'dataset';
   } else if (unlabeled > 0) {
-    title = isZh ? `再標註 ${unlabeled.toLocaleString()} 張，資料就完整了！` : `Label ${unlabeled.toLocaleString()} more images to complete the dataset!`;
+    title = isZh
+      ? `還差 ${unlabeled.toLocaleString()} 張影像待標註`
+      : `${unlabeled.toLocaleString()} images left to label`;
     subtitle = isZh
-      ? `已完成 ${labeled.toLocaleString()} / ${total.toLocaleString()} 張（${labelPct}%）。`
-      : `${labeled.toLocaleString()} of ${total.toLocaleString()} done (${labelPct}%).`;
+      ? `已完成 ${labeled.toLocaleString()} / ${total.toLocaleString()} 張（${labelPct}%）`
+      : `${labeled.toLocaleString()} of ${total.toLocaleString()} labeled (${labelPct}%)`;
     cta = isZh ? '繼續標註' : 'Continue labeling';
     target = 'annotator';
   } else if (!trained) {
-    title = isZh ? '資料已就緒，開始訓練模型！' : 'Your data is ready — train a model!';
-    subtitle = isZh ? `${total.toLocaleString()} 張影像皆已標註。` : `All ${total.toLocaleString()} images are labeled.`;
-    cta = isZh ? '開始訓練' : 'Start training';
+    title = isZh ? '資料已就緒，可開始訓練' : 'Dataset ready for training';
+    subtitle = isZh ? `${total.toLocaleString()} 張影像皆已標註` : `All ${total.toLocaleString()} images labeled`;
+    cta = isZh ? '配置與訓練' : 'Configure training';
     target = 'train';
   } else {
-    title = isZh ? '模型已訓練完成，匯出或部署它！' : 'Model trained — export or deploy it!';
-    subtitle = isZh ? '可匯出 ONNX / PTH，或到推論工作站即時測試。' : 'Export ONNX / PTH, or test it live in the inference station.';
-    cta = isZh ? '前往匯出' : 'Go to export';
+    title = isZh ? '模型已完成，可進行評估或匯出' : 'Model trained — ready to evaluate or export';
+    subtitle = isZh ? '檢視混淆矩陣、匯出 ONNX / PTH 或啟動推論工作站' : 'Review confusion matrix, export ONNX / PTH, or test live inference';
+    cta = isZh ? '評估與匯出' : 'Evaluate & export';
     target = 'export';
   }
 
@@ -127,17 +127,18 @@ export const NextStepPanel: React.FC<{ project: Project }> = ({ project }) => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <section className="vf-next-step" aria-label={isZh ? '下一步' : 'Next step'}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <section className="vf-next-step vf-reticle" aria-label={isZh ? '下一步' : 'Next step'}>
         <div className="vf-next-step-body">
-          <span className="vf-next-step-pill">
+          <span className="vf-next-step-pill vf-num">
             {isZh ? '下一步' : 'Next step'} · {project.name}
           </span>
           <h2 className="vf-next-step-title">{title}</h2>
-          <p className="vf-next-step-sub">{subtitle}</p>
+          <p className="vf-next-step-sub vf-num">{subtitle}</p>
         </div>
         <button type="button" className="vf-next-step-cta" onClick={() => setCurrentView(target)}>
-          {cta} <ArrowRight size={18} aria-hidden="true" />
+          <span>{cta}</span>
+          <ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
         </button>
       </section>
 
@@ -146,7 +147,7 @@ export const NextStepPanel: React.FC<{ project: Project }> = ({ project }) => {
           {steps.map((s) => (
             <li key={s.key} className="vf-step" aria-current={s.state === 'current' ? 'step' : undefined}>
               <span className={`vf-step-dot ${s.state === 'todo' ? '' : s.state}`}>
-                {s.state === 'done' ? <Check size={20} strokeWidth={3} aria-hidden="true" /> : s.dot}
+                {s.state === 'done' ? <Check size={16} strokeWidth={2} aria-hidden="true" /> : s.dot}
               </span>
               <span className="vf-step-label">{s.label}</span>
               <span className="vf-step-sub">{s.sub}</span>

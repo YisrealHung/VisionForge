@@ -22,62 +22,61 @@ export const TerminalLogger: React.FC<TerminalLoggerProps> = ({ logs, onClear, h
   return (
     <div
       style={{
-        background: '#070a10',
+        background: 'var(--canvas-bg)',
         borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border-subtle)',
+        border: '1px solid var(--canvas-border)',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      {/* Terminal Title Bar */}
       <div
         style={{
-          height: '32px',
-          background: 'rgba(255, 255, 255, 0.03)',
-          borderBottom: '1px solid var(--border-subtle)',
+          height: '36px',
+          background: 'var(--canvas-surface)',
+          borderBottom: '1px solid var(--canvas-border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 0.75rem',
+          padding: '0 12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          <Terminal size={13} color="#818cf8" />
-          <span>{isZh ? '即時訓練終端輸出 (Terminal Log)' : 'Training Terminal Log'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--canvas-muted)', fontWeight: 500 }}>
+          <Terminal size={14} strokeWidth={1.5} color="var(--canvas-muted)" />
+          <span>{isZh ? '訓練終端輸出' : 'Training terminal log'}</span>
         </div>
 
         {onClear && logs.length > 0 && (
           <button
+            type="button"
             className="btn btn-ghost btn-sm"
             onClick={onClear}
-            style={{ fontSize: '0.7rem', padding: '2px 6px', color: 'var(--text-muted)' }}
+            style={{ height: '24px', fontSize: '12px', padding: '0 8px', color: 'var(--canvas-muted)' }}
             title={isZh ? '清除記錄' : 'Clear logs'}
           >
-            <Trash2 size={12} /> {isZh ? '清除' : 'Clear'}
+            <Trash2 size={12} strokeWidth={1.5} /> {isZh ? '清除' : 'Clear'}
           </button>
         )}
       </div>
 
-      {/* Terminal Output Body */}
       <div
         ref={scrollRef}
+        className="vf-mono"
         style={{
           height: `${height}px`,
-          padding: '0.75rem 1rem',
+          padding: '12px 16px',
           overflowY: 'auto',
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: '0.78rem',
-          lineHeight: '1.6',
-          color: '#cbd5e1',
+          fontSize: '12px',
+          lineHeight: 1.6,
+          color: 'var(--canvas-text)',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px',
         }}
       >
         {logs.length === 0 ? (
-          <div style={{ color: '#475569', fontStyle: 'italic' }}>
-            {isZh ? '尚未啟動訓練，即時訓練終端訊息將會在此顯示...' : 'Training has not started yet. Real-time terminal output will appear here...'}
+          <div style={{ color: 'var(--canvas-muted)' }}>
+            {isZh ? '尚未啟動訓練，即時訓練輸出將顯示於此…' : 'Training has not started yet. Real-time logs will appear here…'}
           </div>
         ) : (
           logs.map((line, idx) => {
@@ -86,10 +85,10 @@ export const TerminalLogger: React.FC<TerminalLoggerProps> = ({ logs, onClear, h
             const isBest = line.includes('New Best');
             const isWarn = line.includes('⚠️');
 
-            let color = '#e2e8f0';
-            if (isError) color = '#fda4af';
-            else if (isSuccess || isBest) color = '#6ee7b7';
-            else if (isWarn) color = '#fcd34d';
+            let color = 'var(--canvas-text)';
+            if (isError) color = '#f87171';
+            else if (isSuccess || isBest) color = '#4cc38a';
+            else if (isWarn) color = '#e5a93c';
 
             return (
               <div key={idx} style={{ color }}>

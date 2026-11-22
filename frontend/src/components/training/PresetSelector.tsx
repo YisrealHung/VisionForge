@@ -14,7 +14,6 @@ interface PresetConfig {
   descZh: string;
   descEn: string;
   icon: React.ReactNode;
-  color: string;
   badgeZh: string;
   badgeEn: string;
   params: Partial<Hyperparameters>;
@@ -22,17 +21,16 @@ interface PresetConfig {
 
 export const PRESET_CONFIGS: Record<PresetType, PresetConfig & { title: string; desc: string; badge: string }> = {
   fast: {
-    titleZh: '快速實驗 (Fast Prototype)',
-    titleEn: 'Fast Prototype',
-    title: 'Fast Prototype',
-    descZh: 'Epoch: 5 · LR: 0.001 · 適合快速檢查資料集與訓練流程是否順暢',
-    descEn: 'Epoch: 5 · LR: 0.001 · Quickly validate dataset and training pipeline',
-    desc: 'Epoch: 5 · LR: 0.001 · Quickly validate dataset and training pipeline',
-    icon: <Zap size={20} />,
-    color: '#557B86',
-    badgeZh: '推薦初步驗證',
-    badgeEn: 'Recommended for initial tests',
-    badge: 'Recommended for initial tests',
+    titleZh: '快速實驗',
+    titleEn: 'Fast Check',
+    title: 'Fast Check',
+    descZh: 'Epoch 5 · LR 0.001 · 快速驗證資料集與管線',
+    descEn: '5 epochs · LR 0.001 · Quick dataset & pipeline check',
+    desc: '5 epochs · LR 0.001 · Quick dataset & pipeline check',
+    icon: <Zap size={16} strokeWidth={1.5} />,
+    badgeZh: '初步驗證',
+    badgeEn: 'Initial check',
+    badge: 'Initial check',
     params: {
       epochs: 5,
       batch_size: 16,
@@ -43,17 +41,16 @@ export const PRESET_CONFIGS: Record<PresetType, PresetConfig & { title: string; 
     },
   },
   balanced: {
-    titleZh: '均衡訓練 (Balanced Standard)',
-    titleEn: 'Balanced Standard',
-    title: 'Balanced Standard',
-    descZh: 'Epoch: 20 · LR: 0.0005 · 達到精準度與訓練耗時的最佳平衡',
-    descEn: 'Epoch: 20 · LR: 0.0005 · Best balance between accuracy and training time',
-    desc: 'Epoch: 20 · LR: 0.0005 · Best balance between accuracy and training time',
-    icon: <Scale size={20} />,
-    color: '#EB7E83',
-    badgeZh: '一般場景推薦',
-    badgeEn: 'General use recommended',
-    badge: 'General use recommended',
+    titleZh: '均衡訓練',
+    titleEn: 'Balanced',
+    title: 'Balanced',
+    descZh: 'Epoch 20 · LR 0.0005 · 兼顧速度與收斂穩定度',
+    descEn: '20 epochs · LR 0.0005 · Balance of speed and accuracy',
+    desc: '20 epochs · LR 0.0005 · Balance of speed and accuracy',
+    icon: <Scale size={16} strokeWidth={1.5} />,
+    badgeZh: '一般推薦',
+    badgeEn: 'Recommended',
+    badge: 'Recommended',
     params: {
       epochs: 20,
       batch_size: 32,
@@ -64,17 +61,16 @@ export const PRESET_CONFIGS: Record<PresetType, PresetConfig & { title: string; 
     },
   },
   accurate: {
-    titleZh: '精確訓練 (High Accuracy)',
-    titleEn: 'High Accuracy',
-    title: 'High Accuracy',
-    descZh: 'Epoch: 50 · LR: 0.0001 · 使用 Cosine 退火調度，追求最高指標',
-    descEn: 'Epoch: 50 · LR: 0.0001 · Cosine annealing schedule, maximum metrics',
-    desc: 'Epoch: 50 · LR: 0.0001 · Cosine annealing schedule, maximum metrics',
-    icon: <Award size={20} />,
-    color: '#67a390',
-    badgeZh: '工業級產線部署',
-    badgeEn: 'Industrial production deployment',
-    badge: 'Industrial production deployment',
+    titleZh: '深度收斂',
+    titleEn: 'Extended',
+    title: 'Extended',
+    descZh: 'Epoch 50 · LR 0.0001 · Cosine 調度充分訓練',
+    descEn: '50 epochs · LR 0.0001 · Cosine schedule for full convergence',
+    desc: '50 epochs · LR 0.0001 · Cosine schedule for full convergence',
+    icon: <Award size={16} strokeWidth={1.5} />,
+    badgeZh: '高準確度',
+    badgeEn: 'Production',
+    badge: 'Production',
     params: {
       epochs: 50,
       batch_size: 32,
@@ -85,17 +81,16 @@ export const PRESET_CONFIGS: Record<PresetType, PresetConfig & { title: string; 
     },
   },
   custom: {
-    titleZh: '自訂超參數 (Custom)',
-    titleEn: 'Custom Hyperparams',
-    title: 'Custom Hyperparams',
-    descZh: '手動微調 Epochs, Learning Rate, Batch Size 與 Optimizer',
-    descEn: 'Manually tune Epochs, Learning Rate, Batch Size & Optimizer',
-    desc: 'Manually tune Epochs, Learning Rate, Batch Size & Optimizer',
-    icon: <SlidersHorizontal size={20} />,
-    color: '#E1998A',
-    badgeZh: '進階開發者',
-    badgeEn: 'Advanced developers',
-    badge: 'Advanced developers',
+    titleZh: '自訂超參數',
+    titleEn: 'Custom',
+    title: 'Custom',
+    descZh: '手動調整 Epochs、Learning Rate 與優化器',
+    descEn: 'Tune Epochs, Learning Rate, Batch Size & Optimizer manually',
+    desc: 'Tune Epochs, Learning Rate, Batch Size & Optimizer manually',
+    icon: <SlidersHorizontal size={16} strokeWidth={1.5} />,
+    badgeZh: '自訂',
+    badgeEn: 'Manual',
+    badge: 'Manual',
     params: {},
   },
 };
@@ -105,36 +100,39 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({ currentPreset, o
   const isZh = language === 'zh-TW';
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
       {(['fast', 'balanced', 'accurate', 'custom'] as PresetType[]).map((key) => {
         const item = PRESET_CONFIGS[key];
         const isSelected = currentPreset === key;
         return (
-          <div
+          <button
             key={key}
+            type="button"
             onClick={() => onSelectPreset(key)}
             style={{
-              padding: '1.1rem',
+              textAlign: 'left',
+              padding: '16px',
               borderRadius: 'var(--radius-md)',
-              background: isSelected ? `${item.color}18` : 'var(--bg-surface-elevated)',
-              border: `1px solid ${isSelected ? item.color : 'var(--border-subtle)'}`,
-              boxShadow: isSelected ? `0 0 16px ${item.color}30` : 'none',
+              background: isSelected ? 'var(--accent-primary-soft)' : 'var(--bg-surface)',
+              border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-card)'}`,
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
+              boxShadow: 'var(--shadow-sm)',
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <div
                   style={{
-                    width: '34px',
-                    height: '34px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: 'var(--radius-sm)',
-                    background: `${item.color}25`,
-                    color: item.color,
+                    background: isSelected ? 'var(--accent-primary)' : 'var(--bg-surface-elevated)',
+                    border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
+                    color: isSelected ? 'var(--accent-on-primary)' : 'var(--text-secondary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -143,21 +141,21 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({ currentPreset, o
                   {item.icon}
                 </div>
                 {isSelected ? (
-                  <CheckCircle2 size={18} color={item.color} />
+                  <CheckCircle2 size={16} strokeWidth={1.5} color="var(--accent-primary)" />
                 ) : (
-                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>
+                  <span className="badge badge-neutral">
                     {isZh ? item.badgeZh : item.badgeEn}
                   </span>
                 )}
               </div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px', color: 'var(--text-primary)' }}>
                 {isZh ? item.titleZh : item.titleEn}
               </h4>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+              <p className="vf-num" style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
                 {isZh ? item.descZh : item.descEn}
               </p>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>

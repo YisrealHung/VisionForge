@@ -1,25 +1,20 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  FolderSearch, 
-  Camera, 
-  UploadCloud, 
+import {
+  FolderSearch,
+  Camera,
+  UploadCloud,
   Download,
-  Trash2, 
-  PieChart, 
-  Sparkles, 
-  Filter, 
-  CheckCircle2, 
-  Clock, 
+  Trash2,
+  PieChart,
+  CheckCircle2,
   ArrowRight,
-  Layers,
-  FileArchive,
-  AlertCircle
 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { ImageItem } from '../../types';
 import { api, DATASET_IMPORT_ACCEPT, formatImportSummary } from '../../services/api';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
+import { TaskBadge } from '../../components/common/Badge';
 import { ImageUploader } from '../../components/dataset/ImageUploader';
 import { CameraCaptureModal } from '../../components/dataset/CameraCaptureModal';
 
@@ -62,7 +57,7 @@ export const DatasetView: React.FC = () => {
       setUploading(true);
       await api.uploadImages(activeProject.id, files);
       await loadImages();
-    } catch (err) {
+    } catch {
       alert(isZh ? '圖片上傳失敗' : 'Failed to upload images');
     } finally {
       setUploading(false);
@@ -77,7 +72,7 @@ export const DatasetView: React.FC = () => {
 
   const handleDeleteImage = async (filename: string) => {
     if (!activeProject) return;
-    if (confirm(isZh ? `確定要刪除圖片「${filename}」嗎？` : `Are you sure you want to delete image "${filename}"?`)) {
+    if (confirm(isZh ? `確定要刪除圖片「${filename}」嗎？` : `Delete image "${filename}"?`)) {
       await api.deleteImage(activeProject.id, filename);
       setImages((prev) => prev.filter((img) => img.filename !== filename));
     }
@@ -93,19 +88,17 @@ export const DatasetView: React.FC = () => {
       });
       setIsSplitModalOpen(false);
       await loadImages();
-    } catch (err) {
+    } catch {
       alert(isZh ? '分割資料集失敗' : 'Failed to split dataset');
     }
   };
 
-  // Export Complete Dataset ZIP
   const handleExportDataset = () => {
     if (!activeProject) return;
     const exportUrl = api.getDatasetExportUrl(activeProject.id);
     window.open(exportUrl, '_blank');
   };
 
-  // Import Dataset ZIP or loose image/JSON files
   const handleImportDataset = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !activeProject) return;
@@ -117,7 +110,7 @@ export const DatasetView: React.FC = () => {
       setImportSuccessMsg(formatImportSummary(res, isZh));
       await loadImages();
     } catch (err: any) {
-      alert(isZh ? `匯入失敗: ${err.message || '檔案格式不支援'}` : `Import failed: ${err.message || 'Unsupported format'}`);
+      alert(isZh ? `匯入失敗：${err.message || '檔案格式不支援'}` : `Import failed: ${err.message || 'Unsupported format'}`);
     } finally {
       setImporting(false);
       if (importDatasetInputRef.current) {
@@ -134,20 +127,24 @@ export const DatasetView: React.FC = () => {
   });
 
   const labeledCount = images.filter((i) => i.labeled).length;
+  const unlabeledCount = Math.max(0, images.length - labeledCount);
   const trainCount = images.filter((i) => i.split === 'train').length;
   const valCount = images.filter((i) => i.split === 'val').length;
 
   if (!activeProject) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <p style={{ color: 'var(--text-muted)' }}>{isZh ? '請先在頂部選單選擇或建立一個專案' : 'Please select or create a project from the top menu first'}</p>
+      <div className="vf-container">
+        <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <p style={{ color: 'var(--text-muted)' }}>
+            {isZh ? '請先在頂部選單選擇或建立專案' : 'Select or create a project from the header first'}
+          </p>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Hidden File Input for Dataset Import */}
+    <div className="vf-container">
       <input
         ref={importDatasetInputRef}
         type="file"
@@ -157,132 +154,146 @@ export const DatasetView: React.FC = () => {
         onChange={handleImportDataset}
       />
 
-      {/* Top Header Row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-            📁 {isZh ? '資料集管理中心' : 'Dataset Management Center'}
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            {isZh ? '專案：' : 'Project: '}<span style={{ color: '#818cf8', fontWeight: 600 }}>{activeProject.name}</span> · {isZh ? '匯入/匯出圖片與標註檔、相機拍攝與資料集分割' : 'Import/Export images and annotations, camera capture, and dataset split'}
-          </p>
+      <div className="vf-page-header">
+        <div className="vf-page-heading">
+          <div className="vf-page-eyebrow">
+            <FolderSearch size={14} strokeWidth={1.5} aria-hidden="true" />
+            <span>{isZh ? '資料集管理' : 'Dataset'}</span>
+            <TaskBadge taskType={activeProject.task_type} />
+          </div>
+          <div className="vf-page-title-row">
+            <h1 className="vf-page-title">{activeProject.name}</h1>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          {/* Import Button */}
+        <div className="vf-page-actions">
           <Button
             variant="secondary"
-            icon={<UploadCloud size={15} />}
+            size="sm"
+            icon={<UploadCloud size={15} strokeWidth={1.5} />}
             loading={importing}
             onClick={() => importDatasetInputRef.current?.click()}
-            title={isZh ? '支援 ZIP 或多選檔案：影像 + COCO JSON，或影像 + YOLO 標籤 (labels/*.txt + data.yaml)' : 'ZIP or multiple files: images + COCO JSON, or images + YOLO labels (labels/*.txt + data.yaml)'}
+            title={isZh ? '支援 ZIP 或多選檔案：影像 + COCO JSON，或影像 + YOLO 標籤' : 'ZIP or multiple files: images + COCO JSON or YOLO labels'}
           >
-            {isZh ? '匯入資料集 (COCO / YOLO)' : 'Import Dataset (COCO / YOLO)'}
+            {isZh ? '匯入 COCO / YOLO' : 'Import COCO / YOLO'}
           </Button>
 
-          {/* Export Button */}
           <Button
             variant="secondary"
-            icon={<Download size={15} />}
+            size="sm"
+            icon={<Download size={15} strokeWidth={1.5} />}
             onClick={handleExportDataset}
             disabled={images.length === 0}
           >
-            {isZh ? '匯出資料集 (ZIP)' : 'Export Dataset (ZIP)'}
+            {isZh ? '匯出 ZIP' : 'Export ZIP'}
           </Button>
 
-          {/* Camera Button */}
           <Button
             variant="secondary"
-            icon={<Camera size={15} />}
+            size="sm"
+            icon={<Camera size={15} strokeWidth={1.5} />}
             onClick={() => setIsCameraOpen(true)}
           >
-            {isZh ? '啟動相機拍攝' : 'Start Camera Capture'}
+            {isZh ? '相機擷取' : 'Camera capture'}
           </Button>
 
-          {/* Split Button */}
           <Button
-            variant="secondary"
-            icon={<PieChart size={15} />}
+            variant={isSplitModalOpen ? 'primary' : 'secondary'}
+            size="sm"
+            icon={<PieChart size={15} strokeWidth={1.5} />}
             onClick={() => setIsSplitModalOpen(!isSplitModalOpen)}
           >
-            {isZh ? '資料集分割' : 'Split Dataset'}
+            {isZh ? '資料集分割' : 'Split dataset'}
           </Button>
 
-          {/* Annotator Navigation */}
           <Button
             variant="primary"
-            icon={<ArrowRight size={15} />}
+            size="sm"
+            icon={<ArrowRight size={15} strokeWidth={1.5} />}
             onClick={() => setCurrentView('annotator')}
           >
-            {isZh ? '前往標註工具' : 'Go to Annotator'}
+            {isZh ? '前往標註' : 'Open annotator'}
           </Button>
         </div>
       </div>
 
-      {/* Success Notification Banner */}
       {importSuccessMsg && (
         <div
           style={{
-            padding: '0.75rem 1rem',
-            background: 'rgba(16, 185, 129, 0.12)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
+            padding: '12px 16px',
+            background: 'var(--accent-emerald-soft)',
+            border: '1px solid rgba(21, 128, 61, 0.25)',
             borderRadius: 'var(--radius-sm)',
-            color: '#34d399',
-            fontSize: '0.85rem',
+            color: 'var(--accent-emerald)',
+            fontSize: '13px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '12px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CheckCircle2 size={16} />
+            <CheckCircle2 size={16} strokeWidth={1.5} />
             <span style={{ whiteSpace: 'pre-line' }}>{importSuccessMsg}</span>
           </div>
           <button
+            type="button"
+            className="btn btn-ghost btn-sm"
             onClick={() => setImportSuccessMsg('')}
-            style={{ background: 'transparent', border: 'none', color: '#34d399', cursor: 'pointer', fontSize: '0.8rem' }}
+            style={{ color: 'var(--accent-emerald)' }}
           >
             {isZh ? '關閉' : 'Close'}
           </button>
         </div>
       )}
 
-      {/* Dataset Statistics Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      {/* Dataset Statistics Strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '16px' }}>
         <Card>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{isZh ? '總圖片數' : 'Total Images'}</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{images.length}</div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {isZh ? '已標註:' : 'Labeled:'} <span style={{ color: '#10b981', fontWeight: 600 }}>{labeledCount}</span> / {isZh ? '未標註:' : 'Unlabeled:'} {images.length - labeledCount}
+          <div className="vf-stat-label">{isZh ? '總影像數' : 'Total images'}</div>
+          <div className="vf-stat-value vf-num">{images.length.toLocaleString()}</div>
+          <div className="vf-stat-sub">
+            {isZh ? `未標註 ${unlabeledCount.toLocaleString()} 張` : `${unlabeledCount.toLocaleString()} unlabeled`}
           </div>
         </Card>
 
         <Card>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{isZh ? '訓練集 (Train)' : 'Train Set'}</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#818cf8' }}>{trainCount}</div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {isZh ? '佔比' : 'Ratio'} {images.length > 0 ? Math.round((trainCount / images.length) * 100) : 0}%
+          <div className="vf-stat-label">{isZh ? '已標註影像' : 'Labeled'}</div>
+          <div className="vf-stat-value vf-num" style={{ color: labeledCount > 0 ? 'var(--accent-emerald)' : 'var(--text-primary)' }}>
+            {labeledCount.toLocaleString()}
+          </div>
+          <div className="vf-stat-sub">
+            {images.length > 0 ? `${Math.round((labeledCount / images.length) * 100)}%` : '0%'} {isZh ? '完成率' : 'complete'}
           </div>
         </Card>
 
         <Card>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{isZh ? '驗證集 (Val)' : 'Val Set'}</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#06b6d4' }}>{valCount}</div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {isZh ? '佔比' : 'Ratio'} {images.length > 0 ? Math.round((valCount / images.length) * 100) : 0}%
+          <div className="vf-stat-label">{isZh ? '訓練集 (Train)' : 'Train subset'}</div>
+          <div className="vf-stat-value vf-num">{trainCount.toLocaleString()}</div>
+          <div className="vf-stat-sub">
+            {isZh ? '佔比' : 'Share'} {images.length > 0 ? Math.round((trainCount / images.length) * 100) : 0}%
+          </div>
+        </Card>
+
+        <Card>
+          <div className="vf-stat-label">{isZh ? '驗證集 (Val)' : 'Validation subset'}</div>
+          <div className="vf-stat-value vf-num">{valCount.toLocaleString()}</div>
+          <div className="vf-stat-sub">
+            {isZh ? '佔比' : 'Share'} {images.length > 0 ? Math.round((valCount / images.length) * 100) : 0}%
           </div>
         </Card>
       </div>
 
       {/* Split Settings Drawer */}
       {isSplitModalOpen && (
-        <Card style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-highlight)' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <PieChart size={16} color="#818cf8" /> {isZh ? '自動依比例劃分訓練集與驗證集' : 'Auto-split Train and Val Sets'}
+        <Card style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-strong)' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 500, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <PieChart size={16} strokeWidth={1.5} color="var(--text-secondary)" />
+            <span>{isZh ? '依比例劃分訓練集與驗證集' : 'Split into train and validation subsets'}</span>
           </h3>
-          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.85rem' }}>{isZh ? '訓練集比例:' : 'Train Ratio:'}</span>
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{isZh ? '訓練集比例' : 'Train ratio'}</span>
               <input
                 type="range"
                 min="0.5"
@@ -294,103 +305,105 @@ export const DatasetView: React.FC = () => {
                   setTrainRatio(val);
                   setValRatio(parseFloat((1 - val).toFixed(2)));
                 }}
-                style={{ width: '120px', accentColor: '#818cf8' }}
+                style={{ width: '132px', accentColor: 'var(--accent-primary)' }}
               />
-              <span style={{ fontWeight: 700, color: '#818cf8' }}>{Math.round(trainRatio * 100)}%</span>
+              <span className="vf-num" style={{ fontWeight: 500, color: 'var(--accent-primary)' }}>
+                {Math.round(trainRatio * 100)}%
+              </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.85rem' }}>{isZh ? '驗證集比例:' : 'Val Ratio:'}</span>
-              <span style={{ fontWeight: 700, color: '#06b6d4' }}>{Math.round(valRatio * 100)}%</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{isZh ? '驗證集比例' : 'Val ratio'}</span>
+              <span className="vf-num" style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                {Math.round(valRatio * 100)}%
+              </span>
             </div>
 
             <Button variant="primary" size="sm" onClick={handleSplitDataset}>
-              {isZh ? '確認執行隨機劃分' : 'Confirm Random Split'}
+              {isZh ? '執行隨機劃分' : 'Apply random split'}
             </Button>
           </div>
         </Card>
       )}
 
-      {/* Image Uploader Component */}
       <ImageUploader onUpload={handleUpload} loading={uploading} />
 
-      {/* Gallery Filter & Actions Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Filter size={15} color="var(--text-muted)" />
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{isZh ? '子集篩選:' : 'Filter:'}</span>
-          {['all', 'train', 'val', 'labeled', 'unlabeled'].map((split) => (
+      {/* Filter Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="vf-tabs" role="tablist" aria-label={isZh ? '子集篩選' : 'Dataset filter'}>
+          {[
+            { id: 'all', label: isZh ? '全部' : 'All' },
+            { id: 'train', label: isZh ? '訓練集' : 'Train' },
+            { id: 'val', label: isZh ? '驗證集' : 'Val' },
+            { id: 'labeled', label: isZh ? '已標註' : 'Labeled' },
+            { id: 'unlabeled', label: isZh ? '未標註' : 'Unlabeled' },
+          ].map((tab) => (
             <button
-              key={split}
-              className={`btn btn-sm ${filterSplit === split ? 'btn-secondary' : 'btn-ghost'}`}
-              onClick={() => setFilterSplit(split)}
-              style={{
-                fontSize: '0.75rem',
-                textTransform: 'capitalize',
-                borderColor: filterSplit === split ? '#818cf8' : undefined,
-              }}
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={filterSplit === tab.id}
+              className={`vf-tab ${filterSplit === tab.id ? 'active' : ''}`}
+              onClick={() => setFilterSplit(tab.id)}
             >
-              {split === 'all' && (isZh ? '全部' : 'All')}
-              {split === 'train' && (isZh ? '訓練集' : 'Train')}
-              {split === 'val' && (isZh ? '驗證集' : 'Val')}
-              {split === 'labeled' && (isZh ? '已標註' : 'Labeled')}
-              {split === 'unlabeled' && (isZh ? '未標註' : 'Unlabeled')}
+              {tab.label}
             </button>
           ))}
         </div>
 
-        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          {isZh ? `顯示 ${filteredImages.length} / ${images.length} 張圖片` : `Showing ${filteredImages.length} / ${images.length} images`}
+        <span className="vf-num" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+          {isZh ? `顯示 ${filteredImages.length} / ${images.length} 張影像` : `Showing ${filteredImages.length} of ${images.length} images`}
         </span>
       </div>
 
       {/* Images Thumbnail Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>
-          {isZh ? '載入圖片列表中...' : 'Loading images...'}
+        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
+          {isZh ? '正在載入影像列表…' : 'Loading images…'}
         </div>
       ) : filteredImages.length === 0 ? (
-        <div
+        <Card
           style={{
             textAlign: 'center',
-            padding: '4rem 1rem',
-            background: 'var(--bg-surface)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px dashed var(--border-subtle)',
+            padding: '48px 24px',
+            borderStyle: 'dashed',
           }}
         >
-          <FolderSearch size={40} color="var(--text-muted)" style={{ margin: '0 auto 1rem' }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{isZh ? '資料集中尚無相符圖片' : 'No matching images in dataset'}</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', maxWidth: '400px', margin: '0 auto 1.25rem' }}>
-            {isZh ? '您可以點擊上方「匯入資料集 (ZIP)」、拖放照片上傳，或開啟攝影機即時拍攝採集樣本。' : 'You can click "Import Dataset", upload photos by drag-and-drop, or use the camera to collect samples.'}
+          <FolderSearch size={32} strokeWidth={1.5} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
+          <h3 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '4px' }}>
+            {isZh ? '資料集中尚無相符影像' : 'No matching images'}
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '420px', margin: '0 auto' }}>
+            {isZh
+              ? '點擊上方匯入 COCO / YOLO 資料集、拖放圖片至此或使用攝影機擷取樣本'
+              : 'Import a COCO / YOLO dataset above, drag & drop images, or capture with your camera'}
           </p>
-        </div>
+        </Card>
       ) : (
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
-            gap: '1rem',
+            gap: '16px',
             alignItems: 'start',
           }}
         >
           {filteredImages.map((img) => {
-            const aspect = (img.width && img.height) ? `${img.width} / ${img.height}` : '16 / 9';
+            const aspect = img.width && img.height ? `${img.width} / ${img.height}` : '16 / 9';
+            const splitLabel = img.split === 'train' ? 'Train' : img.split === 'val' ? 'Val' : img.split;
             return (
               <div
                 key={img.id}
                 style={{
                   position: 'relative',
                   aspectRatio: aspect,
-                  background: '#040711',
-                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--canvas-bg)',
+                  borderRadius: '10px',
                   overflow: 'hidden',
                   border: '1px solid var(--border-card)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'transform 0.15s ease, border-color 0.15s ease',
                 }}
               >
                 <img
@@ -404,36 +417,38 @@ export const DatasetView: React.FC = () => {
                   }}
                 />
 
-                {/* Status Badges */}
+                {/* Top-left Status Badges */}
                 <div style={{ position: 'absolute', top: '6px', left: '6px', display: 'flex', gap: '4px', zIndex: 2 }}>
                   {img.labeled ? (
                     <span
+                      className="vf-num"
                       style={{
-                        background: 'rgba(16, 185, 129, 0.9)',
-                        color: 'white',
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
+                        background: 'rgba(17, 17, 19, 0.78)',
+                        color: '#6ee7b7',
+                        fontSize: '11px',
+                        fontWeight: 500,
                         padding: '2px 6px',
-                        borderRadius: '3px',
-                        backdropFilter: 'blur(4px)',
-                        display: 'flex',
+                        borderRadius: '4px',
+                        backdropFilter: 'blur(6px)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '2px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        gap: '4px',
                       }}
                     >
-                      <CheckCircle2 size={10} /> {img.annotation_count > 0 ? `${img.annotation_count} ${isZh ? '標記' : 'box'}` : (isZh ? '已標' : 'L')}
+                      <CheckCircle2 size={11} strokeWidth={1.75} />
+                      {img.annotation_count > 0 ? `${img.annotation_count}` : (isZh ? '已標' : 'Labeled')}
                     </span>
                   ) : (
                     <span
                       style={{
-                        background: 'rgba(0, 0, 0, 0.7)',
-                        color: '#94a3b8',
-                        fontSize: '0.65rem',
+                        background: 'rgba(17, 17, 19, 0.78)',
+                        color: '#a1a1aa',
+                        fontSize: '11px',
                         padding: '2px 6px',
-                        borderRadius: '3px',
-                        backdropFilter: 'blur(4px)',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        borderRadius: '4px',
+                        backdropFilter: 'blur(6px)',
+                        border: '1px solid rgba(255, 255, 255, 0.10)',
                       }}
                     >
                       {isZh ? '未標註' : 'Unlabeled'}
@@ -443,24 +458,24 @@ export const DatasetView: React.FC = () => {
                   {img.split && img.split !== 'unassigned' && (
                     <span
                       style={{
-                        background: img.split === 'train' ? 'rgba(99, 102, 241, 0.9)' : 'rgba(6, 182, 212, 0.9)',
-                        color: 'white',
-                        fontSize: '0.65rem',
-                        fontWeight: 600,
+                        background: 'rgba(17, 17, 19, 0.78)',
+                        color: '#e4e4e7',
+                        fontSize: '11px',
+                        fontWeight: 500,
                         padding: '2px 6px',
-                        borderRadius: '3px',
-                        backdropFilter: 'blur(4px)',
-                        textTransform: 'uppercase',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        borderRadius: '4px',
+                        backdropFilter: 'blur(6px)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
                       }}
                     >
-                      {img.split}
+                      {splitLabel}
                     </span>
                   )}
                 </div>
 
                 {/* Delete Button overlay */}
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteImage(img.filename);
@@ -469,38 +484,40 @@ export const DatasetView: React.FC = () => {
                     position: 'absolute',
                     top: '6px',
                     right: '6px',
-                    background: 'rgba(244, 63, 94, 0.85)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '3px',
-                    padding: '4px',
+                    background: 'rgba(17, 17, 19, 0.78)',
+                    color: '#f4f4f5',
+                    border: '1px solid rgba(255, 255, 255, 0.14)',
+                    borderRadius: '4px',
+                    width: '24px',
+                    height: '24px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
+                    backdropFilter: 'blur(6px)',
                     zIndex: 2,
                   }}
-                  title={isZh ? '刪除此圖片' : 'Delete image'}
+                  title={isZh ? '刪除圖片' : 'Delete image'}
+                  aria-label={isZh ? `刪除 ${img.filename}` : `Delete ${img.filename}`}
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={12} strokeWidth={1.5} />
                 </button>
 
-                {/* Native Camera Resolution Badge */}
+                {/* Resolution Badge */}
                 <div
+                  className="vf-num"
                   style={{
                     position: 'absolute',
                     bottom: '6px',
                     right: '6px',
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                    color: '#e2e8f0',
-                    background: 'rgba(15, 23, 42, 0.8)',
-                    backdropFilter: 'blur(4px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: '#e4e4e7',
+                    background: 'rgba(17, 17, 19, 0.78)',
+                    backdropFilter: 'blur(6px)',
+                    border: '1px solid rgba(255, 255, 255, 0.10)',
                     padding: '2px 6px',
-                    borderRadius: '3px',
-                    letterSpacing: '0.02em',
+                    borderRadius: '4px',
                     pointerEvents: 'none',
                     zIndex: 2,
                   }}
@@ -513,7 +530,6 @@ export const DatasetView: React.FC = () => {
         </div>
       )}
 
-      {/* Camera Capture Modal */}
       <CameraCaptureModal
         isOpen={isCameraOpen}
         onCaptureImage={handleCameraCapture}

@@ -269,7 +269,7 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
       canvas.height = bh0;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#070a10';
+    ctx.fillStyle = '#111113';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const { scale, offsetX, offsetY } = view;
@@ -293,7 +293,7 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
       const [bx, by, bw, bh] = anno.bbox;
       const isSelected = selectedBoxId === anno.id;
       const isHovered = hoveredBoxId === anno.id && !isSelected;
-      const color = catColorMap[anno.category_id] || '#6366f1';
+      const color = catColorMap[anno.category_id] || '#1d5fd6';
       const label = catNameMap[anno.category_id] || 'Target';
 
       ctx.fillStyle = isSelected ? `${color}45` : isHovered ? `${color}25` : `${color}15`;
@@ -307,7 +307,7 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
 
       // Label pill (constant on-screen size)
       const fontSize = px(13);
-      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.font = `500 ${fontSize}px Allo, system-ui, sans-serif`;
       const badgeH = fontSize + px(8);
       const badgeW = ctx.measureText(label).width + px(14);
       const badgeY = Math.max(0, by - badgeH);
@@ -345,7 +345,7 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
         const centerRadius = px(11);
         ctx.beginPath();
         ctx.arc(centerX, centerY, centerRadius, 0, 2 * Math.PI);
-        ctx.fillStyle = activeHandle === 'center' || hoveredHandle === 'center' ? color : 'rgba(15, 23, 42, 0.8)';
+        ctx.fillStyle = activeHandle === 'center' || hoveredHandle === 'center' ? color : 'rgba(17, 17, 19, 0.85)';
         ctx.fill();
         ctx.lineWidth = px(2);
         ctx.strokeStyle = '#ffffff';
@@ -361,20 +361,20 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
         // Dimension badge [W × H] (in image pixels)
         const dimText = `${Math.round(bw)} × ${Math.round(bh)}`;
         const dimFontSize = px(12);
-        ctx.font = `bold ${dimFontSize}px sans-serif`;
+        ctx.font = `500 ${dimFontSize}px Allo, system-ui, sans-serif`;
         const dimW = ctx.measureText(dimText).width + px(12);
         const dimH = dimFontSize + px(6);
         const dimY = Math.min(img.naturalHeight - dimH, by + bh + px(4));
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillStyle = 'rgba(17, 17, 19, 0.88)';
         ctx.fillRect(bx + bw - dimW, dimY, dimW, dimH);
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = '#ededf0';
         ctx.fillText(dimText, bx + bw - dimW + px(6), dimY + dimFontSize);
       }
     });
 
     // Box being drawn
     if (actionMode === 'drawing' && currentDrawBox) {
-      const activeColor = catColorMap[selectedCategoryId] || '#6366f1';
+      const activeColor = catColorMap[selectedCategoryId] || '#1d5fd6';
       const { x, y, w, h } = currentDrawBox;
       ctx.fillStyle = `${activeColor}30`;
       ctx.fillRect(x, y, w, h);
@@ -384,10 +384,10 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
       ctx.strokeRect(x, y, w, h);
       ctx.setLineDash([]);
       const dimText = `${Math.round(w)} × ${Math.round(h)}`;
-      ctx.font = `bold ${px(12)}px sans-serif`;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.font = `500 ${px(12)}px Allo, system-ui, sans-serif`;
+      ctx.fillStyle = 'rgba(17, 17, 19, 0.88)';
       ctx.fillRect(x + w + px(6), y + h + px(6), ctx.measureText(dimText).width + px(10), px(20));
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#ededf0';
       ctx.fillText(dimText, x + w + px(11), y + h + px(20));
     }
 
@@ -637,15 +637,15 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
   const zoomByButton = (factor: number) => zoomAt(viewport.w / 2, viewport.h / 2, view.scale * factor);
   const zoomPercent = Math.round(view.scale * 100);
   const toolBtn: React.CSSProperties = {
-    width: '32px',
-    height: '32px',
+    width: '28px',
+    height: '28px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: 'transparent',
     border: 0,
-    borderRadius: '9999px',
-    color: '#e2e8f0',
+    borderRadius: '6px',
+    color: '#ededf0',
     cursor: 'pointer',
   };
 
@@ -658,15 +658,15 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
         height: '100%',
         minHeight: '320px',
         flex: 1,
-        background: '#070a10',
+        background: 'var(--canvas-bg)',
         borderRadius: 'var(--radius-md)',
         overflow: 'hidden',
         userSelect: 'none',
       }}
     >
       {!imageLoaded && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          {isZh ? '正在載入影像畫布...' : 'Loading image…'}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--canvas-muted)', fontSize: '13px' }}>
+          {isZh ? '正在載入影像畫布…' : 'Loading image…'}
         </div>
       )}
       <canvas
@@ -714,13 +714,14 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
             alignItems: 'center',
             gap: '2px',
             padding: '4px',
-            background: 'rgba(15, 23, 42, 0.8)',
-            borderRadius: '9999px',
+            background: 'rgba(17, 17, 19, 0.88)',
+            borderRadius: 'var(--radius-sm)',
             border: '1px solid rgba(255, 255, 255, 0.12)',
+            backdropFilter: 'blur(6px)',
           }}
         >
           <button type="button" style={toolBtn} onClick={() => zoomByButton(1 / 1.25)} aria-label={isZh ? '縮小' : 'Zoom out'} title={isZh ? '縮小' : 'Zoom out'}>
-            <ZoomOut size={16} aria-hidden="true" />
+            <ZoomOut size={16} strokeWidth={1.5} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -730,15 +731,15 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
             }}
             title={isZh ? '原始大小 (100%)' : 'Actual size (100%)'}
             aria-label={isZh ? `目前 ${zoomPercent}%，按此切換為原始大小` : `Zoom ${zoomPercent}%, click for actual size`}
-            style={{ ...toolBtn, width: 'auto', minWidth: '52px', padding: '0 6px', fontSize: '0.75rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+            style={{ ...toolBtn, width: 'auto', minWidth: '52px', padding: '0 6px', fontSize: '12px', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}
           >
             {zoomPercent}%
           </button>
           <button type="button" style={toolBtn} onClick={() => zoomByButton(1.25)} aria-label={isZh ? '放大' : 'Zoom in'} title={isZh ? '放大' : 'Zoom in'}>
-            <ZoomIn size={16} aria-hidden="true" />
+            <ZoomIn size={16} strokeWidth={1.5} aria-hidden="true" />
           </button>
           <button type="button" style={toolBtn} onClick={resetToFit} aria-label={isZh ? '符合視窗' : 'Fit to window'} title={isZh ? '符合視窗' : 'Fit to window'}>
-            <Maximize size={15} aria-hidden="true" />
+            <Maximize size={15} strokeWidth={1.5} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -752,18 +753,19 @@ export const CanvasAnnotator: React.FC<CanvasAnnotatorProps> = ({
             left: '50%',
             transform: 'translateX(-50%)',
             maxWidth: 'calc(100% - 24px)',
-            background: 'rgba(15, 23, 42, 0.75)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#cbd5e1',
+            background: 'rgba(17, 17, 19, 0.84)',
+            border: '1px solid rgba(255, 255, 255, 0.10)',
+            color: '#d4d4d8',
             padding: '4px 12px',
-            borderRadius: '12px',
-            fontSize: '0.72rem',
+            borderRadius: '6px',
+            fontSize: '12px',
             pointerEvents: 'none',
             display: 'flex',
             flexWrap: 'wrap',
             justifyContent: 'center',
             columnGap: '12px',
             rowGap: '2px',
+            backdropFilter: 'blur(6px)',
           }}
         >
           {(isZh

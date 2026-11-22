@@ -26,7 +26,6 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const titleId = useId();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  // Keep the latest onClose without re-running the open/close effect on every parent render.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -39,7 +38,6 @@ export const Modal: React.FC<ModalProps> = ({
         onCloseRef.current();
         return;
       }
-      // Simple focus trap: keep Tab / Shift+Tab inside the dialog.
       if (e.key === 'Tab' && containerRef.current) {
         const items = Array.from(containerRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
         if (items.length === 0) {
@@ -92,9 +90,9 @@ export const Modal: React.FC<ModalProps> = ({
             onClick={onClose}
             aria-label={closeLabel}
             title={closeLabel}
-            style={{ padding: '4px', borderRadius: '50%' }}
+            style={{ width: '32px', height: '32px', padding: 0, borderRadius: 'var(--radius-sm)' }}
           >
-            <X size={18} />
+            <X size={16} strokeWidth={1.5} />
           </button>
         </div>
         <div className="modal-body">{children}</div>

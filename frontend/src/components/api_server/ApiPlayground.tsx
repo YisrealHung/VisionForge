@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Send, FileJson, CheckCircle2, AlertCircle, UploadCloud, Layers } from 'lucide-react';
+import { Send, FileJson, UploadCloud } from 'lucide-react';
 import { api } from '../../services/api';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
@@ -23,7 +23,6 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Release the previous preview blob whenever it is replaced, and on unmount.
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -52,7 +51,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
 
   const handleSendRequest = async () => {
     if (!selectedFile) {
-      setErrorMsg(isZh ? '請先選擇一張測試圖片' : 'Please select a test image first');
+      setErrorMsg(isZh ? '請先選擇一張測試圖片' : 'Select a test image first');
       return;
     }
 
@@ -74,7 +73,7 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
         const b64 = await fileToBase64(selectedFile);
         result = await api.inferenceBatch({
           model_id: projectId,
-          images_base64: [b64, b64], // Send batch of 2
+          images_base64: [b64, b64],
         });
       }
 
@@ -93,78 +92,61 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
 
   return (
     <Card>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <FileJson size={18} color="#818cf8" />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>{isZh ? '互動式 API 測試工作台 (Playground)' : 'Interactive API Playground'}</h3>
+          <FileJson size={16} strokeWidth={1.5} color="var(--text-secondary)" />
+          <h3 style={{ fontSize: '16px', fontWeight: 500 }}>
+            {isZh ? '互動式 API 測試工作台' : 'Interactive API playground'}
+          </h3>
         </div>
 
-        {/* Endpoint Selector Tabs */}
-        <div style={{ display: 'flex', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', padding: '2px', border: '1px solid var(--border-subtle)' }}>
+        <div className="vf-tabs" role="tablist" aria-label={isZh ? '端點選擇' : 'Select endpoint'}>
           <button
+            type="button"
+            role="tab"
+            aria-selected={endpoint === 'predict'}
+            className={`vf-tab ${endpoint === 'predict' ? 'active' : ''}`}
             onClick={() => setEndpoint('predict')}
-            style={{
-              padding: '4px 10px',
-              fontSize: '0.75rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: endpoint === 'predict' ? 'var(--accent-primary)' : 'transparent',
-              color: endpoint === 'predict' ? '#fff' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
           >
-            POST /predict (Base64)
+            POST /predict
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={endpoint === 'predict-form'}
+            className={`vf-tab ${endpoint === 'predict-form' ? 'active' : ''}`}
             onClick={() => setEndpoint('predict-form')}
-            style={{
-              padding: '4px 10px',
-              fontSize: '0.75rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: endpoint === 'predict-form' ? 'var(--accent-primary)' : 'transparent',
-              color: endpoint === 'predict-form' ? '#fff' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
           >
-            POST /predict-form (Multipart)
+            POST /predict-form
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={endpoint === 'batch'}
+            className={`vf-tab ${endpoint === 'batch' ? 'active' : ''}`}
             onClick={() => setEndpoint('batch')}
-            style={{
-              padding: '4px 10px',
-              fontSize: '0.75rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              background: endpoint === 'batch' ? 'var(--accent-primary)' : 'transparent',
-              color: endpoint === 'batch' ? '#fff' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
           >
-             POST /batch {isZh ? '(批次)' : '(Batch)'}
+            POST /batch
           </button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
-        {/* Left: Input Selection */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div
+            className={previewUrl ? '' : 'vf-reticle'}
             onClick={() => fileInputRef.current?.click()}
             style={{
-              minHeight: '160px',
-              border: '2px dashed var(--border-subtle)',
+              minHeight: '176px',
+              border: '1px dashed var(--border-strong)',
               borderRadius: 'var(--radius-sm)',
-              background: previewUrl ? 'transparent' : 'var(--bg-base)',
+              background: previewUrl ? 'var(--canvas-bg)' : 'var(--bg-surface-elevated)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              padding: '1rem',
+              padding: '16px',
             }}
           >
             <input
@@ -181,85 +163,83 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ projectId }) => {
                   alt="Payload preview"
                   style={{ maxHeight: '130px', maxWidth: '100%', objectFit: 'contain', borderRadius: '4px' }}
                 />
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  {isZh ? `已選取: ${selectedFile?.name} (點擊更換)` : `Selected: ${selectedFile?.name} (click to change)`}
+                <div style={{ fontSize: '12px', color: 'var(--canvas-muted)', marginTop: '6px' }}>
+                  {isZh ? `已選取 ${selectedFile?.name}（點擊更換）` : `${selectedFile?.name} (click to change)`}
                 </div>
               </div>
             ) : (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                <UploadCloud size={28} style={{ margin: '0 auto 6px', color: '#818cf8' }} />
-                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {isZh ? '點擊選擇測試圖片' : 'Click to select a test image'}
+                <UploadCloud size={22} strokeWidth={1.5} style={{ margin: '0 auto 8px', color: 'var(--text-secondary)' }} />
+                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                  {isZh ? '選擇測試圖片' : 'Select test image'}
                 </div>
-                <div style={{ fontSize: '0.7rem' }}>{isZh ? '作為 API 請求 Payload 內容' : 'Used as API request payload'}</div>
+                <div style={{ fontSize: '12px', marginTop: '2px' }}>
+                  {isZh ? '作為 API 請求測試資料' : 'Used as API request payload'}
+                </div>
               </div>
             )}
           </div>
 
           <Button
             variant="primary"
-            icon={<Send size={14} />}
+            icon={<Send size={14} strokeWidth={1.5} />}
             loading={loading}
             onClick={handleSendRequest}
           >
-            {isZh ? '發送 API 請求 (Send Request)' : 'Send API Request'}
+            {isZh ? '發送 API 請求' : 'Send API request'}
           </Button>
 
           {errorMsg && (
-            <div style={{ padding: '0.6rem', background: 'rgba(244,63,94,0.1)', color: '#fda4af', fontSize: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ padding: '8px 12px', background: 'var(--accent-rose-soft)', color: 'var(--accent-rose)', fontSize: '12px', borderRadius: 'var(--radius-sm)' }}>
               {errorMsg}
             </div>
           )}
         </div>
 
-        {/* Right: Response Inspector */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-              {isZh ? 'API 回傳結果 (Response Body)' : 'Response Body'}
+            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+              {isZh ? '回傳內容 (JSON)' : 'Response body'}
             </span>
             {statusCode && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="vf-num" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span
+                  className="badge"
                   style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    background: statusCode === 200 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)',
-                    color: statusCode === 200 ? '#10b981' : '#f43f5e',
+                    background: statusCode === 200 ? 'var(--accent-emerald-soft)' : 'var(--accent-rose-soft)',
+                    color: statusCode === 200 ? 'var(--accent-emerald)' : 'var(--accent-rose)',
                   }}
                 >
                   HTTP {statusCode} {statusCode === 200 ? 'OK' : 'Error'}
                 </span>
                 {latency !== null && (
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                    {latency} ms
-                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{latency} ms</span>
                 )}
               </div>
             )}
           </div>
 
           <pre
+            className="vf-mono"
             style={{
-              background: '#070a12',
-              padding: '1rem',
+              background: 'var(--canvas-bg)',
+              padding: '12px 16px',
               borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-subtle)',
-              fontSize: '0.75rem',
-              fontFamily: "'JetBrains Mono', monospace",
-              color: '#cbd5e1',
+              border: '1px solid var(--canvas-border)',
+              fontSize: '12px',
+              color: 'var(--canvas-text)',
               height: '220px',
               overflowY: 'auto',
               margin: 0,
-              lineHeight: '1.5',
+              lineHeight: 1.55,
             }}
           >
             <code>
               {responseJson
                 ? JSON.stringify(responseJson, null, 2)
-                : (isZh ? '// 點擊「發送 API 請求」後，JSON 回應將即時在此格式化顯示...' : '// Click "Send API Request" to see the JSON response here...')}
+                : isZh
+                ? '// 點擊「發送 API 請求」後，JSON 回應將顯示於此…'
+                : '// Click "Send API request" to view the formatted JSON response…'}
             </code>
           </pre>
         </div>

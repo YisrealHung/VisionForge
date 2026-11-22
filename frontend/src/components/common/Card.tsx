@@ -8,7 +8,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Card: React.FC<CardProps> = ({
   children,
   interactive = false,
-  glow = false,
+  glow: _glow = false,
   className = '',
   style,
   ...props
@@ -16,10 +16,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <div
       className={`glass-card ${interactive ? 'glass-card-interactive' : ''} ${className}`}
-      style={{
-        ...(glow ? { boxShadow: '0 0 25px rgba(99, 102, 241, 0.2)' } : {}),
-        ...style,
-      }}
+      style={style}
       {...props}
     >
       {children}

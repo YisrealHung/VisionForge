@@ -1,17 +1,10 @@
 import React from 'react';
-import {
-  FolderPlus,
-  FolderGit2,
-  Sparkles,
-  Layers,
-  Cpu,
-  TrendingUp,
-  Boxes
-} from 'lucide-react';
+import { FolderPlus, LayoutDashboard } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { ProjectCard } from '../../components/project/ProjectCard';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
+import { TaskBadge } from '../../components/common/Badge';
 import { NextStepPanel } from '../../components/project/NextStepPanel';
 
 export const DashboardView: React.FC = () => {
@@ -21,133 +14,120 @@ export const DashboardView: React.FC = () => {
     activateProject,
     deleteProject,
     setIsCreateModalOpen,
-    setCurrentView,
     systemHealth,
     language,
-    t
+    t,
   } = useProject();
 
+  const isZh = language === 'zh-TW';
+  const totalImages = projects.reduce((sum, p) => sum + (p.dataset_count || 0), 0);
+  const totalModels = projects.reduce((sum, p) => sum + (p.model_count || 0), 0);
+  const gpuAvailable = Boolean(systemHealth?.gpu.available);
+  const computeName = gpuAvailable
+    ? systemHealth!.gpu.device.replace('NVIDIA GeForce ', '')
+    : 'CPU';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* With an active project: greeting + "next step" guidance; otherwise the welcome hero */}
-      {activeProject && (
+    <div className="vf-container">
+      {activeProject ? (
         <>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ flex: 1, minWidth: '240px' }}>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                {language === 'zh-TW' ? '歡迎回來' : 'Welcome back'}
+          <div className="vf-page-header">
+            <div className="vf-page-heading">
+              <div className="vf-page-eyebrow">
+                <LayoutDashboard size={14} strokeWidth={1.5} aria-hidden="true" />
+                <span>{t.navDashboard}</span>
               </div>
-              <h1 style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.2, margin: '0.15rem 0 0' }}>
-                {language === 'zh-TW' ? '今天要訓練什麼？' : 'What will you train today?'}
-              </h1>
+              <div className="vf-page-title-row">
+                <h1 className="vf-page-title">{activeProject.name}</h1>
+                <TaskBadge taskType={activeProject.task_type} />
+              </div>
             </div>
-            <Button variant="primary" icon={<FolderPlus size={16} />} onClick={() => setIsCreateModalOpen(true)}>
-              {t.dashboardBtnNewProject}
-            </Button>
+            <div className="vf-page-actions">
+              <Button
+                variant="primary"
+                icon={<FolderPlus size={16} strokeWidth={1.5} />}
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                {t.dashboardBtnNewProject}
+              </Button>
+            </div>
           </div>
+
           <NextStepPanel project={activeProject} />
         </>
+      ) : (
+        <section className="vf-next-step vf-reticle" aria-label={isZh ? '開始使用' : 'Get started'}>
+          <div className="vf-next-step-body">
+            <span className="vf-next-step-pill">{t.brandTagline}</span>
+            <h1 className="vf-next-step-title">{t.dashboardHeroTitleDefault}</h1>
+            <p className="vf-next-step-sub">{t.dashboardHeroSubtitleDefault}</p>
+          </div>
+          <button
+            type="button"
+            className="vf-next-step-cta"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <FolderPlus size={16} strokeWidth={1.5} aria-hidden="true" />
+            {t.dashboardBtnNewProject}
+          </button>
+        </section>
       )}
 
-      {!activeProject && (
-      <div
-        className="glass-card"
-        style={{
-          background: 'var(--gradient-brand-subtle)',
-          border: '1px solid var(--border-highlight)',
-          position: 'relative',
-          overflow: 'hidden',
-          padding: '2rem'
-        }}
-      >
-        <div style={{ maxWidth: '640px', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.75rem' }}>
-            <span className="badge badge-indigo">
-              <Sparkles size={13} /> VisionForge v1.0
-            </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              {t.platformSubtitle}
-            </span>
-          </div>
-
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.6rem', lineHeight: '1.2' }}>
-            {language === 'zh-TW' ? '鍛造屬於你的專屬 ' : 'Forge Your Custom '}<span style={{ color: 'var(--accent-primary)' }}>{language === 'zh-TW' ? 'AI 視覺模型' : 'AI Vision Models'}</span>
-          </h1>
-
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-            {t.dashboardHeroSubtitleDefault}
-          </p>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <Button
-              variant="primary"
-              icon={<FolderPlus size={16} />}
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              {t.dashboardBtnNewProject}
-            </Button>
-          </div>
-        </div>
-      </div>
-      )}
-
-      {/* System & Workspace Overview Statistics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      {/* Workspace Statistics (4 real metrics, numbers only) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px' }}>
         <Card>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t.dashboardStatsTotalProjects}</span>
-            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent-primary-glow)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FolderGit2 size={16} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>{projects.length}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            {language === 'zh-TW' ? '本地 SQLite 儲存庫' : 'Local SQLite Storage'}
+          <div className="vf-stat-label">{t.dashboardStatsTotalProjects}</div>
+          <div className="vf-stat-value vf-num">{projects.length.toLocaleString()}</div>
+          <div className="vf-stat-sub">
+            {isZh ? '本機 SQLite 儲存庫' : 'Local SQLite storage'}
           </div>
         </Card>
 
         <Card>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t.dashboardStatsGpuStatus}</span>
-            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.18)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Cpu size={16} />
-            </div>
-          </div>
-          <div style={{ fontSize: '1.15rem', fontWeight: 700, color: systemHealth?.gpu.available ? '#10b981' : 'var(--text-primary)' }}>
-            {systemHealth?.gpu.available ? systemHealth.gpu.device : (language === 'zh-TW' ? 'CPU 運算模式' : 'CPU Mode')}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            {systemHealth?.gpu.available ? (language === 'zh-TW' ? '🟢 CUDA 加速已啟用' : '🟢 CUDA Accelerated') : (language === 'zh-TW' ? '🟡 未偵測到 GPU，將使用 CPU' : '🟡 CPU compute mode')}
+          <div className="vf-stat-label">{t.dashboardStatsTotalImages}</div>
+          <div className="vf-stat-value vf-num">{totalImages.toLocaleString()}</div>
+          <div className="vf-stat-sub">
+            {isZh ? '所有專案合計' : 'Across all projects'}
           </div>
         </Card>
 
         <Card>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>{language === 'zh-TW' ? '架構雙模式' : 'Workspace Mode'}</span>
-            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent-teal-glow)', color: 'var(--accent-teal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Boxes size={16} />
-            </div>
+          <div className="vf-stat-label">{t.dashboardStatsActiveModels}</div>
+          <div className="vf-stat-value vf-num">{totalModels.toLocaleString()}</div>
+          <div className="vf-stat-sub">
+            {isZh ? '已完成訓練檢查點' : 'Trained checkpoints'}
           </div>
-          <div style={{ fontSize: '1.15rem', fontWeight: 700 }}>{language === 'zh-TW' ? '訓練 + 獨立推論' : 'Train & Inference'}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            {language === 'zh-TW' ? '支援 WebSocket / REST API' : 'REST & WebSocket API'}
+        </Card>
+
+        <Card>
+          <div className="vf-stat-label">{t.dashboardStatsGpuStatus}</div>
+          <div
+            className="vf-stat-value vf-num"
+            style={{ fontSize: '20px', lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            title={computeName}
+          >
+            {computeName}
+          </div>
+          <div className="vf-stat-sub">
+            <span className={`vf-status-dot ${gpuAvailable ? 'online' : 'warning'}`} aria-hidden="true" />
+            <span>{gpuAvailable ? (isZh ? 'CUDA 加速可用' : 'CUDA acceleration') : (isZh ? 'CPU 運算模式' : 'CPU compute mode')}</span>
           </div>
         </Card>
       </div>
 
-      {/* Projects Grid Section */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+      {/* Projects Grid */}
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{t.dashboardProjectsTitle}</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              {language === 'zh-TW' ? '點選即可將專案切換為當前工作目標' : 'Click to select project as current working target'}
+            <h2 style={{ fontSize: '18px', fontWeight: 500 }}>{t.dashboardProjectsTitle}</h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {isZh ? '點選專案卡片可切換為目前工作目標' : 'Select a project card to set it as active'}
             </p>
           </div>
           <Button
             variant="secondary"
             size="sm"
-            icon={<FolderPlus size={14} />}
+            icon={<FolderPlus size={14} strokeWidth={1.5} />}
             onClick={() => setIsCreateModalOpen(true)}
           >
             {t.dashboardBtnNewProject}
@@ -155,53 +135,53 @@ export const DashboardView: React.FC = () => {
         </div>
 
         {projects.length === 0 ? (
-          <div
-            className="glass-card"
+          <Card
             style={{
-              padding: '3.5rem 2rem',
+              padding: '48px 24px',
               textAlign: 'center',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '1rem',
+              gap: '16px',
             }}
           >
             <div
               style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '50%',
-                background: 'rgba(99, 102, 241, 0.15)',
-                color: '#818cf8',
+                width: '44px',
+                height: '44px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-surface-elevated)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <FolderPlus size={28} />
+              <FolderPlus size={20} strokeWidth={1.5} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.35rem' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '4px' }}>
                 {t.dashboardNoProjects}
               </h3>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', maxWidth: '400px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '420px' }}>
                 {t.dashboardCreateFirstPrompt}
               </p>
             </div>
             <Button
               variant="primary"
-              icon={<FolderPlus size={16} />}
+              icon={<FolderPlus size={16} strokeWidth={1.5} />}
               onClick={() => setIsCreateModalOpen(true)}
             >
               {t.dashboardBtnNewProject}
             </Button>
-          </div>
+          </Card>
         ) : (
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '1.25rem',
+              gap: '16px',
             }}
           >
             {projects.map((project) => (
@@ -215,7 +195,7 @@ export const DashboardView: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 };

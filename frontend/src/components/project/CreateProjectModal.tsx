@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Scan, TrendingUp, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Layers, Scan, TrendingUp, Focus, CheckCircle2 } from 'lucide-react';
 import { useProject } from '../../context/ProjectContext';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
@@ -12,48 +12,52 @@ export const CreateProjectModal: React.FC = () => {
   const [taskType, setTaskType] = useState<TaskType>('classification');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isZh = language === 'zh-TW';
 
   const taskOptions: {
     type: TaskType;
     title: string;
     desc: string;
     icon: React.ReactNode;
-    color: string;
   }[] = [
     {
       type: 'classification',
-      title: language === 'zh-TW' ? '影像分類' : 'Image Classification',
-      desc: language === 'zh-TW' ? '為整張圖片指定分類標籤（如：良品/瑕疵、種類辨識）。支援 ResNet、ViT 等深度架構。' : 'Assign category label to whole image (Pass/NG, object class). Supports ResNet, ViT.',
-      icon: <Layers size={18} />,
-      color: '#EB7E83',
+      title: isZh ? '影像分類' : 'Image Classification',
+      desc: isZh
+        ? '為整張圖片指定分類標籤（如良品與瑕疵、物件種類），支援 ResNet 與 ViT 架構'
+        : 'Assign one class label per image (Pass/NG, object type). Supports ResNet and ViT',
+      icon: <Layers size={16} strokeWidth={1.5} />,
     },
     {
       type: 'detection',
-      title: language === 'zh-TW' ? '物件偵測' : 'Object Detection',
-      desc: language === 'zh-TW' ? '在影像中定位多個目標物並繪製 Bounding Box。支援 YOLO26、D-FINE HGNetv2 等即時架構。' : 'Locate multiple objects with Bounding Boxes. Supports YOLO26, D-FINE HGNetv2.',
-      icon: <Scan size={18} />,
-      color: '#557B86',
+      title: isZh ? '物件偵測' : 'Object Detection',
+      desc: isZh
+        ? '在影像中定位多個目標物並標記邊界框，支援 YOLO26 與 D-FINE 架構'
+        : 'Locate multiple objects with bounding boxes. Supports YOLO26 and D-FINE',
+      icon: <Scan size={16} strokeWidth={1.5} />,
     },
     {
       type: 'regression',
-      title: language === 'zh-TW' ? '圖像迴歸' : 'Feature Regression',
-      desc: language === 'zh-TW' ? '依據影像特徵輸出連續數值預測（如：溫度估算、角度測量、關鍵點座標定位）。' : 'Predict continuous numerical outputs (angle, temperature, coordinates).',
-      icon: <TrendingUp size={18} />,
-      color: '#E1998A',
+      title: isZh ? '圖像迴歸' : 'Feature Regression',
+      desc: isZh
+        ? '依據影像特徵輸出連續數值預測（如角度、位置座標或品質評分）'
+        : 'Predict continuous numerical values (angle, temperature, or coordinates)',
+      icon: <TrendingUp size={16} strokeWidth={1.5} />,
     },
     {
       type: 'feature',
-      title: language === 'zh-TW' ? '特徵辨識' : 'Feature Representation',
-      desc: language === 'zh-TW' ? '自訂 ROI 關注區域或全圖高維特徵提取，支援 Swin-Tiny、ResNet-50+FPN 比對。' : 'Extract high-dimensional ROI or full image features with Swin / ResNet-50 FPN.',
-      icon: <Sparkles size={18} />,
-      color: '#67a390',
+      title: isZh ? '特徵辨識' : 'Feature Representation',
+      desc: isZh
+        ? '自訂 ROI 關注區域或全圖特徵提取，支援 Swin-Tiny 與 ResNet-50 FPN'
+        : 'Extract ROI or full-image feature embeddings with Swin or ResNet-50 FPN',
+      icon: <Focus size={16} strokeWidth={1.5} />,
     },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError(language === 'zh-TW' ? '請輸入專案名稱' : 'Please enter project name');
+      setError(isZh ? '請輸入專案名稱' : 'Please enter a project name');
       return;
     }
 
@@ -70,7 +74,7 @@ export const CreateProjectModal: React.FC = () => {
       setTaskType('classification');
       setIsCreateModalOpen(false);
     } catch (err: any) {
-      setError(err.message || (language === 'zh-TW' ? '建立專案失敗' : 'Failed to create project'));
+      setError(err.message || (isZh ? '建立專案失敗' : 'Failed to create project'));
     } finally {
       setLoading(false);
     }
@@ -80,21 +84,21 @@ export const CreateProjectModal: React.FC = () => {
     <Modal
       isOpen={isCreateModalOpen}
       onClose={() => setIsCreateModalOpen(false)}
-      title={`🚀 ${t.createProjectModalTitle}`}
-      closeLabel={language === 'zh-TW' ? '關閉' : 'Close'}
+      title={t.createProjectModalTitle}
+      closeLabel={isZh ? '關閉' : 'Close'}
       maxWidth="620px"
     >
       <form onSubmit={handleSubmit}>
         {error && (
           <div
             style={{
-              padding: '0.65rem 0.85rem',
+              padding: '10px 12px',
               borderRadius: 'var(--radius-sm)',
-              background: 'rgba(244, 63, 94, 0.15)',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
-              color: '#fda4af',
-              fontSize: '0.85rem',
-              marginBottom: '1.25rem',
+              background: 'var(--accent-rose-soft)',
+              border: '1px solid rgba(200, 30, 30, 0.25)',
+              color: 'var(--accent-rose)',
+              fontSize: '13px',
+              marginBottom: '16px',
             }}
           >
             {error}
@@ -130,32 +134,25 @@ export const CreateProjectModal: React.FC = () => {
             {taskOptions.map((opt) => {
               const isSelected = taskType === opt.type;
               return (
-                <div
+                <button
                   key={opt.type}
+                  type="button"
                   className={`task-type-card ${isSelected ? 'selected' : ''}`}
                   onClick={() => setTaskType(opt.type)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div
-                      className="task-type-icon-wrapper"
-                      style={{
-                        background: isSelected ? `${opt.color}30` : 'rgba(255,255,255,0.05)',
-                        color: opt.color,
-                      }}
-                    >
-                      {opt.icon}
-                    </div>
-                    {isSelected && <CheckCircle2 size={16} color={opt.color} />}
+                    <div className="task-type-icon-wrapper">{opt.icon}</div>
+                    {isSelected && <CheckCircle2 size={16} strokeWidth={1.5} color="var(--accent-primary)" />}
                   </div>
                   <div className="task-type-title">{opt.title}</div>
                   <div className="task-type-desc">{opt.desc}</div>
-                </div>
+                </button>
               );
             })}
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
           <Button
             type="button"
             variant="ghost"

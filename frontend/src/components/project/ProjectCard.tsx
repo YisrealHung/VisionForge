@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Trash2, 
-  ArrowRight, 
-  Images, 
-  Boxes, 
-  Calendar,
-  CheckCircle2
-} from 'lucide-react';
+import { Trash2, ArrowRight, Images, Boxes, Calendar } from 'lucide-react';
 import { Project } from '../../types';
 import { TaskBadge } from '../common/Badge';
 import { useProject } from '../../context/ProjectContext';
@@ -41,7 +34,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`glass-card ${isActive ? 'active-card' : ''}`}
+      className="glass-card"
       style={{
         position: 'relative',
         display: 'flex',
@@ -50,92 +43,135 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         height: '100%',
         cursor: 'pointer',
         border: isActive
-          ? '2px solid var(--accent-primary)'
+          ? '1.5px solid var(--accent-primary)'
           : isHovered
-          ? '1.5px solid var(--border-highlight)'
+          ? '1px solid var(--border-strong)'
           : '1px solid var(--border-card)',
-        boxShadow: isActive
-          ? 'var(--shadow-glow), 0 0 0 1px var(--accent-primary)'
-          : isHovered
-          ? 'var(--shadow-md)'
-          : 'var(--shadow-sm)',
-        background: 'var(--bg-glass-card)',
-        transform: !isActive && isHovered ? 'translateY(-2px)' : 'none',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        background: 'var(--bg-surface)',
+        transition: 'border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out)',
         outline: 'none',
       }}
     >
       <div>
-        {/* Top bar with TaskBadge and active indicator / delete button */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <TaskBadge taskType={project.task_type} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {isActive && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 700 }}>
-                <CheckCircle2 size={14} color="var(--accent-primary)" /> {isZh ? '當前啟用中' : 'Active'}
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  color: 'var(--accent-primary)',
+                  fontWeight: 500,
+                }}
+              >
+                <span className="vf-status-dot online" aria-hidden="true" />
+                {isZh ? '使用中' : 'Active'}
               </span>
             )}
             <button
               type="button"
               className="btn btn-ghost btn-sm"
-              style={{ color: 'var(--text-muted)', padding: '4px' }}
-              title={isZh ? '刪除專案' : 'Delete Project'}
+              style={{ width: '28px', height: '28px', padding: 0, color: 'var(--text-muted)' }}
+              title={isZh ? '刪除專案' : 'Delete project'}
+              aria-label={isZh ? `刪除專案 ${project.name}` : `Delete project ${project.name}`}
               onClick={(e) => {
                 e.stopPropagation();
-                const msg = isZh 
+                const msg = isZh
                   ? `確定要刪除專案「${project.name}」嗎？所有資料集與模型將一併移除。`
-                  : `Are you sure you want to delete project "${project.name}"? All datasets and models will be removed.`;
+                  : `Delete project "${project.name}"? All datasets and models will be removed.`;
                 if (confirm(msg)) {
                   onDelete(project.id);
                 }
               }}
             >
-              <Trash2 size={14} />
+              <Trash2 size={15} strokeWidth={1.5} />
             </button>
           </div>
         </div>
 
-        {/* Project Name & Description */}
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.4rem', color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
+        <h3
+          style={{
+            fontSize: '16px',
+            fontWeight: 500,
+            marginBottom: '6px',
+            color: 'var(--text-primary)',
+          }}
+        >
           {project.name}
         </h3>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', minHeight: '2.4em', marginBottom: '1.25rem', lineHeight: '1.4' }}>
+        <p
+          style={{
+            fontSize: '13px',
+            color: 'var(--text-secondary)',
+            minHeight: '38px',
+            marginBottom: '16px',
+            lineHeight: 1.45,
+          }}
+        >
           {project.description || (isZh ? '無描述資訊' : 'No description')}
         </p>
 
-        {/* Stats Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem', marginBottom: '1.25rem' }}>
-          <div style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>
-              <Images size={13} /> {isZh ? '圖片數量' : 'Images'}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '16px' }}>
+          <div
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+              <Images size={14} strokeWidth={1.5} aria-hidden="true" />
+              <span>{isZh ? '圖片數量' : 'Images'}</span>
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {project.dataset_count}
+            <div className="vf-num" style={{ fontSize: '18px', fontWeight: 500, color: 'var(--text-primary)' }}>
+              {project.dataset_count.toLocaleString()}
             </div>
           </div>
-          <div style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px' }}>
-              <Boxes size={13} /> {isZh ? '模型數量' : 'Models'}
+          <div
+            style={{
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+              <Boxes size={14} strokeWidth={1.5} aria-hidden="true" />
+              <span>{isZh ? '模型數量' : 'Models'}</span>
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {project.model_count}
+            <div className="vf-num" style={{ fontSize: '18px', fontWeight: 500, color: 'var(--text-primary)' }}>
+              {project.model_count.toLocaleString()}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          <Calendar size={13} /> {project.created_at.split(' ')[0]}
+      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="vf-num" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+          <Calendar size={14} strokeWidth={1.5} aria-hidden="true" />
+          <span>{project.created_at.split(' ')[0]}</span>
         </div>
         {isActive ? (
-          <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-            ● {isZh ? '操作中' : 'In Use'}
+          <span style={{ fontSize: '12px', color: 'var(--accent-primary)', fontWeight: 500 }}>
+            {isZh ? '目前專案' : 'Selected'}
           </span>
         ) : (
-          <span style={{ fontSize: '0.75rem', color: isHovered ? 'var(--accent-primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', transition: 'color 0.15s' }}>
-            {isZh ? '點擊切換' : 'Click to switch'} <ArrowRight size={12} />
+          <span
+            style={{
+              fontSize: '12px',
+              color: isHovered ? 'var(--accent-primary)' : 'var(--text-muted)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'color var(--dur-fast) var(--ease-out)',
+            }}
+          >
+            <span>{isZh ? '切換至此專案' : 'Switch project'}</span>
+            <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
           </span>
         )}
       </div>

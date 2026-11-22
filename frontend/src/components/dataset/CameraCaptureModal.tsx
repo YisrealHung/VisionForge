@@ -11,7 +11,6 @@ interface CameraCaptureModalProps {
   onCaptureImage: (file: File) => Promise<void>;
 }
 
-/** Region of interest in *displayed* frame coordinates (after optional mirroring), 0–1. */
 interface Roi {
   x: number;
   y: number;
@@ -19,7 +18,7 @@ interface Roi {
   h: number;
 }
 
-const MIN_ROI = 0.02; // ignore accidental clicks smaller than 2% of the frame
+const MIN_ROI = 0.02;
 const roiStorageKey = (projectId: string | undefined) => `visionforge_capture_roi:${projectId || 'default'}`;
 
 function loadRoi(projectId: string | undefined): Roi | null {
@@ -38,7 +37,7 @@ function saveRoi(projectId: string | undefined, roi: Roi | null) {
     if (roi) localStorage.setItem(roiStorageKey(projectId), JSON.stringify(roi));
     else localStorage.removeItem(roiStorageKey(projectId));
   } catch {
-    /* storage unavailable: ROI just isn't remembered */
+    /* storage unavailable */
   }
 }
 
@@ -48,7 +47,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  // Kept in a ref (not state) so cleanups always see the current stream, never a stale closure value.
   const streamRef = useRef<MediaStream | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
@@ -64,12 +62,10 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
   const isZh = language === 'zh-TW';
   const projectId = activeProject?.id;
 
-  // ROI
   const [roi, setRoi] = useState<Roi | null>(null);
   const [roiMode, setRoiMode] = useState(false);
   const [draftRoi, setDraftRoi] = useState<Roi | null>(null);
   const roiStartRef = useRef<{ x: number; y: number } | null>(null);
-  // Where the video picture actually sits inside the viewport (object-fit: contain), in px.
   const [frameRect, setFrameRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
   useEffect(() => {
@@ -81,7 +77,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
     saveRoi(projectId, next);
   };
 
-  // ---------- Devices & stream ----------
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
@@ -91,8 +86,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
         if (cancelled) return;
         const videoDevs = devs.filter((d) => d.kind === 'videoinput');
         setDevices(videoDevs);
-        // Only pick a device if none is chosen; the first stream opens with the default camera,
-        // so we don't restart the camera just to switch to the same device.
         setSelectedDeviceId((cur) => cur || '');
       } catch (err) {
         console.error('Failed to enumerate devices:', err);
@@ -124,8 +117,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
       stopStream(streamRef.current);
       streamRef.current = null;
       try {
-        // Queued with every other camera open in the app, so StrictMode's double effect or a quick
-        // device switch never makes two opens overlap (Windows rejects the second one).
         const newStream = await openCameraStream(videoConstraints(selectedDeviceId || undefined, 1920, 1080));
         if (cancelled) {
           stopStream(newStream);
@@ -133,7 +124,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
         }
         streamRef.current = newStream;
         if (videoRef.current) videoRef.current.srcObject = newStream;
-        // Labels become available once permission is granted.
         const devs = await navigator.mediaDevices.enumerateDevices();
         if (!cancelled) setDevices(devs.filter((d) => d.kind === 'videoinput'));
       } catch (err) {
@@ -151,14 +141,12 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedDeviceId, retryKey]);
 
-  // Clear the interval-capture timer on unmount.
   useEffect(() => {
     return () => {
       if (intervalTimerRef.current) clearInterval(intervalTimerRef.current);
     };
   }, []);
 
-  // Track the on-screen picture rectangle so the ROI overlay lines up with the video.
   const measureFrame = useCallback(() => {
     const v = videoRef.current;
     const box = viewportRef.current;
@@ -184,13 +172,10 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
     if (v.videoWidth && v.videoHeight) {
       setVideoResolution({ width: v.videoWidth, height: v.videoHeight, aspect: v.videoWidth / v.videoHeight });
       measureFrame();
-      setTimeout(measureFrame, 50); // again after layout settles (aspect-ratio change)
+      setTimeout(measureFrame, 50);
     }
   };
 
-  // ---------- ROI drawing ----------
-  // Map a mouse position to 0–1 coordinates on the picture, measured live from the <video>
-  // element (object-fit: contain) so a stale layout measurement can never skew the ROI.
   const toFramePoint = (e: React.MouseEvent) => {
     const v = videoRef.current;
     if (!v || !v.videoWidth || !v.videoHeight) return null;
@@ -228,7 +213,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
     const start = roiStartRef.current;
     if (!start) return;
     roiStartRef.current = null;
-    // Use the release point itself (not the last rendered draft) so a fast drag is never lost.
     const p = toFramePoint(e);
     const next = p ? rectFrom(start, p) : null;
     if (next && next.w >= MIN_ROI && next.h >= MIN_ROI) {
@@ -238,14 +222,12 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
     setDraftRoi(null);
   };
 
-  // ---------- Capture ----------
   const captureFrame = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || !video.videoWidth) return;
     const vw = video.videoWidth;
     const vh = video.videoHeight;
-    // Crop in source pixels. The ROI is drawn on the displayed (possibly mirrored) picture.
     const r = roi ?? { x: 0, y: 0, w: 1, h: 1 };
     const sw = Math.max(1, Math.round(r.w * vw));
     const sh = Math.max(1, Math.round(r.h * vh));
@@ -272,7 +254,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
       }
     }, 'image/jpeg', 0.95);
   };
-  // Interval capture always uses the latest ROI / mirror setting.
   const captureRef = useRef(captureFrame);
   captureRef.current = captureFrame;
 
@@ -298,15 +279,16 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
 
   const shownRoi = draftRoi ?? roi;
   const roiPx = roi && videoResolution ? { w: Math.round(roi.w * videoResolution.width), h: Math.round(roi.h * videoResolution.height) } : null;
-  const badge: React.CSSProperties = {
-    background: 'rgba(15, 23, 42, 0.75)',
+  const overlayBadge: React.CSSProperties = {
+    background: 'rgba(17, 17, 19, 0.82)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
-    color: '#e2e8f0',
-    padding: '3px 9px',
-    borderRadius: '9999px',
-    fontSize: '0.72rem',
-    fontWeight: 600,
-    display: 'flex',
+    color: '#ededf0',
+    padding: '3px 8px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: 500,
+    fontVariantNumeric: 'tabular-nums',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
     pointerEvents: 'none',
@@ -316,48 +298,47 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isZh ? '📷 攝影機即時擷取' : '📷 Live Camera Capture'}
+      title={isZh ? '攝影機即時擷取' : 'Live Camera Capture'}
       closeLabel={isZh ? '關閉' : 'Close'}
       maxWidth={videoResolution && videoResolution.aspect < 1.3 ? '680px' : '820px'}
       footer={
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', fontWeight: 700 }}>
-            {isZh ? `已擷取：${capturedCount} 張` : `Captured: ${capturedCount} frame${capturedCount !== 1 ? 's' : ''}`}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '8px' }}>
+          <div className="vf-num" style={{ fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 500 }}>
+            {isZh ? `已擷取 ${capturedCount} 張` : `Captured ${capturedCount} frame${capturedCount !== 1 ? 's' : ''}`}
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <Button variant="ghost" onClick={onClose}>
-              {isZh ? '完成並關閉' : 'Done & Close'}
+              {isZh ? '完成並關閉' : 'Done'}
             </Button>
             <Button
               variant={isIntervalRunning ? 'danger' : 'secondary'}
               onClick={toggleIntervalCapture}
               disabled={!!errorMsg}
-              icon={isIntervalRunning ? <Square size={14} /> : <Play size={14} />}
+              icon={isIntervalRunning ? <Square size={14} strokeWidth={1.5} /> : <Play size={14} strokeWidth={1.5} />}
             >
               {isIntervalRunning
-                ? (isZh ? '停止定時連拍' : 'Stop Auto Capture')
-                : (isZh ? `定時連拍 (每 ${intervalSec} 秒)` : `Auto Capture (every ${intervalSec}s)`)}
+                ? (isZh ? '停止連拍' : 'Stop auto capture')
+                : (isZh ? `定時連拍（每 ${intervalSec} 秒）` : `Auto capture (${intervalSec}s)`)}
             </Button>
-            <Button variant="primary" onClick={() => captureRef.current()} disabled={!!errorMsg} icon={<Camera size={15} />}>
-              {isZh ? (roi ? '拍照（ROI）' : '單張拍照') : (roi ? 'Capture (ROI)' : 'Capture')}
+            <Button variant="primary" onClick={() => captureRef.current()} disabled={!!errorMsg} icon={<Camera size={15} strokeWidth={1.5} />}>
+              {isZh ? (roi ? '拍照 (ROI)' : '單張拍照') : (roi ? 'Capture (ROI)' : 'Capture')}
             </Button>
           </div>
         </div>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {/* Top Control Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '220px' }}>
-            <label htmlFor="vf-capture-device" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-              {isZh ? '選擇裝置：' : 'Device:'}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }}>
+            <label htmlFor="vf-capture-device" style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+              {isZh ? '裝置' : 'Device'}
             </label>
             <select
               id="vf-capture-device"
               className="form-select"
               value={selectedDeviceId}
               onChange={(e) => setSelectedDeviceId(e.target.value)}
-              style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
+              style={{ fontSize: '13px', padding: '6px 10px' }}
             >
               <option value="">{isZh ? '預設攝影機' : 'Default camera'}</option>
               {devices.map((d, i) => (
@@ -368,7 +349,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
             </select>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
               className={`btn btn-sm ${roiMode ? 'btn-primary' : 'btn-secondary'}`}
@@ -381,11 +362,11 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
               aria-pressed={roiMode}
               title={isZh ? '在畫面上拖曳框選要保存的區域' : 'Drag on the picture to choose the area to save'}
             >
-              <Crop size={14} /> {roiMode ? (isZh ? '框選中…' : 'Drawing…') : roi ? (isZh ? '重設 ROI' : 'Redraw ROI') : (isZh ? '設定 ROI' : 'Set ROI')}
+              <Crop size={14} strokeWidth={1.5} /> {roiMode ? (isZh ? '框選中…' : 'Drawing…') : roi ? (isZh ? '重設 ROI' : 'Redraw ROI') : (isZh ? '設定 ROI' : 'Set ROI')}
             </button>
             {roi && (
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => updateRoi(null)} title={isZh ? '清除 ROI，改存整張畫面' : 'Clear ROI and save the full frame'}>
-                <X size={14} /> {isZh ? '清除 ROI' : 'Clear ROI'}
+                <X size={14} strokeWidth={1.5} /> {isZh ? '清除 ROI' : 'Clear ROI'}
               </button>
             )}
             <button
@@ -393,15 +374,15 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
               className={`btn btn-sm ${isFlipped ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setIsFlipped(!isFlipped)}
               aria-pressed={isFlipped}
-              title={isZh ? '水平鏡像翻轉' : 'Flip Horizontal'}
+              title={isZh ? '水平鏡像翻轉' : 'Flip horizontal'}
             >
-              <FlipHorizontal size={14} /> {isZh ? '鏡像' : 'Flip'}
+              <FlipHorizontal size={14} strokeWidth={1.5} /> {isZh ? '鏡像' : 'Flip'}
             </button>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem' }}>
-              <span>{isZh ? '連拍間隔:' : 'Interval:'}</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <span>{isZh ? '間隔' : 'Interval'}</span>
               <select
                 className="form-select"
-                style={{ width: '70px', padding: '2px 6px', fontSize: '0.8rem' }}
+                style={{ width: '68px', padding: '4px 8px', fontSize: '13px' }}
                 value={intervalSec}
                 onChange={(e) => setIntervalSec(Number(e.target.value))}
                 disabled={isIntervalRunning}
@@ -423,7 +404,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
             width: '100%',
             aspectRatio: videoResolution ? `${videoResolution.width} / ${videoResolution.height}` : '16 / 9',
             maxHeight: '62vh',
-            background: '#040711',
+            background: 'var(--canvas-bg)',
             borderRadius: 'var(--radius-md)',
             overflow: 'hidden',
             display: 'flex',
@@ -433,10 +414,10 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
           }}
         >
           {errorMsg ? (
-            <div style={{ textAlign: 'center', color: '#fda4af', padding: '1.5rem', maxWidth: '520px' }}>
-              <AlertTriangle size={32} style={{ margin: '0 auto 0.5rem' }} />
-              <p style={{ marginBottom: '0.75rem' }}>{errorMsg}</p>
-              <Button variant="secondary" size="sm" icon={<RotateCcw size={14} />} onClick={() => setRetryKey((k) => k + 1)}>
+            <div style={{ textAlign: 'center', color: '#f87171', padding: '24px', maxWidth: '520px' }}>
+              <AlertTriangle size={28} strokeWidth={1.5} style={{ margin: '0 auto 8px' }} />
+              <p style={{ marginBottom: '12px', fontSize: '13px' }}>{errorMsg}</p>
+              <Button variant="secondary" size="sm" icon={<RotateCcw size={14} strokeWidth={1.5} />} onClick={() => setRetryKey((k) => k + 1)}>
                 {isZh ? '重試' : 'Retry'}
               </Button>
             </div>
@@ -457,7 +438,6 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
             />
           )}
 
-          {/* ROI layer: dims everything outside the region; captures the drag while drawing */}
           {!errorMsg && frameRect && (roiMode || shownRoi) && (
             <div
               onMouseDown={onRoiDown}
@@ -483,31 +463,30 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
                     top: `${shownRoi.y * 100}%`,
                     width: `${shownRoi.w * 100}%`,
                     height: `${shownRoi.h * 100}%`,
-                    border: '2px dashed var(--studio-highlight, #c6f432)',
-                    boxShadow: '0 0 0 9999px rgba(4, 7, 17, 0.55)',
+                    border: '2px dashed var(--accent-primary)',
+                    boxShadow: '0 0 0 9999px rgba(17, 17, 19, 0.56)',
                     boxSizing: 'border-box',
                   }}
                 />
               )}
               {roiMode && !draftRoi && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                  <span style={badge}>{isZh ? '在畫面上拖曳，框選要保存的區域' : 'Drag on the picture to select the area to save'}</span>
+                  <span style={overlayBadge}>{isZh ? '在畫面上拖曳，框選要保存的區域' : 'Drag on the frame to select the region'}</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Resolution / ROI badges */}
           {videoResolution && !errorMsg && (
-            <div style={{ position: 'absolute', top: '10px', left: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={badge}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
-                <Video size={12} style={{ color: '#38bdf8' }} />
+            <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={overlayBadge}>
+                <span className="vf-status-dot online" aria-hidden="true" />
+                <Video size={13} strokeWidth={1.5} />
                 {videoResolution.width} × {videoResolution.height} ({getAspectLabel(videoResolution.width, videoResolution.height)})
               </span>
               {roiPx && (
-                <span style={badge}>
-                  <Crop size={12} /> ROI {roiPx.w} × {roiPx.h}
+                <span style={overlayBadge}>
+                  <Crop size={13} strokeWidth={1.5} /> ROI {roiPx.w} × {roiPx.h}
                 </span>
               )}
             </div>
@@ -515,32 +494,32 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({ isOpen, 
 
           {isIntervalRunning && (
             <div
+              className="vf-num"
               style={{
                 position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'rgba(244, 63, 94, 0.9)',
-                color: 'white',
+                top: '12px',
+                right: '12px',
+                background: 'rgba(200, 30, 30, 0.92)',
+                color: '#ffffff',
                 padding: '4px 10px',
-                borderRadius: '9999px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 500,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                animation: 'pulse 1.5s infinite',
               }}
             >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'white' }} />
-              {isZh ? `定時連拍中 (每 ${intervalSec}s)` : `Auto capturing every ${intervalSec}s`}
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ffffff' }} />
+              {isZh ? `連拍中 (${intervalSec}s)` : `Auto capture (${intervalSec}s)`}
             </div>
           )}
         </div>
 
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+        <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
           {roi
-            ? (isZh ? '已設定 ROI：拍照與連拍只會保存框內區域（原始解析度），此專案會記住這個 ROI。' : 'ROI set: captures save only the selected area at full resolution. This project remembers it.')
-            : (isZh ? '未設定 ROI：保存整張畫面。按「設定 ROI」可只保存需要的區域。' : 'No ROI: the full frame is saved. Use “Set ROI” to keep only the area you need.')}
+            ? (isZh ? '已設定 ROI：拍照與連拍只保存框內原始解析度區域，並對此專案記住該設定' : 'ROI active: captures save only the cropped full-resolution region for this project')
+            : (isZh ? '未設定 ROI：保存整張畫面；點擊「設定 ROI」可僅保存局部區域' : 'No ROI: full frame is saved. Select "Set ROI" to crop a specific area')}
         </p>
 
         <canvas ref={canvasRef} style={{ display: 'none' }} />
